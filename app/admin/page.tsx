@@ -8,6 +8,7 @@ import UserManagement from '../../components/admin/UserManagement'
 import AssetMaster from '../../components/admin/AssetMaster'
 import BorrowingProcess from '../../components/admin/BorrowingProcess'
 import AssetMaintenance from '../../components/admin/AssetMaintenance'
+import ReturnProcess from '../../components/admin/ReturnProcess'
 import { initialTickets } from '../../lib/dummyData'
 
 export default function AdminDashboard() {
@@ -31,7 +32,7 @@ export default function AdminDashboard() {
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
           userName="Siti Aminah" 
-          roleName="Admin Gudang" 
+          roleName="Admin" 
         />
         
         <div className="flex-1 overflow-auto p-8">
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
           )}
           
           {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={initialTickets} />}
+          {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={initialTickets} />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
           {activeNav === 'Kelola Pengguna' && <UserManagement />}
           {activeNav === 'Master Aset' && <AssetMaster />}

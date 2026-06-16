@@ -18,7 +18,7 @@ export default function LoginForm() {
       if (email.toLowerCase().includes('admin')) {
         router.push('/admin')
       } else {
-        router.push('/dashboard')
+        router.push('/areahead')
       }
     }, 1500)
   }
@@ -27,7 +27,7 @@ export default function LoginForm() {
     setIsLoading(true)
     setTimeout(() => {
       if (role === 'admin') router.push('/admin')
-      if (role === 'areahead') router.push('/dashboard')
+      if (role === 'areahead') router.push('/areahead')
     }, 1000)
   }
 

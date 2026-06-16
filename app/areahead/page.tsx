@@ -79,14 +79,14 @@ export default function ApprovalDashboard() {
         />
 
         {/* Dashboard Content */}
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 flex flex-col overflow-hidden p-8">
           
           {activeNav === 'Analitik' ? (
-            <AnalyticsContent />
+            <div className="flex-1 overflow-y-auto"><AnalyticsContent /></div>
           ) : activeNav === 'Persetujuan' ? (
             <>
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 shrink-0">
                 {stats.map((card) => (
                   <StatCard key={card.label} {...card} />
                 ))}

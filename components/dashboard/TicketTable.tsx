@@ -35,8 +35,8 @@ function ConflictWarning({ conflictWith }: { conflictWith: string }) {
 
 export default function TicketTable({ tickets, handleAction }: TicketTableProps) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0 flex-1">
+      <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Daftar Pengajuan Aktif</h2>
           <p className="text-sm text-gray-500">Menampilkan pengajuan yang memerlukan peninjauan.</p>
@@ -51,9 +51,9 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-auto flex-1 relative">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
               {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status', 'Tindakan'].map((h) => (
                 <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -94,8 +94,13 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
 
                   {/* Kuantitas */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm font-semibold ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'text-red-600' : 'text-gray-900'}`}>
-                      {ticket.jumlah} <span className="text-xs font-normal text-gray-500">/ {ticket.stokTersedia} unit</span>
+                    <div className="flex flex-col gap-1.5">
+                      <div className={`text-sm font-bold ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'text-red-600' : 'text-gray-900'}`}>
+                        {ticket.jumlah} <span className="text-xs font-normal text-gray-500">unit diajukan</span>
+                      </div>
+                      <div className="text-[11px] font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded px-2 py-0.5 w-fit">
+                        Live Stok: <span className={`font-bold ${ticket.stokTersedia < ticket.jumlah ? 'text-red-600' : 'text-blue-600'}`}>{ticket.stokTersedia}</span>
+                      </div>
                     </div>
                   </td>
 
@@ -144,7 +149,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
       </div>
 
       {/* Pagination Footer */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
         <span className="text-sm text-gray-500">Menampilkan {tickets.length} hasil</span>
         <div className="flex gap-1">
           <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
