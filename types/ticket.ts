@@ -1,5 +1,5 @@
 export type ApprovalStage = 'Peminjam' | 'Admin' | 'HSSE' | 'Area Head' | 'Serah Terima'
-export type TicketStatus = 'Menunggu' | 'Disetujui' | 'Ditolak' | 'Selesai'
+export type TicketStatus = 'Menunggu' | 'Disetujui' | 'Ditolak' | 'Selesai' | 'Dipinjam' | 'Dikembalikan'
 
 export interface ApprovalFlow {
   stage: ApprovalStage

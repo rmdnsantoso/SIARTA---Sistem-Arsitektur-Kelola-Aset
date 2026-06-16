@@ -63,6 +63,32 @@ export const initialTickets: Ticket[] = [
       { stage: 'Admin', status: 'Ditolak karena stok fisik tidak mencukupi (rusak/maintenance).', actor: 'Siti Aminah (Admin)', timestamp: '17 Jun 2026, 10:45 WIB', notes: '2 unit sedang kalibrasi' }
     ]
   },
+  {
+    id: 'TKT-006', peminjam: 'Fajar Nugroho', jabatan: 'Welder',
+    alat: 'Welding Mask Pro', jumlah: 1, stokTersedia: 0, assetType: 'SERIALIZED', allocatedUnits: ['SN-WLD-005'],
+    tanggalPinjam: '10 Jun 2026', tanggalKembali: '25 Jun 2026',
+    lokasi: 'Area Fabrikasi', currentStage: 'Serah Terima', overallStatus: 'Dipinjam',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Disetujui' },
+      { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
+    ],
+    trackingLogs: [
+      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Siti Aminah (Admin)', timestamp: '10 Jun 2026, 09:00 WIB' }
+    ]
+  },
+  {
+    id: 'TKT-007', peminjam: 'Lina Marlina', jabatan: 'QC Inspector',
+    alat: 'Digital Caliper', jumlah: 2, stokTersedia: 1, assetType: 'BULK', allocatedUnits: ['BULK_QTY_2'],
+    tanggalPinjam: '12 Jun 2026', tanggalKembali: '19 Jun 2026',
+    lokasi: 'Lab QC', currentStage: 'Serah Terima', overallStatus: 'Dipinjam',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Disetujui' },
+      { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
+    ],
+    trackingLogs: [
+      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Siti Aminah (Admin)', timestamp: '12 Jun 2026, 08:15 WIB' }
+    ]
+  },
 ]
 
 export const navItems = [

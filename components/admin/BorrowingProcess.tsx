@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Ticket } from '../../types/ticket'
+import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
+import StatCard from '../dashboard/StatCard'
 
 interface Props {
   tickets?: Ticket[]
@@ -11,6 +12,39 @@ interface Props {
 type ActionModal = {
   ticket: Ticket
   type: 'setujui' | 'tolak' | 'serah_terima'
+}
+
+function StatusBadge({ status, stage }: { status: TicketStatus, stage: string }) {
+  const map: Record<TicketStatus, string> = {
+    Menunggu: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    Disetujui: 'bg-green-50 text-green-700 border-green-200',
+    Ditolak: 'bg-red-50 text-red-700 border-red-200',
+    Selesai: 'bg-blue-50 text-blue-700 border-blue-200',
+  }
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status]}`}>
+        {status}
+      </span>
+      {(status === 'Menunggu' || status === 'Disetujui') && (
+        <span className="text-xs text-gray-500">Posisi: {stage}</span>
+      )}
+    </div>
+  )
+}
+
+function ConflictWarning({ conflictWith }: { conflictWith: string }) {
+  return (
+    <div className="flex items-start gap-1.5 mt-2 bg-red-50 border border-red-100 rounded p-2">
+      <svg className="w-4 h-4 text-red-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <span className="text-xs text-red-700">
+        Konflik Stok! Diminta juga oleh <strong>{conflictWith}</strong>.
+      </span>
+    </div>
+  )
 }
 
 export default function BorrowingProcess({ tickets = initialTickets }: Props) {
@@ -32,23 +66,11 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
   
   // Search
   const [searchQuery, setSearchQuery] = useState('')
-  
-  // Tab UI
-  const [activeTab, setActiveTab] = useState<'admin' | 'handover' | 'history'>('admin')
 
-  const filterFn = (t: Ticket) => 
+  const filteredTickets = localTickets.filter(t => 
     t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
     t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
     t.alat.toLowerCase().includes(searchQuery.toLowerCase())
-
-  const adminQueue = localTickets.filter(
-    t => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && filterFn(t)
-  )
-  const handoverQueue = localTickets.filter(
-    t => t.overallStatus === 'Disetujui' && t.currentStage === 'Serah Terima' && filterFn(t)
-  )
-  const historyQueue = localTickets.filter(
-    t => ((t.currentStage !== 'Admin' && t.currentStage !== 'Serah Terima') || t.overallStatus === 'Ditolak' || t.overallStatus === 'Selesai') && filterFn(t)
   )
 
   const showToast = (msg: string) => {
@@ -126,63 +148,24 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
     if (modal.ticket.assetType === 'BULK') {
       return allocatedBulkCount === modal.ticket.jumlah
     }
-    return true // Default if type unknown
+    return true
   }
 
-  return (
-    <div className="font-sans flex flex-col h-full overflow-hidden bg-gray-50/50">
-      
-      {/* Header & Tabs */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6 shrink-0 z-10">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Verifikasi & Serah Terima Peminjaman</h2>
-            <p className="text-sm text-gray-500 mt-1">Kelola antrean verifikasi fisik alat dan serah terima ke pekerja.</p>
-          </div>
-          <div className="relative">
-            <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input 
-              type="text" 
-              placeholder="Cari ID tiket, pemohon, aset..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all w-full sm:w-72"
-            />
-          </div>
-        </div>
-        
-        <div className="flex gap-6 mt-6 border-b border-gray-100">
-          <button 
-            onClick={() => setActiveTab('admin')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors relative ${activeTab === 'admin' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Antrean Verifikasi Fisik
-            {adminQueue.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-700">
-                {adminQueue.length}
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={() => setActiveTab('handover')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors relative ${activeTab === 'handover' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Siap Serah Terima
-            {handoverQueue.length > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700">
-                {handoverQueue.length}
-              </span>
-            )}
-          </button>
-          <button 
-            onClick={() => setActiveTab('history')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-colors ${activeTab === 'history' ? 'border-gray-800 text-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Riwayat Selesai
-          </button>
-        </div>
-      </div>
+  // Calculate stats
+  const pendingVerifikasi = localTickets.filter(t => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin').length
+  const pendingSerahTerima = localTickets.filter(t => t.overallStatus === 'Disetujui' && t.currentStage === 'Serah Terima').length
+  const selesaiCount = localTickets.filter(t => t.overallStatus === 'Selesai').length
+  const konflikCount = localTickets.filter(t => t.conflictWith && t.overallStatus === 'Menunggu' && t.currentStage === 'Admin').length
 
+  const stats = [
+    { label: 'Verifikasi Fisik (Antrean)', value: pendingVerifikasi, iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+    { label: 'Siap Serah Terima', value: pendingSerahTerima, iconPath: 'M5 13l4 4L19 7' },
+    { label: 'Selesai / Diambil', value: selesaiCount, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { label: 'Konflik Stok', value: konflikCount, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  ]
+
+  return (
+    <div className="font-sans flex flex-col h-full overflow-hidden bg-gray-50">
       {/* Toast */}
       {toast && (
         <div className="fixed top-6 right-6 z-[99] px-5 py-3 bg-gray-900 text-white rounded-lg shadow-xl text-sm font-medium animate-fade-in flex items-center gap-2">
@@ -190,178 +173,180 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-8">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden p-8">
         
-        {/* TAB: VERIFIKASI FISIK (ADMIN) */}
-        {activeTab === 'admin' && (
-          <div className="space-y-4">
-            {adminQueue.some(t => t.conflictWith) && (
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl mb-6">
-                <div className="p-1.5 bg-red-100 rounded-full shrink-0 mt-0.5">
-                  <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-red-700">Terdeteksi Konflik Stok!</p>
-                  <p className="text-xs text-red-600 mt-0.5">Ada pengajuan berebut aset. Tolak salah satu agar alokasi fisik tidak minus.</p>
-                </div>
-              </div>
-            )}
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 shrink-0">
+          {stats.map((card) => (
+            <StatCard key={card.label} {...card} />
+          ))}
+        </div>
 
-            {adminQueue.length === 0 ? (
-              <div className="py-20 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
-                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p className="text-gray-500 font-medium">Semua antrean telah dialokasikan.</p>
+        {/* Unified Table */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0 flex-1">
+          <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Semua Tiket Peminjaman</h2>
+              <p className="text-sm text-gray-500">Kelola verifikasi fisik dan serah terima aset ke pekerja.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input 
+                  type="text" 
+                  placeholder="Cari Tiket..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
+                />
               </div>
-            ) : (
-              adminQueue.map(ticket => (
-                <div key={ticket.id} className={`bg-white p-5 rounded-2xl shadow-sm border transition-all ${ticket.conflictWith ? 'border-red-300 bg-red-50/30' : 'border-gray-200 hover:shadow-md'}`}>
-                  <div className="flex flex-col lg:flex-row gap-6">
-                    <div className="flex-1 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center flex-wrap gap-2 mb-1">
-                            <span className="text-sm font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{ticket.id}</span>
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{ticket.tanggalPinjam} - {ticket.tanggalKembali}</span>
-                            {ticket.conflictWith && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded uppercase tracking-wider border border-red-200">
-                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                Konflik Stok dg {ticket.conflictWith}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-lg font-extrabold text-gray-900">{ticket.alat}</h3>
-                          <p className="text-sm text-gray-600 mt-1">Pemohon: <span className="font-bold text-gray-900">{ticket.peminjam}</span> ({ticket.jabatan}) di {ticket.lokasi}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-black text-gray-900">{ticket.jumlah}</div>
-                          <div className="text-xs font-bold text-gray-500 uppercase">Diminta</div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <div className="text-xs font-medium text-gray-500">Tipe Aset: <strong className="text-gray-900">{ticket.assetType || 'N/A'}</strong></div>
-                        <div className="w-px h-4 bg-gray-300"></div>
-                        <div className={`text-xs font-bold ${ticket.stokTersedia >= ticket.jumlah ? 'text-green-600' : 'text-red-600'}`}>
-                          Stok Gudang: {ticket.stokTersedia} Tersedia
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="w-full lg:w-48 flex flex-col justify-center gap-2 shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 pt-4 lg:pt-0 lg:pl-6">
-                      <button
-                        onClick={() => handleOpenAllocation(ticket)}
-                        className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm"
-                      >
-                        Alokasikan Unit
-                      </button>
-                      <button
-                        onClick={() => setModal({ ticket, type: 'tolak' })}
-                        className="w-full py-2.5 bg-white border border-red-200 text-red-600 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors shadow-sm"
-                      >
-                        Tolak
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+              <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                </svg>
+                Saring
+              </button>
+            </div>
           </div>
-        )}
 
-        {/* TAB: SERAH TERIMA (HANDOVER) */}
-        {activeTab === 'handover' && (
-          <div className="space-y-4">
-            {handoverQueue.length === 0 ? (
-              <div className="py-20 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
-                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" /></svg>
-                <p className="text-gray-500 font-medium">Belum ada barang yang siap diserahterimakan.</p>
-              </div>
-            ) : (
-              handoverQueue.map(ticket => (
-                <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-amber-200 hover:shadow-md transition-all flex flex-col lg:flex-row gap-6 items-center">
-                  <div className="flex-1">
-                     <div className="flex items-center gap-3 mb-1">
-                      <span className="text-sm font-black text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{ticket.id}</span>
-                      <span className="text-xs font-bold text-gray-500 uppercase">Siap Diambil</span>
-                    </div>
-                    <h3 className="text-lg font-extrabold text-gray-900">{ticket.alat} (x{ticket.jumlah})</h3>
-                    <p className="text-sm text-gray-600 mt-1">Pemohon: <span className="font-bold text-gray-900">{ticket.peminjam}</span></p>
-                    
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {ticket.allocatedUnits?.map(sn => (
-                        <span key={sn} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-mono rounded border border-gray-200">
-                          {sn.startsWith('BULK_QTY_') ? `Jumlah: ${sn.split('_')[2]}` : `SN: ${sn}`}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="shrink-0 w-full lg:w-auto">
-                    <button
-                      onClick={() => setModal({ ticket, type: 'serah_terima' })}
-                      className="w-full lg:w-auto px-6 py-3 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 transition-colors shadow-sm flex items-center justify-center gap-2"
-                    >
-                      Selesaikan Serah Terima
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* TAB: HISTORY */}
-        {activeTab === 'history' && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+          <div className="overflow-auto flex-1 relative">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">ID Tiket</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Tanggal</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Pemohon & Aset</th>
-                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase">Status Terkini</th>
+                  {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status', 'Tindakan', ''].map((h, i) => (
+                    <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {historyQueue.map(t => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-bold text-gray-900">{t.id}</td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{t.tanggalPinjam}</div>
-                      <div className="text-xs text-gray-500">s/d {t.tanggalKembali}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-bold text-gray-900">{t.alat}</div>
-                      <div className="text-xs text-gray-500">{t.peminjam} ({t.jabatan})</div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <span className={`inline-flex px-3 py-1 rounded-lg text-xs font-bold border ${
-                          t.overallStatus === 'Selesai' ? 'bg-green-50 text-green-700 border-green-200' :
-                          t.overallStatus === 'Ditolak' ? 'bg-red-50 text-red-700 border-red-200' :
-                          'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}>
-                          {t.overallStatus === 'Selesai' ? 'Selesai / Diambil' : 
-                           t.overallStatus === 'Ditolak' ? `Ditolak (Oleh ${t.currentStage})` : 
-                           `Menunggu (${t.currentStage})`}
-                        </span>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTickets.map((ticket) => {
+                  const isAdminActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
+                  const isHandoverActionable = ticket.overallStatus === 'Disetujui' && ticket.currentStage === 'Serah Terima'
+                  const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
+                  
+                  return (
+                    <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                      {/* ID Pengajuan */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
+                        {hasConflict && (
+                          <span className="block mt-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded w-fit uppercase">
+                            Konflik Stok
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Pemohon */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm font-medium text-gray-900">{ticket.peminjam}</p>
+                        <p className="text-xs text-gray-500">{ticket.jabatan}</p>
+                      </td>
+
+                      {/* Aset & Lokasi */}
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
+                        <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+                        {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {ticket.allocatedUnits.map(sn => (
+                              <span key={sn} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-mono rounded border border-gray-200">
+                                {sn.startsWith('BULK_QTY_') ? `Jml: ${sn.split('_')[2]}` : `SN: ${sn}`}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {hasConflict && <ConflictWarning conflictWith={ticket.conflictWith!} />}
+                      </td>
+
+                      {/* Kuantitas */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1.5">
+                          <div className={`text-sm font-bold ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'text-red-600' : 'text-gray-900'}`}>
+                            {ticket.jumlah} <span className="text-xs font-normal text-gray-500">unit diajukan</span>
+                          </div>
+                          <div className="text-[11px] font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded px-2 py-0.5 w-fit">
+                            Live Stok: <span className={`font-bold ${ticket.stokTersedia < ticket.jumlah ? 'text-red-600' : 'text-blue-600'}`}>{ticket.stokTersedia}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Periode */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <p className="text-sm text-gray-900">{ticket.tanggalPinjam}</p>
+                        <p className="text-xs text-gray-500">{ticket.tanggalKembali}</p>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
+                      </td>
+
+                      {/* Tindakan */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex gap-2 items-center">
+                          {isAdminActionable ? (
+                            <>
+                              <button
+                                onClick={() => handleOpenAllocation(ticket)}
+                                className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700 transition-colors"
+                              >
+                                Alokasikan
+                              </button>
+                              <button
+                                onClick={() => setModal({ ticket, type: 'tolak' })}
+                                className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition-colors"
+                              >
+                                Tolak
+                              </button>
+                            </>
+                          ) : isHandoverActionable ? (
+                            <button
+                              onClick={() => setModal({ ticket, type: 'serah_terima' })}
+                              className="px-3 py-1.5 bg-amber-500 text-white rounded text-sm font-medium hover:bg-amber-600 transition-colors flex items-center gap-1.5"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                              Serah Terima
+                            </button>
+                          ) : (
+                            <span className="text-sm text-gray-400">—</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Detail Riwayat (Dipisah) */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button 
-                          onClick={() => setModal({ type: 'detail', ticket: t })}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          onClick={() => setModal({ type: 'detail', ticket })}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
                           title="Lihat Detail Riwayat"
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Pagination Footer */}
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
+            <span className="text-sm text-gray-500">Menampilkan {filteredTickets.length} hasil</span>
+            <div className="flex gap-1">
+              <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
+              <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
+              <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {/* MODAL ALOKASI / KONFIRMASI / DETAIL (Tengah) */}
+      {/* MODAL ALOKASI / KONFIRMASI / DETAIL */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
           <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full max-w-4xl max-h-[85vh]' : 'w-full max-w-sm'}`}>
