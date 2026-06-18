@@ -52,11 +52,11 @@ export default function ApprovalDashboard() {
     setModal(null)
   }
 
-  const stats = [
-    { label: 'Menunggu Persetujuan', value: pendingCount, iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { label: 'Total Pengajuan', value: tickets.length, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { label: 'Selesai Disetujui', value: tickets.filter((t) => t.overallStatus === 'Disetujui').length, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { label: 'Konflik Stok', value: tickets.filter((t) => t.conflictWith && t.overallStatus === 'Menunggu').length, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+  const stats: Array<{ label: string, value: number, iconPath: string, colorTheme: 'default' | 'blue' | 'green' | 'amber' | 'red' | 'purple' }> = [
+    { label: 'Menunggu Persetujuan', value: pendingCount, iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'amber' },
+    { label: 'Total Pengajuan', value: tickets.length, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' },
+    { label: 'Selesai Disetujui', value: tickets.filter((t) => t.overallStatus === 'Disetujui').length, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'green' },
+    { label: 'Konflik Stok', value: tickets.filter((t) => t.conflictWith && t.overallStatus === 'Menunggu').length, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'red' },
   ]
 
   return (
@@ -74,15 +74,15 @@ export default function ApprovalDashboard() {
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
-          userName="Budi Santoso"
+          userName="John Doe"
           roleName="Area Head"
         />
 
         {/* Dashboard Content */}
-        <div className="flex-1 flex flex-col overflow-hidden p-8">
+        <div className="flex-1 overflow-auto p-8">
           
           {activeNav === 'Analitik' ? (
-            <div className="flex-1 overflow-y-auto"><AnalyticsContent /></div>
+            <AnalyticsContent />
           ) : activeNav === 'Persetujuan' ? (
             <>
               {/* Key Metrics */}

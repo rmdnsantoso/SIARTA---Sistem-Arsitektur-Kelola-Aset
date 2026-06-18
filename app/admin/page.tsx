@@ -9,6 +9,8 @@ import AssetMaster from '../../components/admin/AssetMaster'
 import BorrowingProcess from '../../components/admin/BorrowingProcess'
 import AssetMaintenance from '../../components/admin/AssetMaintenance'
 import ReturnProcess from '../../components/admin/ReturnProcess'
+import TicketHistory from '../../components/admin/TicketHistory'
+import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
 import { initialTickets } from '../../lib/dummyData'
 
 export default function AdminDashboard() {
@@ -45,6 +47,8 @@ export default function AdminDashboard() {
           
           {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={initialTickets} />}
           {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={initialTickets} />}
+          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={initialTickets} />}
+          {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
           {activeNav === 'Kelola Pengguna' && <UserManagement />}
           {activeNav === 'Master Aset' && <AssetMaster />}

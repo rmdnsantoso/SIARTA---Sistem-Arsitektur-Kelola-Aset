@@ -15,6 +15,7 @@ import {
   BarChart,
   Bar,
 } from 'recharts'
+import StatCard from './StatCard'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -65,11 +66,11 @@ export default function AnalyticsContent() {
       </div>
 
       {/* ── 2. KPI Row ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Aset"        value="605" sub="+12 dari bulan lalu"  accent="text-blue-600"  dot="bg-blue-500" />
-        <KpiCard label="Tersedia"          value="450" sub="74% dari total stok"  accent="text-green-600" dot="bg-green-500" />
-        <KpiCard label="Sedang Dipinjam"   value="120" sub="20% dari total stok"  accent="text-indigo-600" dot="bg-indigo-500" />
-        <KpiCard label="Perlu Maintenance" value="35"  sub="6% perlu perhatian"   accent="text-amber-600" dot="bg-amber-500" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard label="Total Aset"        value="605" sub="+12 dari bulan lalu"  colorTheme="blue" iconPath="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        <StatCard label="Tersedia"          value="450" sub="74% dari total stok"  colorTheme="green" iconPath="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <StatCard label="Sedang Dipinjam"   value="120" sub="20% dari total stok"  colorTheme="purple" iconPath="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <StatCard label="Perlu Maintenance" value="35"  sub="6% perlu perhatian"   colorTheme="amber" iconPath="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
       </div>
 
       {/* ── 3. Summary ────────────────────────────────────────────────────── */}
@@ -185,18 +186,6 @@ export default function AnalyticsContent() {
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, accent, dot }: { label: string; value: string; sub: string; accent: string; dot: string }) {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3 hover:-translate-y-0.5 transition-transform duration-200">
-      <div className="flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${dot}`} />
-        <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">{label}</span>
-      </div>
-      <p className={`text-3xl font-extrabold leading-none ${accent}`}>{value}</p>
-      <p className="text-xs text-gray-400">{sub}</p>
-    </div>
-  )
-}
 
 function SummaryItem({ color, textCls, label, text }: { color: string; textCls: string; label: string; text: React.ReactNode }) {
   return (

@@ -14,25 +14,6 @@ type ActionModal = {
   type: 'setujui' | 'tolak' | 'serah_terima'
 }
 
-function StatusBadge({ status, stage }: { status: TicketStatus, stage: string }) {
-  const map: Record<TicketStatus, string> = {
-    Menunggu: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    Disetujui: 'bg-green-50 text-green-700 border-green-200',
-    Ditolak: 'bg-red-50 text-red-700 border-red-200',
-    Selesai: 'bg-blue-50 text-blue-700 border-blue-200',
-  }
-  return (
-    <div className="flex flex-col items-start gap-1">
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status]}`}>
-        {status}
-      </span>
-      {(status === 'Menunggu' || status === 'Disetujui') && (
-        <span className="text-xs text-gray-500">Posisi: {stage}</span>
-      )}
-    </div>
-  )
-}
-
 function ConflictWarning({ conflictWith }: { conflictWith: string }) {
   return (
     <div className="flex items-start gap-1.5 mt-2 bg-red-50 border border-red-100 rounded p-2">
@@ -52,7 +33,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
   
   // State khusus Alokasi Fisik
   const [catatan, setCatatan] = useState('')
-  const [allocatedBulkCount, setAllocatedBulkCount] = useState<number>(0)
+
   const [allocatedSerials, setAllocatedSerials] = useState<string[]>([])
   const [currentScan, setCurrentScan] = useState('')
   
@@ -64,14 +45,46 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
   
   const [toast, setToast] = useState<string | null>(null)
   
-  // Search
+  // Search & Filter
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
+  
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<'Semua' | 'Verifikasi Fisik' | 'Siap Serah Terima' | 'Konflik Stok'>('Semua')
 
-  const filteredTickets = localTickets.filter(t => 
-    t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    t.alat.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredTickets = localTickets.filter(t => {
+    const isVerifikasi = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && !t.conflictWith
+    const isSiapSerahTerima = t.overallStatus === 'Disetujui' && t.currentStage === 'Serah Terima'
+    const isKonflik = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && !!t.conflictWith
+
+    let passesFilter = false
+    if (activeFilter === 'Semua') {
+      passesFilter = isVerifikasi || isSiapSerahTerima || isKonflik || (t.overallStatus === 'Menunggu' && t.currentStage === 'Admin')
+    } else if (activeFilter === 'Verifikasi Fisik') {
+      passesFilter = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && !t.conflictWith
+    } else if (activeFilter === 'Siap Serah Terima') {
+      passesFilter = isSiapSerahTerima
+    } else if (activeFilter === 'Konflik Stok') {
+      passesFilter = isKonflik
+    }
+
+    if (!passesFilter) return false
+
+    return (
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      t.alat.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
+
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage)
+  const paginatedTickets = filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  // Reset to page 1 if search query or filter changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, activeFilter])
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -81,7 +94,6 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
   const handleOpenAllocation = (ticket: Ticket) => {
     setModal({ ticket, type: 'setujui' })
     setCatatan('')
-    setAllocatedBulkCount(0)
     setAllocatedSerials([])
     setCurrentScan('')
   }
@@ -101,7 +113,9 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       if (t.id !== ticket.id) return t
       
       if (type === 'setujui') {
-        const units = ticket.assetType === 'SERIALIZED' ? allocatedSerials : [`BULK_QTY_${allocatedBulkCount}`]
+        const units = ticket.assetType === 'NON_SERIALIZED' 
+          ? []
+          : allocatedSerials
         return {
           ...t,
           currentStage: 'HSSE',
@@ -142,30 +156,25 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
     if (!modal) return true
     if (modal.type === 'tolak') return catatan.trim().length > 0
     if (modal.type !== 'setujui') return true
-    if (modal.ticket.assetType === 'SERIALIZED') {
-      return allocatedSerials.length === modal.ticket.jumlah
+    if (modal.ticket.assetType === 'NON_SERIALIZED') {
+      return allocatedSerials.length === 1
     }
-    if (modal.ticket.assetType === 'BULK') {
-      return allocatedBulkCount === modal.ticket.jumlah
-    }
-    return true
+    return allocatedSerials.length === modal.ticket.jumlah
   }
 
   // Calculate stats
   const pendingVerifikasi = localTickets.filter(t => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin').length
   const pendingSerahTerima = localTickets.filter(t => t.overallStatus === 'Disetujui' && t.currentStage === 'Serah Terima').length
-  const selesaiCount = localTickets.filter(t => t.overallStatus === 'Selesai').length
   const konflikCount = localTickets.filter(t => t.conflictWith && t.overallStatus === 'Menunggu' && t.currentStage === 'Admin').length
 
   const stats = [
-    { label: 'Verifikasi Fisik (Antrean)', value: pendingVerifikasi, iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
-    { label: 'Siap Serah Terima', value: pendingSerahTerima, iconPath: 'M5 13l4 4L19 7' },
-    { label: 'Selesai / Diambil', value: selesaiCount, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-    { label: 'Konflik Stok', value: konflikCount, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    { label: 'Verifikasi Fisik (Antrean)', value: pendingVerifikasi, iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', colorTheme: 'blue' as const },
+    { label: 'Siap Serah Terima', value: pendingSerahTerima, iconPath: 'M5 13l4 4L19 7', colorTheme: 'green' as const },
+    { label: 'Konflik Stok', value: konflikCount, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'red' as const },
   ]
 
   return (
-    <div className="font-sans flex flex-col h-full overflow-hidden bg-gray-50">
+    <div className="font-sans">
       {/* Toast */}
       {toast && (
         <div className="fixed top-6 right-6 z-[99] px-5 py-3 bg-gray-900 text-white rounded-lg shadow-xl text-sm font-medium animate-fade-in flex items-center gap-2">
@@ -174,61 +183,96 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden p-8">
+      <div className="flex flex-col gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 shrink-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
         </div>
 
         {/* Unified Table */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0 flex-1">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Semua Tiket Peminjaman</h2>
-              <p className="text-sm text-gray-500">Kelola verifikasi fisik dan serah terima aset ke pekerja.</p>
+              <h2 className="text-lg font-semibold text-gray-900">Antrean Verifikasi & Serah Terima</h2>
+              <p className="text-sm text-gray-500">Kelola verifikasi fisik dan serah terima aset ke peminjam.</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
-                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
                 <input 
                   type="text" 
-                  placeholder="Cari Tiket..." 
+                  placeholder="Cari ID, Nama, atau Aset..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all"
                 />
               </div>
-              <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-                </svg>
-                Saring
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                  </svg>
+                  Filter {activeFilter !== 'Semua' && `(${activeFilter})`}
+                </button>
+                
+                {/* Dropdown Menu */}
+                {isFilterOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      {(['Semua', 'Verifikasi Fisik', 'Siap Serah Terima', 'Konflik Stok'] as const).map((filterOpt) => (
+                        <button
+                          key={filterOpt}
+                          onClick={() => {
+                            setActiveFilter(filterOpt)
+                            setIsFilterOpen(false)
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm ${
+                            activeFilter === filterOpt 
+                              ? 'bg-blue-50 text-blue-700 font-semibold' 
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {filterOpt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="overflow-auto flex-1 relative">
+          <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status', 'Tindakan', ''].map((h, i) => (
-                    <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">ID Pengajuan</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Pemohon</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Aset & Lokasi</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Kuantitas</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Periode Pinjam</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tindakan</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTickets.map((ticket) => {
+              <tbody className="bg-white divide-y-2 divide-gray-100">
+                {paginatedTickets.map((ticket) => {
                   const isAdminActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
                   const isHandoverActionable = ticket.overallStatus === 'Disetujui' && ticket.currentStage === 'Serah Terima'
                   const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
                   
                   return (
-                    <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={ticket.id} className="hover:bg-blue-50/40 transition-colors even:bg-gray-50/50">
                       {/* ID Pengajuan */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
@@ -241,8 +285,9 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
                       {/* Pemohon */}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <p className="text-sm font-medium text-gray-900">{ticket.peminjam}</p>
-                        <p className="text-xs text-gray-500">{ticket.jabatan}</p>
+                        <div className="text-sm font-bold text-gray-900">{ticket.peminjam}</div>
+                        <div className="text-xs font-mono text-gray-500 mt-0.5 tracking-tight">{ticket.nip || 'NIP-XXX'}</div>
+                        <div className="text-xs text-blue-600 font-medium mt-0.5">{ticket.jabatan}</div>
                       </td>
 
                       {/* Aset & Lokasi */}
@@ -252,8 +297,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {ticket.allocatedUnits.map(sn => (
-                              <span key={sn} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-mono rounded border border-gray-200">
-                                {sn.startsWith('BULK_QTY_') ? `Jml: ${sn.split('_')[2]}` : `SN: ${sn}`}
+                              <span key={sn} className="inline-block mt-2 text-xs font-mono bg-blue-100 text-blue-800 px-2 py-0.5 rounded mr-1 mb-1">
+                                {sn}
                               </span>
                             ))}
                           </div>
@@ -279,10 +324,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         <p className="text-xs text-gray-500">{ticket.tanggalKembali}</p>
                       </td>
 
-                      {/* Status */}
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
-                      </td>
+
 
                       {/* Tindakan */}
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -297,7 +339,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                               </button>
                               <button
                                 onClick={() => setModal({ ticket, type: 'tolak' })}
-                                className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-sm font-medium hover:bg-gray-50 transition-colors"
+                                className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded text-sm font-bold hover:bg-red-100 transition-colors shadow-sm"
                               >
                                 Tolak
                               </button>
@@ -315,33 +357,64 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                           )}
                         </div>
                       </td>
-
-                      {/* Detail Riwayat (Dipisah) */}
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <button 
-                          onClick={() => setModal({ type: 'detail', ticket })}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
-                          title="Lihat Detail Riwayat"
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        </button>
-                      </td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
+            
+            {paginatedTickets.length === 0 && (
+              <div className="text-center py-12">
+                <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak ada tiket</h3>
+                <p className="mt-1 text-sm text-gray-500">Antrean kosong atau tidak ditemukan hasil pencarian.</p>
+              </div>
+            )}
           </div>
 
           {/* Pagination Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
-            <span className="text-sm text-gray-500">Menampilkan {filteredTickets.length} hasil</span>
-            <div className="flex gap-1">
-              <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
-              <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
-              <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
+          {totalPages > 0 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+              <span className="text-sm text-gray-500 font-medium">
+                Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
+              </span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Sebelumnya
+                </button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                        currentPage === page 
+                          ? 'bg-blue-600 text-white shadow-md' 
+                          : 'text-gray-500 hover:bg-gray-200 bg-transparent'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages || filteredTickets.length === 0}
+                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Selanjutnya
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
       </div>
@@ -374,15 +447,15 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <div className="text-sm font-bold text-gray-900">{modal.ticket.alat}</div>
                   <div className="text-xs text-gray-500 mt-1">Diminta: <strong className="text-gray-900">{modal.ticket.jumlah}</strong> unit</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Tipe: <strong className="text-gray-900">{modal.ticket.assetType || 'N/A'}</strong></div>
+                  <div className="text-xs text-gray-500 mt-0.5">Tipe: <strong className="text-gray-900">{modal.ticket.assetType === 'SERIALIZED' ? 'Serialized' : modal.ticket.assetType === 'NON_SERIALIZED' ? 'Non-Serialized' : 'N/A'}</strong></div>
                 </div>
               )}
 
               {/* LOGIKA ALOKASI BERDASARKAN TIPE */}
-              {modal.type === 'setujui' && modal.ticket.assetType === 'SERIALIZED' && (
+              {modal.type === 'setujui' && modal.ticket.assetType !== 'NON_SERIALIZED' && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Scan Nomor Seri (SN)</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Scan Unit ID / QR Code</label>
                     <div className="flex gap-2">
                       <input 
                         type="text" 
@@ -417,45 +490,33 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 </div>
               )}
 
-              {modal.type === 'setujui' && modal.ticket.assetType === 'BULK' && (
+              {modal.type === 'setujui' && modal.ticket.assetType === 'NON_SERIALIZED' && (
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
-                    <p className="text-sm text-blue-700">Barang ini bertipe <strong>GROSIR (BULK)</strong>. Scan Master QR pada rak untuk memverifikasi lokasi.</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Scan Master QR Rak</label>
-                    <div className="flex gap-2">
+                    <p className="text-sm text-blue-800 font-medium mb-2">Scan 1 QR Fisik Saja (Otomatis mewakili seluruh {modal.ticket.jumlah} unit)</p>
+                    <div className="flex gap-2 mb-4">
                       <input 
                         type="text" 
                         value={currentScan}
                         onChange={e => setCurrentScan(e.target.value)}
-                        placeholder="Scan QR Rak..."
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                        placeholder="Scan Stiker QR..."
+                        className="flex-1 px-4 py-2 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        disabled={allocatedSerials.length >= 1}
                       />
                       <button 
-                        onClick={() => {
-                          if(currentScan.trim()) {
-                            setAllocatedBulkCount(modal.ticket.jumlah);
-                            setCurrentScan('');
-                            showToast('✓ Rak terverifikasi. Jumlah disesuaikan otomatis.');
-                          }
-                        }} 
-                        disabled={!currentScan.trim()} 
-                        className="px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50"
+                        onClick={handleAddSerial}
+                        disabled={!currentScan.trim() || allocatedSerials.length >= 1}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold disabled:opacity-50"
                       >
-                        Verifikasi
+                        Verifikasi Sekaligus
                       </button>
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Konfirmasi Jumlah Fisik yang Diambil</label>
-                    <input 
-                      type="number" 
-                      value={allocatedBulkCount || ''}
-                      onChange={e => setAllocatedBulkCount(Number(e.target.value))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-lg font-bold text-center focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                    <p className="text-xs text-gray-500 mt-2 text-center">Jumlah otomatis terisi setelah Anda men-scan QR Rak. Ubah angka ini hanya jika Anda mengambil jumlah yang lebih sedikit dari permintaan.</p>
+                    {allocatedSerials.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-green-700 bg-green-100 px-3 py-2 rounded-lg font-bold">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        Telah terverifikasi! {modal.ticket.jumlah} unit dialokasikan.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -464,8 +525,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
                   <p className="text-sm text-amber-800 font-medium">Pastikan pekerja menerima barang fisik berikut:</p>
                   <ul className="mt-2 space-y-1">
-                    {modal.ticket.allocatedUnits?.map(sn => (
-                       <li key={sn} className="text-sm font-bold text-amber-900">• {sn.startsWith('BULK_QTY_') ? `Jumlah: ${sn.split('_')[2]} buah` : `SN: ${sn}`}</li>
+                    {modal.ticket.allocatedUnits?.map((sn: string) => (
+                       <li key={sn} className="text-sm font-bold text-amber-900">• SN: {sn}</li>
                     ))}
                   </ul>
                 </div>

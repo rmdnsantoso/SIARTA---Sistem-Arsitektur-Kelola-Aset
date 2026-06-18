@@ -1,3 +1,6 @@
+'use client'
+
+import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 
 interface TicketTableProps {
@@ -11,9 +14,11 @@ function StatusBadge({ status }: { status: TicketStatus }) {
     Disetujui: 'bg-green-50 text-green-700 border-green-200',
     Ditolak: 'bg-red-50 text-red-700 border-red-200',
     Selesai: 'bg-blue-50 text-blue-700 border-blue-200',
+    Dipinjam: 'bg-purple-50 text-purple-700 border-purple-200',
+    Dikembalikan: 'bg-gray-50 text-gray-700 border-gray-200',
   }
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status]}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status] || map.Menunggu}`}>
       {status}
     </span>
   )
@@ -34,14 +39,42 @@ function ConflictWarning({ conflictWith }: { conflictWith: string }) {
 }
 
 export default function TicketTable({ tickets, handleAction }: TicketTableProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredTickets = tickets.filter(t => 
+    t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    t.alat.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const ITEMS_PER_PAGE = 5
+  const [currentPage, setCurrentPage] = React.useState(1)
+
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE)
+  const paginatedTickets = filteredTickets.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0 flex-1">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
       <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Daftar Pengajuan Aktif</h2>
           <p className="text-sm text-gray-500">Menampilkan pengajuan yang memerlukan peninjauan.</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="relative">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input 
+              type="text" 
+              placeholder="Cari ID, Nama, atau Aset..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
+            />
+          </div>
           <button className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
@@ -51,7 +84,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
         </div>
       </div>
 
-      <div className="overflow-auto flex-1 relative">
+      <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
@@ -63,7 +96,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {tickets.map((ticket) => {
+            {paginatedTickets.map((ticket) => {
               const isActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Area Head'
               const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu'
               return (
@@ -144,19 +177,58 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
                 </tr>
               )
             })}
+            {paginatedTickets.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  Tidak ada tiket yang cocok dengan pencarian "{searchQuery}".
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination Footer */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
-        <span className="text-sm text-gray-500">Menampilkan {tickets.length} hasil</span>
-        <div className="flex gap-1">
-          <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
-          <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
-          <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
+      {totalPages > 0 && (
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+          <span className="text-sm text-gray-500 font-medium">
+            Menampilkan <span className="font-bold text-gray-900">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * ITEMS_PER_PAGE, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
+          </span>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Sebelumnya
+            </button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                    currentPage === page 
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-gray-500 hover:bg-gray-200 bg-transparent'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Selanjutnya
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

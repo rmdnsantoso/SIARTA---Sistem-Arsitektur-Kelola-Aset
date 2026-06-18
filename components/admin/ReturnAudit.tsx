@@ -318,7 +318,7 @@ export default function ReturnAudit() {
                     </div>
                     {auditResult.db - auditResult.scanned > 0 && (
                       <p className="text-xs text-red-600 mt-3 text-center font-medium">
-                        1 aset tidak terpindai. Kemungkinan hilang, terselip, atau masih di lapangan tanpa tiket aktif.
+                        1 aset tidak terpindai. Kemungkinan terselip atau masih di lapangan tanpa tiket aktif.
                       </p>
                     )}
                   </div>
