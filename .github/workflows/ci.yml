@@ -1,4 +1,4 @@
-name: Pengecekan Kode Otomatis
+name: CI Status
 
 on:
   push:
