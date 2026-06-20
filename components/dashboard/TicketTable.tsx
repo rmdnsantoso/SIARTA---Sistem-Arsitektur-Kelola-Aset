@@ -185,8 +185,8 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
           <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
           <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
           <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
-        </div>
-      )}
+      </div>
+      </div>
     </div>
   )
 }
