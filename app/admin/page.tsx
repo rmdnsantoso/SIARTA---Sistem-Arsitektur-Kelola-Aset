@@ -57,6 +57,8 @@ export default function AdminDashboard() {
           
           {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={initialTickets} />}
           {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={initialTickets} />}
+          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={initialTickets} />}
+          {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
           {activeNav === 'Kelola Pengguna' && <UserManagement />}
           {activeNav === 'Master Aset' && <AssetMaster />}

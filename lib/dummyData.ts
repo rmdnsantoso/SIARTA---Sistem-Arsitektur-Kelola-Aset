@@ -2,7 +2,7 @@ import { Ticket } from '../types/ticket'
 
 export const initialTickets: Ticket[] = [
   {
-    id: 'TKT-001', peminjam: 'Budi Santoso', jabatan: 'Field Technician',
+    id: 'TKT-001', peminjam: 'Budi Santoso', nip: '19880102001', jabatan: 'Field Technician',
     alat: 'Gas Detector (MSA Altair 4X)', jumlah: 1, stokTersedia: 1, assetType: 'SERIALIZED',
     tanggalPinjam: '16 Jun 2026', tanggalKembali: '18 Jun 2026',
     lokasi: 'Platform Delta-7', currentStage: 'Area Head', overallStatus: 'Menunggu',
@@ -13,7 +13,7 @@ export const initialTickets: Ticket[] = [
     ],
   },
   {
-    id: 'TKT-002', peminjam: 'Rina Kusuma', jabatan: 'Safety Officer',
+    id: 'TKT-002', peminjam: 'Rina Kusuma', nip: '19900315002', jabatan: 'Safety Officer',
     alat: 'Gas Detector (MSA Altair 4X)', jumlah: 1, stokTersedia: 1, assetType: 'SERIALIZED',
     tanggalPinjam: '16 Jun 2026', tanggalKembali: '17 Jun 2026',
     lokasi: 'Wellpad Charlie-3', currentStage: 'Admin', overallStatus: 'Menunggu',
@@ -34,7 +34,7 @@ export const initialTickets: Ticket[] = [
     ],
   },
   {
-    id: 'TKT-004', peminjam: 'Dewi Rahayu', jabatan: 'Instrument Tech.',
+    id: 'TKT-004', peminjam: 'Dewi Rahayu', nip: '19920708004', jabatan: 'Instrument Tech.',
     alat: 'Portable O2 Analyzer', jumlah: 1, stokTersedia: 3, assetType: 'SERIALIZED', allocatedUnits: ['SN-O2-001'],
     tanggalPinjam: '15 Jun 2026', tanggalKembali: '16 Jun 2026',
     lokasi: 'Control Room Alpha', currentStage: 'Serah Terima', overallStatus: 'Disetujui',
@@ -50,7 +50,7 @@ export const initialTickets: Ticket[] = [
     ]
   },
   {
-    id: 'TKT-005', peminjam: 'Hendra Putra', jabatan: 'Drilling Operator',
+    id: 'TKT-005', peminjam: 'Hendra Putra', nip: '19890510005', jabatan: 'Drilling Operator',
     alat: 'Personal H2S Monitor', jumlah: 3, stokTersedia: 2, assetType: 'SERIALIZED',
     tanggalPinjam: '18 Jun 2026', tanggalKembali: '22 Jun 2026',
     lokasi: 'Rig Nusantara-12', currentStage: 'Admin', overallStatus: 'Ditolak',
@@ -64,8 +64,8 @@ export const initialTickets: Ticket[] = [
     ]
   },
   {
-    id: 'TKT-006', peminjam: 'Fajar Nugroho', jabatan: 'Welder',
-    alat: 'Welding Mask Pro', jumlah: 1, stokTersedia: 0, assetType: 'SERIALIZED', allocatedUnits: ['SN-WLD-005'],
+    id: 'TKT-006', peminjam: 'Fajar Nugroho', nip: '19951230006', jabatan: 'Welder',
+    alat: 'Welding Mask Pro', jumlah: 1, stokTersedia: 0, assetType: 'NON_SERIALIZED', allocatedUnits: ['AST-006-01'],
     tanggalPinjam: '10 Jun 2026', tanggalKembali: '25 Jun 2026',
     lokasi: 'Area Fabrikasi', currentStage: 'Serah Terima', overallStatus: 'Dipinjam',
     flow: [
@@ -74,7 +74,13 @@ export const initialTickets: Ticket[] = [
     ],
     trackingLogs: [
       { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Siti Aminah (Admin)', timestamp: '10 Jun 2026, 09:00 WIB' }
-    ]
+    ],
+    isReportedDamaged: true,
+    damageReport: {
+      imageUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&q=80',
+      description: 'Kaca pelindung retak saat dipakai mengelas, pandangan terhalang.',
+      timestamp: '18 Jun 2026 08:15:22'
+    }
   },
   {
     id: 'TKT-007', peminjam: 'Lina Marlina', jabatan: 'QC Inspector',
@@ -89,6 +95,76 @@ export const initialTickets: Ticket[] = [
       { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Siti Aminah (Admin)', timestamp: '12 Jun 2026, 08:15 WIB' }
     ]
   },
+  {
+    id: 'TKT-008', peminjam: 'Rudi Hartono', nip: '19930412008', jabatan: 'Electrical Eng.',
+    alat: 'Multimeter Digital', jumlah: 1, stokTersedia: 4, assetType: 'SERIALIZED',
+    tanggalPinjam: '20 Jun 2026', tanggalKembali: '22 Jun 2026',
+    lokasi: 'Substation C', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-009', peminjam: 'Andi Setiawan', nip: '19870514009', jabatan: 'Mechanic',
+    alat: 'Impact Wrench', jumlah: 2, stokTersedia: 2, assetType: 'NON_SERIALIZED',
+    tanggalPinjam: '20 Jun 2026', tanggalKembali: '25 Jun 2026',
+    lokasi: 'Workshop', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-010', peminjam: 'Siska Amanda', nip: '19960228010', jabatan: 'HSE Inspector',
+    alat: 'Noise Dosimeter', jumlah: 1, stokTersedia: 1, assetType: 'SERIALIZED',
+    tanggalPinjam: '21 Jun 2026', tanggalKembali: '23 Jun 2026',
+    lokasi: 'Area Produksi 1', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-011', peminjam: 'Tomi Kurniawan', nip: '19901105011', jabatan: 'Civil Eng.',
+    alat: 'Theodolite', jumlah: 1, stokTersedia: 1, assetType: 'SERIALIZED',
+    tanggalPinjam: '22 Jun 2026', tanggalKembali: '28 Jun 2026',
+    lokasi: 'Proyek Ekspansi', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-012', peminjam: 'Maya Sari', nip: '19940822012', jabatan: 'Lab Analyst',
+    alat: 'pH Meter Portable', jumlah: 1, stokTersedia: 3, assetType: 'SERIALIZED',
+    tanggalPinjam: '19 Jun 2026', tanggalKembali: '20 Jun 2026',
+    lokasi: 'Water Treatment', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-013', peminjam: 'Wahyu Hidayat', nip: '19860930013', jabatan: 'Rigger',
+    alat: 'Chain Block 2T', jumlah: 2, stokTersedia: 0, assetType: 'NON_SERIALIZED',
+    tanggalPinjam: '23 Jun 2026', tanggalKembali: '26 Jun 2026',
+    lokasi: 'Dermaga', currentStage: 'Admin', overallStatus: 'Menunggu', conflictWith: 'TKT-014',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-014', peminjam: 'Eko Prasetyo', nip: '19910115014', jabatan: 'Scaffolder',
+    alat: 'Chain Block 2T', jumlah: 1, stokTersedia: 0, assetType: 'NON_SERIALIZED',
+    tanggalPinjam: '24 Jun 2026', tanggalKembali: '27 Jun 2026',
+    lokasi: 'Menara Flare', currentStage: 'Admin', overallStatus: 'Menunggu', conflictWith: 'TKT-013',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-015', peminjam: 'Rizky Ramadhan', nip: '19980303015', jabatan: 'IT Support',
+    alat: 'Splicer Fiber Optic', jumlah: 1, stokTersedia: 1, assetType: 'SERIALIZED',
+    tanggalPinjam: '20 Jun 2026', tanggalKembali: '21 Jun 2026',
+    lokasi: 'Server Room B', currentStage: 'Serah Terima', overallStatus: 'Disetujui',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Disetujui' }, { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-016', peminjam: 'Doni Tata', nip: '19850707016', jabatan: 'Driver',
+    alat: 'Dongkrak Buaya 3T', jumlah: 1, stokTersedia: 2, assetType: 'NON_SERIALIZED',
+    tanggalPinjam: '21 Jun 2026', tanggalKembali: '21 Jun 2026',
+    lokasi: 'Pool Kendaraan', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  {
+    id: 'TKT-017', peminjam: 'Siti Nurhaliza', nip: '19971010017', jabatan: 'Surveyor',
+    alat: 'GPS Geodetik Trimble', jumlah: 1, stokTersedia: 1, assetType: 'SERIALIZED',
+    tanggalPinjam: '25 Jun 2026', tanggalKembali: '30 Jun 2026',
+    lokasi: 'Area Eksplorasi', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  }
 ]
 
 export const navItems = [

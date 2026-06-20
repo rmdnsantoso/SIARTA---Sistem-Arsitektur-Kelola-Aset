@@ -736,6 +736,7 @@ export default function AssetMaster() {
                                       <div key={j} className={Math.random() > 0.5 ? 'bg-gray-800' : 'bg-transparent'} />
                                     ))}
                                   </div>
+                                  <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.id} (Master)</span>
                                 </div>
                                 <div className="min-w-0">
                                   <h3 className="font-mono font-bold text-sm text-indigo-700 leading-tight">{unit.unitId}</h3>

@@ -18,7 +18,7 @@ function StatusBadge({ status }: { status: TicketStatus }) {
     Dikembalikan: 'bg-gray-50 text-gray-700 border-gray-200',
   }
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status]}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status] || map.Menunggu}`}>
       {status}
     </span>
   )
@@ -48,7 +48,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
   )
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col min-h-0 flex-1">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
       <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Daftar Pengajuan Aktif</h2>
@@ -74,7 +74,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
         </div>
       </div>
 
-      <div className="overflow-auto flex-1 relative">
+      <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
@@ -186,7 +186,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
           <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
           <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
         </div>
-      </div>
+      )}
     </div>
   )
 }

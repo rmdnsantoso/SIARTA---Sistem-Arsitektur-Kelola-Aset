@@ -74,15 +74,15 @@ export default function ApprovalDashboard() {
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
-          userName="Budi Santoso"
+          userName="John Doe"
           roleName="Area Head"
         />
 
         {/* Dashboard Content */}
-        <div className="flex-1 flex flex-col overflow-hidden p-8">
+        <div className="flex-1 overflow-auto p-8">
           
           {activeNav === 'Analitik' ? (
-            <div className="flex-1 overflow-y-auto"><AnalyticsContent /></div>
+            <AnalyticsContent />
           ) : activeNav === 'Persetujuan' ? (
             <>
               {/* Key Metrics */}

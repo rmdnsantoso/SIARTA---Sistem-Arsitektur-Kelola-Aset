@@ -18,6 +18,7 @@ export interface Ticket {
   id: string
   nip?: string
   peminjam: string
+  nip?: string
   jabatan: string
   alat: string
   jumlah: number
@@ -36,4 +37,12 @@ export interface Ticket {
 
   // Riwayat Pelacakan Detail
   trackingLogs?: TrackingLog[]
+
+  // Laporan Kerusakan (Lapor Mandiri)
+  isReportedDamaged?: boolean
+  damageReport?: {
+    imageUrl: string
+    description: string
+    timestamp: string
+  }
 }
