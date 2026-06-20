@@ -16,6 +16,7 @@ export interface TrackingLog {
 
 export interface Ticket {
   id: string
+  nip?: string
   peminjam: string
   jabatan: string
   alat: string
@@ -30,8 +31,8 @@ export interface Ticket {
   conflictWith?: string
   
   // Alokasi Fisik
-  assetType?: 'SERIALIZED' | 'BULK'
-  allocatedUnits?: string[] // Berisi Serial Number (jika SERIALIZED) atau Catatan (jika BULK)
+  assetType?: 'SERIALIZED' | 'NON_SERIALIZED'
+  allocatedUnits?: string[] // Berisi Serial Number (jika SERIALIZED) atau Catatan (jika NON_SERIALIZED)
 
   // Riwayat Pelacakan Detail
   trackingLogs?: TrackingLog[]

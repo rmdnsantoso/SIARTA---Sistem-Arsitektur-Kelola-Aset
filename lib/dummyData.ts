@@ -25,7 +25,7 @@ export const initialTickets: Ticket[] = [
   },
   {
     id: 'TKT-003', peminjam: 'Agus Wirawan', jabatan: 'Maintenance Eng.',
-    alat: 'Safety Harness Full Body', jumlah: 2, stokTersedia: 5, assetType: 'BULK',
+    alat: 'Safety Harness Full Body', jumlah: 2, stokTersedia: 5, assetType: 'NON_SERIALIZED',
     tanggalPinjam: '17 Jun 2026', tanggalKembali: '20 Jun 2026',
     lokasi: 'Compressor Station B', currentStage: 'Admin', overallStatus: 'Menunggu',
     flow: [
@@ -78,7 +78,7 @@ export const initialTickets: Ticket[] = [
   },
   {
     id: 'TKT-007', peminjam: 'Lina Marlina', jabatan: 'QC Inspector',
-    alat: 'Digital Caliper', jumlah: 2, stokTersedia: 1, assetType: 'BULK', allocatedUnits: ['BULK_QTY_2'],
+    alat: 'Digital Caliper', jumlah: 2, stokTersedia: 1, assetType: 'NON_SERIALIZED', allocatedUnits: ['BULK_QTY_2'],
     tanggalPinjam: '12 Jun 2026', tanggalKembali: '19 Jun 2026',
     lokasi: 'Lab QC', currentStage: 'Serah Terima', overallStatus: 'Dipinjam',
     flow: [
