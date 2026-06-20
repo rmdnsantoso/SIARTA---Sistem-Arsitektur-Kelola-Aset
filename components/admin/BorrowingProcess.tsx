@@ -186,7 +186,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       <div className="flex flex-col gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
@@ -199,8 +199,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
               <h2 className="text-lg font-semibold text-gray-900">Antrean Verifikasi & Serah Terima</h2>
               <p className="text-sm text-gray-500">Kelola verifikasi fisik dan serah terima aset ke peminjam.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 mt-4 lg:mt-0 w-full lg:w-auto">
+              <div className="relative w-full lg:w-auto">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -211,13 +211,13 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                   placeholder="Cari ID, Nama, atau Aset..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all"
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full lg:w-64 transition-all"
                 />
               </div>
-              <div className="relative">
+              <div className="relative w-full lg:w-auto">
                 <button 
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 w-full lg:w-auto"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
@@ -252,7 +252,98 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+            {paginatedTickets.map((ticket) => {
+              const isAdminActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
+              const isHandoverActionable = ticket.overallStatus === 'Disetujui' && ticket.currentStage === 'Serah Terima'
+              const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
+              
+              return (
+                <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold text-gray-900 text-base leading-tight">{ticket.alat}</h3>
+                      <div className="text-sm font-medium text-blue-600 mt-1">{ticket.id}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className={`inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                        {ticket.jumlah} unit
+                      </span>
+                      <div className="text-[10px] font-medium text-gray-500 mt-1">Stok: {ticket.stokTersedia}</div>
+                    </div>
+                  </div>
+
+                  {hasConflict && <div className="mt-1"><ConflictWarning conflictWith={ticket.conflictWith!} /></div>}
+
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                    <div>
+                      <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
+                      <p className="font-bold text-gray-900 text-sm">{ticket.peminjam}</p>
+                      <p className="text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
+                      <p className="font-bold text-gray-900 text-sm">{ticket.tanggalPinjam}</p>
+                      <p className="text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
+                    </div>
+                  </div>
+
+                  {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                    <div>
+                      <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1.5">Alokasi S/N</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ticket.allocatedUnits.map(sn => (
+                          <span key={sn} className="text-xs font-mono bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                            {sn}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {(isAdminActionable || isHandoverActionable) && (
+                    <div className="flex gap-2 mt-1">
+                      {isAdminActionable && (
+                        <>
+                          <button
+                            onClick={() => handleOpenAllocation(ticket)}
+                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors"
+                          >
+                            Alokasikan
+                          </button>
+                          <button
+                            onClick={() => setModal({ ticket, type: 'tolak' })}
+                            className="flex-1 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors"
+                          >
+                            Tolak
+                          </button>
+                        </>
+                      )}
+                      {isHandoverActionable && (
+                        <button
+                          onClick={() => setModal({ ticket, type: 'serah_terima' })}
+                          className="w-full py-2.5 bg-amber-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-amber-600 transition-colors flex justify-center items-center gap-1.5"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          Serah Terima
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            
+            {paginatedTickets.length === 0 && (
+              <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <p className="text-gray-500 font-medium">Tidak ada tiket yang ditemukan.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
@@ -262,7 +353,6 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Kuantitas</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Periode Pinjam</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tindakan</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y-2 divide-gray-100">
@@ -272,7 +362,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                   const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
                   
                   return (
-                    <tr key={ticket.id} className="hover:bg-blue-50/40 transition-colors even:bg-gray-50/50">
+                    <tr key={ticket.id} className="group hover:bg-blue-50 transition-colors even:bg-gray-50">
                       {/* ID Pengajuan */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
@@ -327,7 +417,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
 
                       {/* Tindakan */}
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap transition-colors">
                         <div className="flex gap-2 items-center">
                           {isAdminActionable ? (
                             <>
@@ -362,7 +452,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 })}
               </tbody>
             </table>
-            
+            {/* Removed redundant empty state check, handled internally by loop length > 0 typically but keep if needed */}
             {paginatedTickets.length === 0 && (
               <div className="text-center py-12">
                 <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -376,7 +466,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
           {/* Pagination Footer */}
           {totalPages > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
               <span className="text-sm text-gray-500 font-medium">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
               </span>
@@ -421,8 +511,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
       {/* MODAL ALOKASI / KONFIRMASI / DETAIL */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full max-w-4xl max-h-[85vh]' : 'w-full max-w-sm'}`}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+          <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full h-[95vh] sm:h-auto sm:max-h-[85vh] max-w-4xl' : 'w-full max-w-sm'}`}>
             
             {/* Modal Header */}
             <div className={`px-6 py-5 border-b shrink-0 ${
@@ -462,9 +552,9 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         value={currentScan}
                         onChange={e => setCurrentScan(e.target.value)}
                         placeholder="Scan atau ketik SN..."
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-blue-500 outline-none"
                       />
-                      <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-4 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50">Tambah</button>
+                      <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50">Tambah</button>
                     </div>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-4">

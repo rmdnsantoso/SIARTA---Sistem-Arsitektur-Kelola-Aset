@@ -71,7 +71,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
       <div className="flex flex-col gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
@@ -84,8 +84,8 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
               <h2 className="text-lg font-semibold text-gray-900">Rekapitulasi Pengajuan</h2>
               <p className="text-sm text-gray-500">Melihat seluruh riwayat tiket yang sudah selesai, ditolak, atau dikembalikan.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
+              <div className="relative w-full lg:w-auto">
                 <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <input 
                   type="text" 
@@ -95,7 +95,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
                     setSearchQuery(e.target.value)
                     setCurrentPage(1)
                   }}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64"
                 />
               </div>
               <select
@@ -104,7 +104,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
                   setFilterStatus(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-blue-500 w-full lg:w-auto"
               >
                 <option value="Semua">Semua Status</option>
                 <option value="Menunggu">Menunggu</option>
@@ -117,20 +117,67 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+            {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
+              <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-gray-900 text-base leading-tight">{ticket.alat}</h3>
+                    <div className="text-sm font-medium text-blue-600 mt-1">{ticket.id}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
+                    <div className="text-xs font-bold text-gray-500 mt-1">{ticket.jumlah} unit</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
+                    <p className="font-bold text-gray-900 text-sm">{ticket.peminjam}</p>
+                    <p className="text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
+                    <p className="font-bold text-gray-900 text-sm">{ticket.tanggalPinjam}</p>
+                    <p className="text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setModalTicket(ticket)}
+                  className="w-full py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  Lihat Detail Riwayat
+                </button>
+              </div>
+            ))}
+            {filteredTickets.length === 0 && (
+              <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <p className="text-gray-500 font-medium">Tidak ada riwayat yang cocok.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status Akhir', 'Riwayat'].map((h, i) => (
+                  {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status Akhir'].map((h, i) => (
                     <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Riwayat
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={ticket.id} className="group hover:bg-gray-50 transition-colors">
                     {/* ID Pengajuan */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
@@ -189,7 +236,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
                     </td>
 
                     {/* Detail Riwayat */}
-                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                    <td className="px-6 py-4 whitespace-nowrap text-left transition-colors">
                       <button 
                         onClick={() => setModalTicket(ticket)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
@@ -200,6 +247,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
                     </td>
                   </tr>
                 ))}
+                {/* Removed redundant empty state check, handled internally by loop length > 0 typically but keep if needed */}
                 {filteredTickets.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
@@ -213,7 +261,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
 
           {/* Pagination Footer */}
           {Math.ceil(filteredTickets.length / itemsPerPage) > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
               <span className="text-sm text-gray-500 font-medium">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> hasil
               </span>

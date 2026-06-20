@@ -249,38 +249,41 @@ export default function AssetMaster() {
 
       {/* ── Toolbar ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="px-6 py-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 flex-wrap">
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Cari nama atau ID aset..."
-              className="w-64 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <div className="flex gap-1">
-              {TRACKING_FILTERS.map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFilterTracking(f)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    filterTracking === f
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {f === 'Semua' ? 'Semua' : f === 'SERIALIZED' ? 'Per Unit (Serialized)' : 'Per Unit (Non-Serialized)'}
-                </button>
-              ))}
+        <div className="px-4 py-4 sm:px-6 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="relative w-full sm:w-72">
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Cari nama atau ID aset..."
+                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              Tambah Barang
+            </button>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 whitespace-nowrap flex items-center gap-2 shrink-0 shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Tambah Barang
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {TRACKING_FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilterTracking(f)}
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-center whitespace-nowrap ${
+                  filterTracking === f
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {f === 'Semua' ? 'Semua' : f === 'SERIALIZED' ? 'Per Unit (Serialized)' : 'Per Unit (Non-Serialized)'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -330,31 +333,33 @@ export default function AssetMaster() {
                       {a.availableStock} <span className="text-xs font-medium text-gray-400">/ {a.totalStock}</span>
                     </span>
                   </div>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-col xl:flex-row gap-2 mt-2">
                     <button
                       onClick={() => setSelectedAsset(a)}
-                      className="flex-1 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 py-2 px-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 min-w-0"
                     >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                      Kelola Unit & QR
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                      <span className="truncate">Kelola Unit & QR</span>
                     </button>
-                    <button
-                      onClick={() => {
-                        setEditingAssetId(a.id);
-                        setEditForm({ name: a.name, rackLocation: a.rackLocation, imageUrl: a.imageUrl || '' });
-                      }}
-                      className="px-3 py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
-                      title="Edit Profil Barang"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteAsset(a.id)}
-                      className="px-3 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
-                      title="Hapus Barang"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
+                    <div className="flex gap-2 justify-center shrink-0">
+                      <button
+                        onClick={() => {
+                          setEditingAssetId(a.id);
+                          setEditForm({ name: a.name, rackLocation: a.rackLocation, imageUrl: a.imageUrl || '' });
+                        }}
+                        className="flex-1 xl:flex-none px-3 py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                        title="Edit Profil Barang"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAsset(a.id)}
+                        className="flex-1 xl:flex-none px-3 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
+                        title="Hapus Barang"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -372,17 +377,16 @@ export default function AssetMaster() {
         )}
       </div>
 
-      {/* ── Add Asset Modal ── */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] sm:max-h-none">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900">Input Barang Baru</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
               
               {/* Tipe Pelacakan Selection */}
               <div>
@@ -458,7 +462,7 @@ export default function AssetMaster() {
                 </div>
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
               <button onClick={handleAddAsset} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40"
                 disabled={!form.name || !form.rackLocation || !form.totalStock}>
@@ -471,8 +475,8 @@ export default function AssetMaster() {
 
       {/* ── Manage Units & QR Modal ── */}
       {selectedAsset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[90vh] max-w-4xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full overflow-hidden flex flex-col h-[95vh] sm:h-auto sm:max-h-[90vh] max-w-4xl">
             {/* Header Modal */}
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
               <div className="flex items-center gap-4">
@@ -539,7 +543,7 @@ export default function AssetMaster() {
                 </div>
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
                     <div className="overflow-x-auto overflow-y-auto flex-1 h-0">
-                      <table className="min-w-full divide-y divide-gray-200">
+                      <table className="hidden md:table min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unit ID / QR</th>
@@ -671,31 +675,142 @@ export default function AssetMaster() {
                         })}
                       </tbody>
                     </table>
+
+                    {/* Mobile Cards for Units */}
+                    <div className="md:hidden p-4 space-y-4">
+                      {selectedAsset.trackingType === 'NON_SERIALIZED' ? (
+                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-white border border-gray-200 rounded p-1 shadow-sm shrink-0">
+                                <div className="w-full h-full grid grid-cols-5 gap-[1px]">
+                                  {Array.from({ length: 25 }).map((_, j) => (
+                                    <div key={j} className={Math.random() > 0.5 ? 'bg-orange-500' : 'bg-transparent'} />
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="font-mono font-bold text-sm text-indigo-700 leading-tight">{selectedAsset.id}</h3>
+                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">(Master) N/A</div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-green-100 text-green-800">
+                                {selectedAsset.availableStock} Tersedia
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 items-center">
+                            <input 
+                              type="number" 
+                              id="adjust-qty-bulk-mobile"
+                              defaultValue="1" 
+                              className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
+                            />
+                            <button
+                              onClick={() => {
+                                const input = document.getElementById('adjust-qty-bulk-mobile') as HTMLInputElement;
+                                const count = parseInt(input.value) || 0;
+                                if (count === 0) return;
+                                handleAdjustBulkStock(selectedAsset.id, count);
+                                input.value = '1';
+                              }}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
+                            >
+                              Update Stok
+                            </button>
+                          </div>
+                        </div>
+                      ) : selectedAsset.units.filter(u => 
+                        u.unitId.toLowerCase().includes(unitSearchQuery.toLowerCase()) || 
+                        u.serialNumber.toLowerCase().includes(unitSearchQuery.toLowerCase())
+                      ).map(unit => {
+                        const isAvailable = unit.status === 'Tersedia'
+                        return (
+                          <div key={unit.unitId} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white border border-gray-200 rounded p-1 shadow-sm shrink-0">
+                                  <div className="w-full h-full grid grid-cols-5 gap-[1px]">
+                                    {Array.from({ length: 25 }).map((_, j) => (
+                                      <div key={j} className={Math.random() > 0.5 ? 'bg-gray-800' : 'bg-transparent'} />
+                                    ))}
+                                  </div>
+                                  <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.id} (Master)</span>
+                                </div>
+                                <div className="min-w-0">
+                                  <h3 className="font-mono font-bold text-sm text-indigo-700 leading-tight">{unit.unitId}</h3>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
+                                  isAvailable ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {unit.status}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <input 
+                                type="text"
+                                value={unit.serialNumber}
+                                onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                                placeholder="Masukkan S/N Pabrik..."
+                                className="w-full border border-gray-300 rounded text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans transition-all"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                              <button
+                                onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
+                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-w-0"
+                              >
+                                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                <span className="truncate">Cetak</span>
+                              </button>
+                              <button
+                                onClick={() => setHistoryModalUnit(unit)}
+                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm min-w-0"
+                              >
+                                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span className="truncate">Riwayat</span>
+                              </button>
+                              <button
+                                onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
+                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors shadow-sm min-w-0"
+                              >
+                                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                <span className="truncate">Hapus</span>
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                     </div>
                   </div>
               </div>
-            <div className="px-6 py-4 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
-              <div className="text-xs text-gray-500">
+            <div className="px-6 py-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row gap-4 justify-between items-center shrink-0">
+              <div className="text-xs text-gray-500 text-center sm:text-left w-full sm:w-auto">
                 {selectedAsset.trackingType === 'SERIALIZED' ? (
                   <p>Pencetakan akan mencantumkan <strong>Unit ID</strong> dan <strong>S/N Pabrik</strong> pada stiker.</p>
                 ) : (
                   <p>Pencetakan akan mencetak <strong>copy dari QR Master</strong> yang 100% sama.</p>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 {selectedAsset.trackingType === 'NON_SERIALIZED' && (
-                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white h-full">
-                    <span className="px-3 text-sm text-gray-500 bg-gray-50 border-r border-gray-300 h-full flex items-center font-medium">Jml Cetak</span>
+                  <div className="order-1 flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white h-10 w-full sm:w-auto">
+                    <span className="px-3 text-sm text-gray-500 bg-gray-50 border-r border-gray-300 h-full flex items-center font-medium whitespace-nowrap">Jml Cetak</span>
                     <input 
                       type="number" 
                       id="print-qty"
                       defaultValue={selectedAsset.totalStock} 
                       min="1"
-                      className="w-16 text-sm px-2 py-2.5 outline-none text-center font-bold text-gray-900 focus:bg-indigo-50" 
+                      className="w-full sm:w-16 text-sm px-2 py-2.5 outline-none text-center font-bold text-gray-900 focus:bg-indigo-50" 
                     />
                   </div>
                 )}
-                <button onClick={() => setSelectedAsset(null)} className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Selesai</button>
+                <button onClick={() => setSelectedAsset(null)} className="order-3 sm:order-2 w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Selesai</button>
                 <button
                   onClick={() => { 
                     if (selectedAsset.trackingType === 'SERIALIZED') {
@@ -710,10 +825,10 @@ export default function AssetMaster() {
                       }
                     }
                   }}
-                  className="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
+                  className="order-2 sm:order-3 w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                  {selectedAsset.trackingType === 'SERIALIZED' ? `Cetak Semua Label (${selectedAsset.totalStock})` : 'Cetak Label Master'}
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                  <span className="truncate">{selectedAsset.trackingType === 'SERIALIZED' ? `Cetak Semua Label (${selectedAsset.totalStock})` : 'Cetak Label Master'}</span>
                 </button>
               </div>
             </div>
@@ -723,15 +838,15 @@ export default function AssetMaster() {
 
       {/* ── Edit Profil Barang Modal ── */}
       {editingAssetId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-lg font-bold text-gray-900">Edit Profil Barang</h3>
               <button onClick={() => setEditingAssetId(null)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Barang <span className="text-red-500">*</span></label>
                 <input
@@ -758,7 +873,7 @@ export default function AssetMaster() {
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setEditingAssetId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
               <button onClick={handleSaveEdit} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40"
                 disabled={!editForm.name || !editForm.rackLocation}>
@@ -771,8 +886,8 @@ export default function AssetMaster() {
 
       {/* ── Riwayat Unit Modal ── */}
       {historyModalUnit && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col h-[90vh] sm:h-auto sm:max-h-[85vh]">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">

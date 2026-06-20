@@ -99,7 +99,7 @@ export default function AssetMaintenance() {
       )}
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-1">Manajemen Eskalasi</p>
           <h1 className="text-2xl font-bold text-gray-900">Aset Bermasalah</h1>
@@ -117,7 +117,59 @@ export default function AssetMaintenance() {
 
       {/* ── Table / List View ───────────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex-1">
-        <div className="overflow-x-auto">
+        <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+          {paginatedTickets.map((t) => (
+            <div key={t.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+              <div className="flex justify-between items-start gap-4">
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-gray-900 text-base leading-tight">{t.assetName}</h3>
+                  <div className="text-xs font-mono text-gray-500 mt-1">{t.serialNumber ? `S/N: ${t.serialNumber}` : 'S/N: N/A'}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
+                    Menunggu Tindakan
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedTicket(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+              <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">ID Eskalasi</p>
+                  <p className="font-bold text-gray-900 text-sm font-mono">{t.id}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Dilaporkan Oleh</p>
+                  <p className="font-bold text-gray-900 text-sm">{t.reporter}</p>
+                  <p className="text-xs text-gray-500">{t.dateReported}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Keterangan</p>
+                <p className="text-sm text-gray-700 line-clamp-2">{t.issue}</p>
+              </div>
+
+              <button 
+                onClick={() => setSelectedTicket(t)}
+                className="w-full py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
+                Buka Detail
+              </button>
+            </div>
+          ))}
+          {paginatedTickets.length === 0 && (
+            <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+              <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p className="text-gray-500 font-medium">Tidak ada tiket eskalasi saat ini.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-left">
             <thead className="bg-gray-50/50">
               <tr>
@@ -169,7 +221,7 @@ export default function AssetMaintenance() {
 
         {/* Pagination Footer */}
         {totalPages > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
             <span className="text-sm text-gray-500 font-medium">
               Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, tickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, tickets.length)}</span> dari <span className="font-bold text-gray-900">{tickets.length}</span> laporan
             </span>

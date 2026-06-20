@@ -130,7 +130,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
       <div className="flex flex-col gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-3 lg:gap-6">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
@@ -143,20 +143,20 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
               <h2 className="text-lg font-semibold text-gray-900">Pengembalian Aset (Walk-in)</h2>
               <p className="text-sm text-gray-500">Pindai barang yang dibawa peminjam untuk memproses pengembalian.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 mt-4 lg:mt-0 w-full lg:w-auto">
+              <div className="relative w-full lg:w-auto">
                 <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 <input 
                   type="text" 
                   placeholder="Cari ID, Nama, atau Aset..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64 transition-all"
                 />
               </div>
               <button 
                 onClick={simulateScan}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-md shadow hover:bg-gray-800 transition-colors shrink-0"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-md shadow hover:bg-gray-800 transition-colors w-full lg:w-auto shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h4a1 1 0 010 2H5v3a1 1 0 01-2 0V4zm14-1a1 1 0 011 1v3a1 1 0 01-2 0V5h-3a1 1 0 010-2h4zM3 20a1 1 0 001 1h4a1 1 0 000-2H5v-3a1 1 0 00-2 0v4zm14 1a1 1 0 001-1v-4a1 1 0 00-2 0v3h-3a1 1 0 000 2h4z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h8" /></svg>
                 Scan Barcode
@@ -164,20 +164,81 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+            {paginatedTickets.map((ticket) => (
+              <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="min-w-0">
+                    <h3 className="font-extrabold text-gray-900 text-base leading-tight">{ticket.alat}</h3>
+                    <div className="text-sm font-medium text-blue-600 mt-1">{ticket.id}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-lg border border-blue-100 whitespace-nowrap">
+                      {ticket.jumlah} unit
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Peminjam</p>
+                    <p className="font-bold text-gray-900 text-sm">{ticket.peminjam}</p>
+                    <p className="text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Tenggat Waktu</p>
+                    <p className="font-bold text-red-600 text-sm">{ticket.tanggalKembali}</p>
+                    <p className="text-[10px] font-medium text-gray-500">Harus Kembali</p>
+                  </div>
+                </div>
+
+                {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1.5">Serial Number</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ticket.allocatedUnits.map(sn => (
+                        <span key={sn} className="text-xs font-mono bg-white text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                          {sn}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => handleOpenProcess(ticket)}
+                  className="w-full py-2.5 mt-1 bg-gray-900 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                  Proses Terima
+                </button>
+              </div>
+            ))}
+            {paginatedTickets.length === 0 && (
+              <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <p className="text-gray-500 font-medium">Tidak ada barang yang sedang dipinjam.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  {['ID Pengajuan', 'Peminjam', 'Aset & SN Dipinjam', 'Kuantitas', 'Tenggat Waktu', 'Tindakan'].map((h, i) => (
+                  {['ID Pengajuan', 'Peminjam', 'Aset & SN Dipinjam', 'Kuantitas', 'Tenggat Waktu'].map((h, i) => (
                     <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Tindakan
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={ticket.id} className="group hover:bg-gray-50 transition-colors">
                     {/* ID Pengajuan */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
@@ -219,7 +280,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                     </td>
 
                     {/* Tindakan */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap transition-colors">
                       <button
                         onClick={() => handleOpenProcess(ticket)}
                         className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
@@ -243,7 +304,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
           {/* Pagination Footer */}
           {totalPages > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
               <span className="text-sm text-gray-500 font-medium">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
               </span>
@@ -287,8 +348,8 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
       {/* MODAL PENGEMBALIAN */}
       {modalTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl w-full h-[95vh] sm:h-auto sm:max-h-[90vh] max-w-lg">
             
             {/* Modal Header */}
             <div className="px-6 py-5 border-b shrink-0 bg-gray-900 text-white">
@@ -315,9 +376,9 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
               {/* Langkah 1: Barang Serialized */}
               {modalTicket.assetType !== 'NON_SERIALIZED' && modalTicket.allocatedUnits && modalTicket.allocatedUnits.length > 0 && (
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                     <span className="text-sm font-bold text-gray-900">Evaluasi Fisik Aset (Scan Satu Per Satu)</span>
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                       <svg className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       <input 
                         type="text" 
@@ -325,7 +386,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                         value={scanInput}
                         onChange={e => setScanInput(e.target.value)}
                         onKeyDown={handleScanInput}
-                        className="pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none w-40"
+                        className="pl-8 pr-3 py-2.5 sm:py-1.5 text-base sm:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48"
                       />
                     </div>
                   </div>
@@ -360,9 +421,9 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
               {/* Langkah 1: Barang Non-Serialized */}
               {modalTicket.assetType === 'NON_SERIALIZED' && (
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                  <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                     <span className="text-sm font-bold text-blue-900">Scan 1 Unit Saja (Mewakili Semua)</span>
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                       <svg className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       <input 
                         type="text" 
@@ -371,7 +432,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                         onChange={e => setScanInput(e.target.value)}
                         onKeyDown={handleScanInput}
                         disabled={verifiedSNs.length > 0}
-                        className="pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 outline-none w-full sm:w-48 disabled:bg-gray-100"
+                        className="pl-8 pr-3 py-2.5 sm:py-1.5 text-base sm:text-xs border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48 disabled:bg-gray-100 bg-white"
                       />
                     </div>
                   </div>

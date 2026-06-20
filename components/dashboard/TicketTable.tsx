@@ -47,16 +47,6 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
     t.alat.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const ITEMS_PER_PAGE = 5
-  const [currentPage, setCurrentPage] = React.useState(1)
-
-  React.useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
-
-  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE)
-  const paginatedTickets = filteredTickets.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
       <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
@@ -69,7 +59,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
             <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input 
               type="text" 
-              placeholder="Cari ID, Nama, atau Aset..." 
+              placeholder="Cari ID atau Pemohon..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
@@ -96,7 +86,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedTickets.map((ticket) => {
+            {filteredTickets.map((ticket) => {
               const isActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Area Head'
               const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu'
               return (
@@ -177,7 +167,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
                 </tr>
               )
             })}
-            {paginatedTickets.length === 0 && (
+            {filteredTickets.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                   Tidak ada tiket yang cocok dengan pencarian "{searchQuery}".
@@ -189,44 +179,12 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
       </div>
 
       {/* Pagination Footer */}
-      {totalPages > 0 && (
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
-          <span className="text-sm text-gray-500 font-medium">
-            Menampilkan <span className="font-bold text-gray-900">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * ITEMS_PER_PAGE, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
-          </span>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Sebelumnya
-            </button>
-            
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                    currentPage === page 
-                      ? 'bg-blue-600 text-white shadow-md' 
-                      : 'text-gray-500 hover:bg-gray-200 bg-transparent'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-
-            <button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Selanjutnya
-            </button>
-          </div>
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
+        <span className="text-sm text-gray-500">Menampilkan {filteredTickets.length} hasil</span>
+        <div className="flex gap-1">
+          <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
+          <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
+          <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
         </div>
       )}
     </div>

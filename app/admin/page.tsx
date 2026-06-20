@@ -22,13 +22,23 @@ export default function AdminDashboard() {
   ).length
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900 relative">
       <AdminSidebar
         sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         pendingCount={adminPendingCount}
       />
+      
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-gray-900/50 z-20 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopHeader 
           sidebarOpen={sidebarOpen} 
@@ -37,7 +47,7 @@ export default function AdminDashboard() {
           roleName="Admin" 
         />
         
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
           {activeNav !== 'Analitik' && (
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">{activeNav}</h1>
@@ -53,6 +63,8 @@ export default function AdminDashboard() {
           {activeNav === 'Kelola Pengguna' && <UserManagement />}
           {activeNav === 'Master Aset' && <AssetMaster />}
           {activeNav === 'Pemeliharaan Aset' && <AssetMaintenance />}
+          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={initialTickets} />}
+          {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
         </div>
       </div>
     </div>
