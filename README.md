@@ -1,3 +1,13 @@
+# 🏛️ SIARTA - Sistem Arsitektur Kelola Aset
+
+[![Status CI](https://github.com/rmdnsantoso/SIARTA---Sistem-Arsitektur-Kelola-Aset/actions/workflows/ci.yml/badge.svg)](https://github.com/rmdnsantoso/SIARTA---Sistem-Arsitektur-Kelola-Aset/actions/workflows/ci.yml)
+[![Vercel Deployment Status](https://vercel.com/api/projects/status/page?repo=rmdnsantoso/SIARTA---Sistem-Arsitektur-Kelola-Aset)](https://vercel.com/project)
+
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
