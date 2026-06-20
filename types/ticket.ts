@@ -16,7 +16,6 @@ export interface TrackingLog {
 
 export interface Ticket {
   id: string
-  nip?: string
   peminjam: string
   nip?: string
   jabatan: string
