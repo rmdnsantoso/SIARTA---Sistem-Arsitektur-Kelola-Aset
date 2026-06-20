@@ -1,7 +1,7 @@
 # 🏛️ SIARTA - Sistem Arsitektur Kelola Aset
 
 [![Status CI](https://github.com/rmdnsantoso/SIARTA---Sistem-Arsitektur-Kelola-Aset/actions/workflows/ci.yml/badge.svg)](https://github.com/rmdnsantoso/SIARTA---Sistem-Arsitektur-Kelola-Aset/actions/workflows/ci.yml)
-[![Vercel Deployment](https://img.shields.io/website?url=https%3A%2F%2Fsiarta-sistem-arsitektur-kelola-aset.vercel.app&up_message=success&down_message=failed&label=Vercel&style=flat-square&logo=vercel)](https://siarta.vercel.app)
+[![Vercel Deployment](https://img.shields.io/website?url=https%3A%2F%2Fsiarta.vercel.app&up_message=success&down_message=failed&label=Vercel&style=flat-square&logo=vercel)](https://siarta.vercel.app)
 
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
