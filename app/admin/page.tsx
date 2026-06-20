@@ -63,8 +63,6 @@ export default function AdminDashboard() {
           {activeNav === 'Kelola Pengguna' && <UserManagement />}
           {activeNav === 'Master Aset' && <AssetMaster />}
           {activeNav === 'Pemeliharaan Aset' && <AssetMaintenance />}
-          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={initialTickets} />}
-          {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
         </div>
       </div>
     </div>
