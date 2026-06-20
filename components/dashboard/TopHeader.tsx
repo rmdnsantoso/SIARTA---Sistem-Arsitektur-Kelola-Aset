@@ -13,7 +13,7 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleN
   const router = useRouter()
 
   return (
-    <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-200 shrink-0">
+    <header className="flex items-center justify-between px-4 sm:px-8 py-4 bg-white border-b border-gray-200 shrink-0">
       <div className="flex items-center gap-4">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}

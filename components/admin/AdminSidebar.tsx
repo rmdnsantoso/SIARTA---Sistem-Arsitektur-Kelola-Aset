@@ -3,6 +3,7 @@ interface AdminSidebarProps {
   sidebarOpen: boolean
   activeNav: string
   setActiveNav: (nav: string) => void
+  setSidebarOpen?: (open: boolean) => void
   pendingCount: number
 }
 
@@ -40,6 +41,18 @@ function NavIcon({ label, active }: { label: string; active: boolean }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
         </svg>
       )
+    case 'Riwayat Peminjaman':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      )
+    case 'Riwayat Pemeliharaan':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
     case 'Analitik':
       return (
         <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -58,7 +71,7 @@ function NavIcon({ label, active }: { label: string; active: boolean }) {
   }
 }
 
-const navItems = [
+const mainNavItems = [
   { label: 'Verifikasi Pinjam' },
   { label: 'Pengembalian Aset' },
   { label: 'Master Aset' },
@@ -67,9 +80,44 @@ const navItems = [
   { label: 'Analitik' },
 ]
 
-export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, pendingCount }: AdminSidebarProps) {
+const bottomNavItems = [
+  { label: 'Riwayat Peminjaman' },
+  { label: 'Riwayat Pemeliharaan' },
+]
+
+export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, setSidebarOpen, pendingCount }: AdminSidebarProps) {
+  const renderNavItems = (items: { label: string }[]) => {
+    return items.map((item) => {
+      const isActive = activeNav === item.label
+      return (
+        <button
+          key={item.label}
+          onClick={() => {
+            setActiveNav(item.label);
+            if (window.innerWidth < 1024 && setSidebarOpen) {
+              setSidebarOpen(false);
+            }
+          }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+            isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          <NavIcon label={item.label} active={isActive} />
+          {sidebarOpen && <span className="truncate">{item.label}</span>}
+          {sidebarOpen && item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
+            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
+              isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
+            }`}>
+              {pendingCount}
+            </span>
+          )}
+        </button>
+      )
+    })
+  }
+
   return (
-    <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
+    <aside className={`fixed lg:relative z-30 h-full ${sidebarOpen ? 'w-64 translate-x-0' : 'w-64 lg:w-20 -translate-x-full lg:translate-x-0'} shrink-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
       <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
         <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shrink-0">
           <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -84,29 +132,12 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, pen
         )}
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-1">
-        {navItems.map((item) => {
-          const isActive = activeNav === item.label
-          return (
-            <button
-              key={item.label}
-              onClick={() => setActiveNav(item.label)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
-            >
-              <NavIcon label={item.label} active={isActive} />
-              {sidebarOpen && <span className="truncate">{item.label}</span>}
-              {sidebarOpen && item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
-                <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
-                  isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
-                }`}>
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          )
-        })}
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        {renderNavItems(mainNavItems)}
+        
+        <div className="my-4 border-t border-gray-200"></div>
+        
+        {renderNavItems(bottomNavItems)}
       </nav>
 
       {sidebarOpen && (
