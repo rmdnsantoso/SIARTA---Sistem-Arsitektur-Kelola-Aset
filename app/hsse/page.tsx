@@ -4,9 +4,16 @@ import { useState } from 'react'
 import HSSESidebar from '../../components/hsse/HSSESidebar'
 import TopHeader from '../../components/dashboard/TopHeader'
 import { initialTickets } from '../../lib/dummyData'
+import BorrowingProcess from '../../components/admin/BorrowingProcess'
+import ReturnProcess from '../../components/admin/ReturnProcess'
+import AssetMaster from '../../components/admin/AssetMaster'
+import AssetMaintenance from '../../components/admin/AssetMaintenance'
+import TicketHistory from '../../components/admin/TicketHistory'
+import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
 
 export default function HSSEDashboard() {
-  const [activeNav, setActiveNav] = useState('Verifikasi Safety')
+  const [activeNav, setActiveNav] = useState('Verifikasi Peminjaman')
+
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   const hssePendingCount = initialTickets.filter(
@@ -35,6 +42,30 @@ export default function HSSEDashboard() {
             <p className="text-sm text-gray-500 mt-1">Halaman ini sedang dalam tahap pengembangan.</p>
           </div>
           
+          {activeNav === 'Verifikasi Peminjaman' && (
+  <BorrowingProcess tickets={initialTickets} />
+)}
+
+{activeNav === 'Pengembalian Aset' && (
+  <ReturnProcess tickets={initialTickets} />
+)}
+
+{activeNav === 'Master Aset' && (
+  <AssetMaster />
+)}
+
+{activeNav === 'Pemeliharaan Aset' && (
+  <AssetMaintenance />
+)}
+
+{activeNav === 'Riwayat Peminjaman' && (
+  <TicketHistory tickets={initialTickets} />
+)}
+
+{activeNav === 'Riwayat Pemeliharaan' && (
+  <MaintenanceHistory />
+)}
+
           <div className="py-20 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
              <p className="text-gray-500 font-medium">Konten {activeNav} akan segera hadir.</p>
           </div>
