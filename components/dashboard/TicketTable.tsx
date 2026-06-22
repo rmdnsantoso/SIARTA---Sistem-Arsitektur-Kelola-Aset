@@ -49,9 +49,9 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Daftar Pengajuan Aktif</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Daftar Pengajuan Aktif</h2>
           <p className="text-sm text-gray-500">Menampilkan pengajuan yang memerlukan peninjauan.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -179,12 +179,12 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
       </div>
 
       {/* Pagination Footer */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between shrink-0">
-        <span className="text-sm text-gray-500">Menampilkan {filteredTickets.length} hasil</span>
+      <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <span className="text-xs sm:text-sm text-gray-500">Menampilkan {filteredTickets.length} hasil</span>
         <div className="flex gap-1">
-          <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
-          <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm font-medium">1</button>
-          <button className="px-3 py-1 rounded border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
+          <button className="px-2 sm:px-3 py-1 rounded border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Seb</button>
+          <button className="px-2 sm:px-3 py-1 rounded bg-blue-600 text-white text-xs sm:text-sm font-medium">1</button>
+          <button className="px-2 sm:px-3 py-1 rounded border border-gray-300 bg-white text-xs sm:text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50" disabled>Sel</button>
       </div>
       </div>
     </div>

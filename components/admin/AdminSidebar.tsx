@@ -117,7 +117,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
   }
 
   return (
-    <aside className={`fixed lg:relative z-30 h-full ${sidebarOpen ? 'w-64 translate-x-0' : 'w-64 lg:w-20 -translate-x-full lg:translate-x-0'} shrink-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
+    <aside className={`fixed xl:relative z-30 h-full ${sidebarOpen ? 'w-64 translate-x-0' : 'w-64 xl:w-20 -translate-x-full xl:translate-x-0'} shrink-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
       <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
         <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shrink-0">
           <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

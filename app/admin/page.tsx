@@ -34,7 +34,7 @@ export default function AdminDashboard() {
       {/* Mobile Sidebar Backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-gray-900/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-gray-900/50 z-20 xl:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -47,11 +47,11 @@ export default function AdminDashboard() {
           roleName="Admin" 
         />
         
-        <div className="flex-1 overflow-auto p-4 sm:p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
           {activeNav !== 'Analitik' && (
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">{activeNav}</h1>
-              <p className="text-sm text-gray-500 mt-1">Pusat Kendali Logistik & Inventaris (Admin)</p>
+            <div className="mb-4 sm:mb-6">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Pusat Kendali Logistik & Inventaris (Admin)</p>
             </div>
           )}
           
