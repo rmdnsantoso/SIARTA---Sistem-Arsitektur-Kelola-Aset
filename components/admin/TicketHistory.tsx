@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
-import StatCard from '../dashboard/StatCard'
+import StatCard from '../shared/StatCard'
 
 interface Props {
   tickets?: Ticket[]
@@ -20,7 +20,7 @@ function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus,
   }
   return (
     <div className={`flex flex-col gap-1 ${align === 'end' ? 'items-end text-right' : 'items-start text-left'}`}>
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status] || map.Menunggu}`}>
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${map[status] || map.Menunggu}`}>
         {status}
       </span>
       {(status === 'Menunggu' || status === 'Disetujui' || status === 'Dipinjam') && (
@@ -31,7 +31,6 @@ function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus,
 }
 
 export default function TicketHistory({ tickets = initialTickets }: Props) {
-  const [localTickets] = useState<Ticket[]>(tickets)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
 
@@ -42,7 +41,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
   // Modal State for details
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
 
-  const filteredTickets = localTickets.filter(t => {
+  const filteredTickets = tickets.filter(t => {
     const matchesSearch = 
       t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
       t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -53,10 +52,10 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
   })
 
   // Calculate stats
-  const totalSelesai = localTickets.filter(t => t.overallStatus === 'Selesai' || t.overallStatus === 'Dikembalikan').length
-  const totalDitolak = localTickets.filter(t => t.overallStatus === 'Ditolak').length
-  const totalDipinjam = localTickets.filter(t => t.overallStatus === 'Dipinjam').length
-  const totalPengajuan = localTickets.length
+  const totalSelesai = tickets.filter(t => t.overallStatus === 'Selesai' || t.overallStatus === 'Dikembalikan').length
+  const totalDitolak = tickets.filter(t => t.overallStatus === 'Ditolak').length
+  const totalDipinjam = tickets.filter(t => t.overallStatus === 'Dipinjam').length
+  const totalPengajuan = tickets.length
 
   const stats: Array<{ label: string, value: number, iconPath: string, colorTheme: 'default' | 'blue' | 'green' | 'amber' | 'red' | 'purple' }> = [
     { label: 'Total Pengajuan', value: totalPengajuan, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' },

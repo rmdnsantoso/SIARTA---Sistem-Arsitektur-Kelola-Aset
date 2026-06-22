@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
-import StatCard from '../dashboard/StatCard'
+import StatCard from '../shared/StatCard'
 interface Props {
   tickets?: Ticket[]
 }
@@ -17,7 +17,7 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
   }
   return (
     <div className="flex flex-col items-start gap-1">
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status] || map.Menunggu}`}>
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${map[status] || map.Menunggu}`}>
         {status}
       </span>
       {status === 'Dipinjam' && (
@@ -139,7 +139,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                   {/* Kerusakan */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {ticket.isReportedDamaged ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-semibold border border-red-100 rounded">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-semibold border border-red-100 rounded-md">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
@@ -245,7 +245,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                     />
                   </div>
                   <div className="flex-1 space-y-1">
-                    <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded uppercase">
+                    <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded-md uppercase">
                       Laporan Kerusakan Terkirim
                     </span>
                     <h5 className="font-bold text-gray-900 text-sm mt-1">Deskripsi Kerusakan Alat:</h5>

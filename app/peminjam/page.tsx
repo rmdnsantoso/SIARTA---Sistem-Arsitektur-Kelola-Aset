@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import PeminjamSidebar from '../../components/peminjam/PeminjamSidebar'
-import TopHeader from '../../components/dashboard/TopHeader'
+import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
