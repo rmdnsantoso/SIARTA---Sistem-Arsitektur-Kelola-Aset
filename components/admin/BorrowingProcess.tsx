@@ -183,10 +183,10 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-3 sm:gap-6 lg:gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 lg:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
@@ -194,9 +194,9 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
         {/* Unified Table */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Antrean Verifikasi & Serah Terima</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Antrean Verifikasi & Serah Terima</h2>
               <p className="text-sm text-gray-500">Kelola verifikasi fisik dan serah terima aset ke peminjam.</p>
             </div>
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 mt-4 lg:mt-0 w-full lg:w-auto">
@@ -211,15 +211,15 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                   placeholder="Cari ID, Nama, atau Aset..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full lg:w-64 transition-all"
+                  className="pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full lg:w-64 transition-all"
                 />
               </div>
               <div className="relative w-full lg:w-auto">
                 <button 
                   onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 w-full lg:w-auto"
+                  className="px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 w-full lg:w-auto"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
                   </svg>
                   Filter {activeFilter !== 'Semua' && `(${activeFilter})`}
@@ -252,39 +252,39 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
             </div>
           </div>
 
-          <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+          <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
             {paginatedTickets.map((ticket) => {
               const isAdminActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
               const isHandoverActionable = ticket.overallStatus === 'Disetujui' && ticket.currentStage === 'Serah Terima'
               const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
               
               return (
-                <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
-                  <div className="flex justify-between items-start gap-4">
+                <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
+                  <div className="flex justify-between items-start gap-3 sm:gap-4">
                     <div className="min-w-0">
-                      <h3 className="font-extrabold text-gray-900 text-base leading-tight">{ticket.alat}</h3>
-                      <div className="text-sm font-medium text-blue-600 mt-1">{ticket.id}</div>
+                      <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{ticket.alat}</h3>
+                      <div className="text-xs sm:text-sm font-medium text-blue-600 mt-0.5 sm:mt-1">{ticket.id}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className={`inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-lg border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                      <span className={`inline-flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                         {ticket.jumlah} unit
                       </span>
-                      <div className="text-[10px] font-medium text-gray-500 mt-1">Stok: {ticket.stokTersedia}</div>
+                      <div className="text-[9px] sm:text-[10px] font-medium text-gray-500 mt-0.5 sm:mt-1">Stok: {ticket.stokTersedia}</div>
                     </div>
                   </div>
 
                   {hasConflict && <div className="mt-1"><ConflictWarning conflictWith={ticket.conflictWith!} /></div>}
 
-                  <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                     <div>
-                      <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
-                      <p className="font-bold text-gray-900 text-sm">{ticket.peminjam}</p>
-                      <p className="text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
+                      <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
+                      <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.peminjam}</p>
+                      <p className="text-[10px] sm:text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
-                      <p className="font-bold text-gray-900 text-sm">{ticket.tanggalPinjam}</p>
-                      <p className="text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
+                      <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
+                      <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.tanggalPinjam}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
                     </div>
                   </div>
 
@@ -303,18 +303,18 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
                   {/* Actions */}
                   {(isAdminActionable || isHandoverActionable) && (
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex gap-2 sm:gap-2 mt-1 sm:mt-1">
                       {isAdminActionable && (
                         <>
                           <button
                             onClick={() => handleOpenAllocation(ticket)}
-                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors"
+                            className="flex-1 py-1.5 sm:py-2.5 bg-blue-600 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors"
                           >
                             Alokasikan
                           </button>
                           <button
                             onClick={() => setModal({ ticket, type: 'tolak' })}
-                            className="flex-1 py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-bold shadow-sm hover:bg-red-100 transition-colors"
+                            className="flex-1 py-1.5 sm:py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-red-100 transition-colors"
                           >
                             Tolak
                           </button>
@@ -323,9 +323,9 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                       {isHandoverActionable && (
                         <button
                           onClick={() => setModal({ ticket, type: 'serah_terima' })}
-                          className="w-full py-2.5 bg-amber-500 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-amber-600 transition-colors flex justify-center items-center gap-1.5"
+                          className="w-full py-1.5 sm:py-2.5 bg-amber-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-amber-600 transition-colors flex justify-center items-center gap-1 sm:gap-1.5"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                           Serah Terima
                         </button>
                       )}
@@ -466,15 +466,15 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
           {/* Pagination Footer */}
           {totalPages > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
-              <span className="text-sm text-gray-500 font-medium">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+              <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
               </span>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sebelumnya
                 </button>
@@ -498,7 +498,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages || filteredTickets.length === 0}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Selanjutnya
                 </button>
@@ -511,30 +511,30 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
       {/* MODAL ALOKASI / KONFIRMASI / DETAIL */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full h-[95vh] sm:h-auto sm:max-h-[85vh] max-w-4xl' : 'w-full max-w-sm'}`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+          <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full max-h-[90vh] max-w-4xl' : 'w-full max-w-sm'}`}>
             
             {/* Modal Header */}
-            <div className={`px-6 py-5 border-b shrink-0 ${
+            <div className={`px-4 sm:px-6 py-4 sm:py-5 border-b shrink-0 ${
               modal.type === 'setujui' ? 'bg-blue-600 text-white' : 
               modal.type === 'serah_terima' ? 'bg-amber-500 text-white' : 
               modal.type === 'detail' ? 'bg-gray-900 text-white' :
               'bg-red-600 text-white'
             }`}>
-              <h3 className="text-xl font-extrabold">
+              <h3 className="text-lg sm:text-xl font-extrabold">
                 {modal.type === 'setujui' ? 'Alokasi Fisik Unit' : 
                  modal.type === 'serah_terima' ? 'Serah Terima Barang' : 
                  modal.type === 'detail' ? 'Riwayat Pelacakan Tiket' :
                  'Konfirmasi Penolakan'}
               </h3>
-              <p className="text-sm opacity-90 mt-1">
+              <p className="text-xs sm:text-sm opacity-90 mt-1">
                 Tiket: {modal.ticket.id} {modal.type === 'detail' && `| Diajukan: ${modal.ticket.tanggalPinjam}`}
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
               {modal.type !== 'detail' && (
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
                   <div className="text-sm font-bold text-gray-900">{modal.ticket.alat}</div>
                   <div className="text-xs text-gray-500 mt-1">Diminta: <strong className="text-gray-900">{modal.ticket.jumlah}</strong> unit</div>
                   <div className="text-xs text-gray-500 mt-0.5">Tipe: <strong className="text-gray-900">{modal.ticket.assetType === 'SERIALIZED' ? 'Serialized' : modal.ticket.assetType === 'NON_SERIALIZED' ? 'Non-Serialized' : 'N/A'}</strong></div>
@@ -552,12 +552,12 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         value={currentScan}
                         onChange={e => setCurrentScan(e.target.value)}
                         placeholder="Scan atau ketik SN..."
-                        className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 outline-none"
                       />
-                      <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-6 py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50">Tambah</button>
+                      <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50">Tambah</button>
                     </div>
                   </div>
-                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                  <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
                     <div className="text-xs font-bold text-gray-500 mb-3 flex justify-between">
                       <span>UNIT DIALOKASIKAN</span>
                       <span className={`${allocatedSerials.length === modal.ticket.jumlah ? 'text-green-600' : 'text-blue-600'}`}>{allocatedSerials.length} / {modal.ticket.jumlah}</span>
@@ -582,7 +582,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
               {modal.type === 'setujui' && modal.ticket.assetType === 'NON_SERIALIZED' && (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
+                  <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-xl">
                     <p className="text-sm text-blue-800 font-medium mb-2">Scan 1 QR Fisik Saja (Otomatis mewakili seluruh {modal.ticket.jumlah} unit)</p>
                     <div className="flex gap-2 mb-4">
                       <input 
@@ -612,7 +612,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
               )}
 
               {modal.type === 'serah_terima' && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+                <div className="bg-amber-50 border border-amber-200 p-3 sm:p-4 rounded-xl">
                   <p className="text-sm text-amber-800 font-medium">Pastikan pekerja menerima barang fisik berikut:</p>
                   <ul className="mt-2 space-y-1">
                     {modal.ticket.allocatedUnits?.map((sn: string) => (
@@ -624,7 +624,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
               {modal.type === 'tolak' && (
                 <div className="space-y-4">
-                  <div className="bg-red-50 border border-red-200 p-4 rounded-xl">
+                  <div className="bg-red-50 border border-red-200 p-3 sm:p-4 rounded-xl">
                     <p className="text-sm text-red-800 font-medium">Anda akan menolak pengajuan ini. Harap berikan alasan yang jelas agar pemohon mengerti.</p>
                   </div>
                   <div>
@@ -640,7 +640,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
               )}
 
               {modal.type === 'detail' && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {/* Tracking Flow Visualizer */}
                   <div className="relative border-l-2 border-gray-200 ml-3 space-y-8 pb-4">
                     {modal.ticket.trackingLogs && modal.ticket.trackingLogs.length > 0 ? (
@@ -677,11 +677,11 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
               )}
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex gap-3 shrink-0">
+            <div className="p-4 sm:p-6 border-t border-gray-100 bg-gray-50 flex gap-2 sm:gap-3 shrink-0">
               {modal.type === 'detail' ? (
                 <button
                   onClick={() => setModal(null)}
-                  className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800"
+                  className="w-full py-2.5 sm:py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800"
                 >
                   Tutup Riwayat
                 </button>
@@ -689,14 +689,14 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <>
                   <button
                     onClick={() => setModal(null)}
-                    className="flex-1 py-3 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50"
+                    className="flex-1 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50"
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleConfirm}
                     disabled={!isAllocationValid()}
-                    className={`flex-1 py-3 text-white rounded-xl text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`flex-1 py-2.5 sm:py-3 text-white rounded-xl text-xs sm:text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
                       modal.type === 'setujui' ? 'bg-blue-600 hover:bg-blue-700' : modal.type === 'serah_terima' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-red-600 hover:bg-red-700'
                     }`}
                   >

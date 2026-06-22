@@ -162,16 +162,16 @@ export default function UserManagement() {
             <div 
               key={u.nip} 
               onClick={() => openDetail(u)}
-              className="flex flex-col lg:flex-row lg:items-center bg-white p-4 lg:p-5 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group gap-3 lg:gap-0"
+              className="flex flex-col lg:flex-row lg:items-center bg-white p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group gap-2.5 sm:gap-3 lg:gap-0"
             >
               {/* Kolom 1: Identitas */}
-              <div className="w-full lg:w-[30%] flex items-center gap-3 lg:gap-4">
-                <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-gradient-to-br from-indigo-50 to-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-700 font-extrabold text-base lg:text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <div className="w-full lg:w-[30%] flex items-center gap-2.5 sm:gap-3 lg:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-gradient-to-br from-indigo-50 to-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-700 font-extrabold text-sm sm:text-base lg:text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                   {u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm lg:text-base font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors truncate">{u.name}</div>
-                  <div className="text-xs font-mono font-medium text-gray-500 mt-0.5 truncate">
+                  <div className="text-xs font-mono font-medium text-gray-500 mt-0.5">
                     NIP: {u.nip} <span className="text-gray-300 mx-1 hidden sm:inline">•</span> <span className="text-gray-400 font-sans block sm:inline mt-0.5 sm:mt-0">{u.jabatan}</span>
                   </div>
                 </div>
@@ -293,16 +293,16 @@ export default function UserManagement() {
       {/* DETAIL MODAL (Tengah) */}
       {selectedUser && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white w-full max-w-lg max-h-[90vh] shadow-2xl flex flex-col overflow-hidden rounded-3xl transform transition-transform">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transform transition-transform">
             
             {/* Header */}
-            <div className="px-8 py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50/50 shrink-0">
-              <div className="flex items-center gap-5">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 border-2 border-white shadow-md flex items-center justify-center text-blue-700 font-extrabold text-2xl">
+            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-4 sm:gap-5">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 border-2 border-white shadow-md flex items-center justify-center text-blue-700 font-extrabold text-xl sm:text-2xl shrink-0">
                   {selectedUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="text-2xl font-extrabold text-gray-900 tracking-tight">{selectedUser.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight truncate">{selectedUser.name}</h3>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-sm font-mono text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200 shadow-sm">{selectedUser.nip}</span>
                     <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest border shadow-sm ${selectedUser.status === 'Aktif' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
@@ -317,7 +317,7 @@ export default function UserManagement() {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-8">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8">
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-4">
                 <button 
@@ -337,7 +337,7 @@ export default function UserManagement() {
               </div>
 
               {/* Data Form/View */}
-              <div className="space-y-5 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+              <div className="space-y-4 sm:space-y-5 bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm">
                 <h4 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                   Informasi Pegawai
@@ -405,7 +405,7 @@ export default function UserManagement() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1.5">Peran (Role)</label>
                   {isEditMode ? (
-                    <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className="w-full border-2 border-blue-200 bg-blue-50 px-4 py-3 text-sm font-extrabold text-blue-900 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 transition-colors">
+                    <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className="w-full border-2 border-blue-200 rounded-xl px-4 py-3 text-sm font-extrabold text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none bg-blue-50 transition-colors">
                       <option>Peminjam</option>
                       <option>Admin</option>
                       <option>HSSE</option>
@@ -454,19 +454,19 @@ export default function UserManagement() {
 
       {/* ── Modal Add / Edit Pegawai ── */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl w-full h-[95vh] sm:h-auto sm:max-h-[90vh] max-w-2xl">
-            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-h-[90vh] max-w-2xl">
+            <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-gray-100 flex items-center justify-between bg-slate-50">
               <div>
-                <h3 className="text-xl font-extrabold text-gray-900">Registrasi Pegawai Baru</h3>
-                <p className="text-sm text-gray-500 mt-1">Buat kredensial akses untuk pegawai masuk ke sistem.</p>
+                <h3 className="text-lg sm:text-xl font-extrabold text-gray-900">Registrasi Pegawai Baru</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Buat kredensial akses untuk pegawai masuk ke sistem.</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-white border border-gray-200 shadow-sm p-2 rounded-full transition-colors">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
-            <div className="p-8 overflow-y-auto space-y-8 flex-1">
+            <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">NIP (Username) <span className="text-red-500">*</span></label>

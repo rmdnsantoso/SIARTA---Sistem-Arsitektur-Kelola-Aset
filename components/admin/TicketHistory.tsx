@@ -9,7 +9,7 @@ interface Props {
   tickets?: Ticket[]
 }
 
-function StatusBadge({ status, stage }: { status: TicketStatus, stage: string }) {
+function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus, stage: string, align?: 'start' | 'end' }) {
   const map: Record<TicketStatus, string> = {
     Menunggu: 'bg-yellow-50 text-yellow-700 border-yellow-200',
     Disetujui: 'bg-green-50 text-green-700 border-green-200',
@@ -19,7 +19,7 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
     Dikembalikan: 'bg-gray-50 text-gray-700 border-gray-200',
   }
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className={`flex flex-col gap-1 ${align === 'end' ? 'items-end text-right' : 'items-start text-left'}`}>
       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status] || map.Menunggu}`}>
         {status}
       </span>
@@ -68,10 +68,10 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
   return (
     <div className="font-sans">
       {/* Main Content Area */}
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4 sm:gap-6 lg:gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-6">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
@@ -79,9 +79,9 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
 
         {/* Unified Table */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Rekapitulasi Pengajuan</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Rekapitulasi Pengajuan</h2>
               <p className="text-sm text-gray-500">Melihat seluruh riwayat tiket yang sudah selesai, ditolak, atau dikembalikan.</p>
             </div>
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
@@ -117,38 +117,38 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
             </div>
           </div>
 
-          <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+          <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
             {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
-              <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
-                <div className="flex justify-between items-start gap-4">
+              <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
+                <div className="flex justify-between items-start gap-3 sm:gap-4">
                   <div className="min-w-0">
-                    <h3 className="font-extrabold text-gray-900 text-base leading-tight">{ticket.alat}</h3>
-                    <div className="text-sm font-medium text-blue-600 mt-1">{ticket.id}</div>
+                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{ticket.alat}</h3>
+                    <div className="text-[10px] sm:text-xs font-medium text-blue-600 mt-0.5 sm:mt-1">{ticket.id}</div>
                   </div>
                   <div className="text-right shrink-0">
-                    <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
-                    <div className="text-xs font-bold text-gray-500 mt-1">{ticket.jumlah} unit</div>
+                    <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} align="end" />
+                    <div className="text-[10px] sm:text-xs font-bold text-gray-500 mt-0.5 sm:mt-1">{ticket.jumlah} unit</div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                   <div>
-                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
-                    <p className="font-bold text-gray-900 text-sm">{ticket.peminjam}</p>
-                    <p className="text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
+                    <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
+                    <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.peminjam}</p>
+                    <p className="text-[10px] sm:text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
-                    <p className="font-bold text-gray-900 text-sm">{ticket.tanggalPinjam}</p>
-                    <p className="text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
+                    <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
+                    <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.tanggalPinjam}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setModalTicket(ticket)}
-                  className="w-full py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-1.5 sm:py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                   Lihat Detail Riwayat
                 </button>
               </div>
@@ -261,15 +261,15 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
 
           {/* Pagination Footer */}
           {Math.ceil(filteredTickets.length / itemsPerPage) > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
-              <span className="text-sm text-gray-500 font-medium">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+              <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> hasil
               </span>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sebelumnya
                 </button>
@@ -293,7 +293,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredTickets.length / itemsPerPage), p + 1))}
                   disabled={currentPage === Math.ceil(filteredTickets.length / itemsPerPage) || filteredTickets.length === 0}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Selanjutnya
                 </button>

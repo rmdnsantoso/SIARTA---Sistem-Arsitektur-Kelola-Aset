@@ -111,13 +111,13 @@ export default function MaintenanceHistory() {
           </div>
         </div>
 
-        <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+        <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
           {paginatedData.map((item) => (
-            <div key={item.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
-              <div className="flex justify-between items-start gap-4">
+            <div key={item.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
+              <div className="flex justify-between items-start gap-3 sm:gap-4">
                 <div className="min-w-0">
-                  <h3 className="font-extrabold text-gray-900 text-base leading-tight">{item.assetName}</h3>
-                  <div className="text-xs font-mono text-gray-500 mt-1">{item.serialNumber ? `S/N: ${item.serialNumber}` : 'S/N: N/A'}</div>
+                  <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{item.assetName}</h3>
+                  <div className="text-[10px] sm:text-xs font-mono text-gray-500 mt-0.5 sm:mt-1">{item.serialNumber ? `S/N: ${item.serialNumber}` : 'S/N: N/A'}</div>
                 </div>
                 <div className="text-right shrink-0">
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider font-bold border whitespace-nowrap ${
@@ -129,26 +129,26 @@ export default function MaintenanceHistory() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                 <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">ID Eskalasi</p>
-                  <p className="font-bold text-gray-900 text-sm font-mono">{item.id}</p>
+                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">ID Eskalasi</p>
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm font-mono">{item.id}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Tgl Selesai</p>
-                  <p className="font-bold text-gray-900 text-sm">{item.dateCompleted}</p>
+                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Tgl Selesai</p>
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm">{item.dateCompleted}</p>
                 </div>
               </div>
 
               <div>
-                <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Pelapor & Keterangan</p>
-                <p className="font-bold text-gray-900 text-sm">{item.reporter}</p>
-                <p className="text-xs text-gray-700 mt-1 line-clamp-2">{item.notes}</p>
+                <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Pelapor & Keterangan</p>
+                <p className="font-bold text-gray-900 text-xs sm:text-sm">{item.reporter}</p>
+                <p className="text-[10px] sm:text-xs text-gray-700 mt-0.5 sm:mt-1 line-clamp-2">{item.notes}</p>
               </div>
 
               <button
                 onClick={() => setSelectedTicket(item)}
-                className="w-full py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-1.5 sm:py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
               >
                 Buka Detail
               </button>
@@ -275,8 +275,8 @@ export default function MaintenanceHistory() {
             
             <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Detail Riwayat Pemeliharaan</h3>
-                <p className="text-xs text-gray-500 font-mono mt-0.5">{selectedTicket.id}</p>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">Detail Riwayat Pemeliharaan</h3>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-mono mt-0.5">{selectedTicket.id}</p>
               </div>
               <button onClick={() => setSelectedTicket(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -287,7 +287,7 @@ export default function MaintenanceHistory() {
               {/* Left: Photo & Asset Info */}
               <div className="w-full md:w-1/2 bg-gray-50 border-r border-gray-100 flex flex-col">
                 {selectedTicket.photoUrl ? (
-                  <div className="w-full aspect-square bg-gray-200 relative">
+                  <div className="w-full h-48 sm:h-auto sm:aspect-square bg-gray-200 relative shrink-0">
                     <img src={selectedTicket.photoUrl} alt="Kerusakan" className="w-full h-full object-cover" />
                     {selectedTicket.timestamp && (
                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1.5 font-mono text-center backdrop-blur-sm">
@@ -296,13 +296,13 @@ export default function MaintenanceHistory() {
                     )}
                   </div>
                 ) : (
-                  <div className="w-full aspect-square bg-gray-200 flex items-center justify-center text-gray-400">
+                  <div className="w-full h-48 sm:h-auto sm:aspect-square bg-gray-200 flex items-center justify-center text-gray-400 shrink-0">
                     Tidak ada foto
                   </div>
                 )}
-                <div className="p-6">
-                  <h4 className="text-xl font-extrabold text-gray-900">{selectedTicket.assetName}</h4>
-                  <p className="text-sm font-mono text-gray-500 mt-1">S/N: {selectedTicket.serialNumber || 'N/A'}</p>
+                <div className="p-4 sm:p-6">
+                  <h4 className="text-lg sm:text-xl font-extrabold text-gray-900 leading-tight">{selectedTicket.assetName}</h4>
+                  <p className="text-xs sm:text-sm font-mono text-gray-500 mt-1">S/N: {selectedTicket.serialNumber || 'N/A'}</p>
                   
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Pelapor</p>
@@ -316,7 +316,7 @@ export default function MaintenanceHistory() {
               </div>
 
               {/* Right: Notes */}
-              <div className="w-full md:w-1/2 p-6 flex flex-col">
+              <div className="w-full md:w-1/2 p-4 sm:p-6 flex flex-col">
                 <div className="flex-1">
                   <h5 className="text-sm font-bold text-gray-900 mb-2">Status Akhir</h5>
                   <div className="mb-6">

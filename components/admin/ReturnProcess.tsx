@@ -127,7 +127,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4 sm:gap-6 lg:gap-8">
         
         {/* Stat Cards */}
         <div className="grid grid-cols-2 gap-3 lg:gap-6">
@@ -138,9 +138,9 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
         {/* Unified Table */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Pengembalian Aset (Walk-in)</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Pengembalian Aset (Walk-in)</h2>
               <p className="text-sm text-gray-500">Pindai barang yang dibawa peminjam untuk memproses pengembalian.</p>
             </div>
             <div className="flex flex-col lg:flex-row lg:items-center gap-3 mt-4 lg:mt-0 w-full lg:w-auto">
@@ -164,31 +164,31 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
             </div>
           </div>
 
-          <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+          <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
             {paginatedTickets.map((ticket) => (
-              <div key={ticket.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
-                <div className="flex justify-between items-start gap-4">
+              <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
+                <div className="flex justify-between items-start gap-3 sm:gap-4">
                   <div className="min-w-0">
-                    <h3 className="font-extrabold text-gray-900 text-base leading-tight">{ticket.alat}</h3>
-                    <div className="text-sm font-medium text-blue-600 mt-1">{ticket.id}</div>
+                    <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{ticket.alat}</h3>
+                    <div className="text-xs sm:text-sm font-medium text-blue-600 mt-0.5 sm:mt-1">{ticket.id}</div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-lg border border-blue-100 whitespace-nowrap">
+                    <span className="inline-flex items-center bg-blue-50 text-blue-700 text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg border border-blue-100 whitespace-nowrap">
                       {ticket.jumlah} unit
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                   <div>
-                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Peminjam</p>
-                    <p className="font-bold text-gray-900 text-sm">{ticket.peminjam}</p>
-                    <p className="text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
+                    <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Peminjam</p>
+                    <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.peminjam}</p>
+                    <p className="text-[10px] sm:text-xs font-mono text-gray-500">{ticket.nip || 'NIP-XXX'}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Tenggat Waktu</p>
-                    <p className="font-bold text-red-600 text-sm">{ticket.tanggalKembali}</p>
-                    <p className="text-[10px] font-medium text-gray-500">Harus Kembali</p>
+                    <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Tenggat Waktu</p>
+                    <p className="font-bold text-red-600 text-xs sm:text-sm">{ticket.tanggalKembali}</p>
+                    <p className="text-[9px] sm:text-[10px] font-medium text-gray-500">Harus Kembali</p>
                   </div>
                 </div>
 
@@ -207,9 +207,9 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
                 <button
                   onClick={() => handleOpenProcess(ticket)}
-                  className="w-full py-2.5 mt-1 bg-gray-900 text-white rounded-xl text-sm font-bold shadow-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-1.5 sm:py-2.5 mt-1 sm:mt-1 bg-gray-900 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                   Proses Terima
                 </button>
               </div>
@@ -304,15 +304,15 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
           {/* Pagination Footer */}
           {totalPages > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
-              <span className="text-sm text-gray-500 font-medium">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+              <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
               </span>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Sebelumnya
                 </button>
@@ -336,7 +336,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages || filteredTickets.length === 0}
-                  className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Selanjutnya
                 </button>
@@ -348,19 +348,19 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
       {/* MODAL PENGEMBALIAN */}
       {modalTicket && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl w-full h-[95vh] sm:h-auto sm:max-h-[90vh] max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-h-[90vh] max-w-lg">
             
             {/* Modal Header */}
-            <div className="px-6 py-5 border-b shrink-0 bg-gray-900 text-white">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b shrink-0 bg-gray-900 text-white">
               <h3 className="text-xl font-extrabold">Inspeksi & Pengembalian</h3>
               <p className="text-sm opacity-90 mt-1">Tiket: {modalTicket.id} | {modalTicket.peminjam}</p>
             </div>
 
 
 
-            <div className="p-6 space-y-6">
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex justify-between items-center">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex-1 overflow-y-auto">
+              <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100 flex justify-between items-center">
                 <div>
                   <div className="text-sm font-bold text-gray-900">{modalTicket.alat}</div>
                   <div className="text-xs text-gray-500 mt-1">Total: <strong className="text-gray-900">{modalTicket.jumlah}</strong> unit</div>
@@ -485,7 +485,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
       {/* Scanning Overlay Modal */}
       {isScanning && (
-        <div className="fixed inset-0 z-[100] bg-gray-900/90 backdrop-blur-sm flex items-center justify-center animate-fade-in">
+        <div className="fixed inset-0 z-[100] bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white p-8 rounded-2xl max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center text-center">
             <div className="relative w-48 h-48 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl mb-6 overflow-hidden flex items-center justify-center">
               {/* Fake barcode lines */}

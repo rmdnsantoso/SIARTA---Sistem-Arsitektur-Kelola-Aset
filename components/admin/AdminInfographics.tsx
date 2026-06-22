@@ -10,11 +10,11 @@ export default function AdminInfographics() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-6">
         {stats.map(s => <StatCard key={s.label} {...s} />)}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Grafik Peminjaman Mingguan</h3>
           <div className="h-64 bg-gray-50 rounded flex items-end justify-between p-4 gap-2">

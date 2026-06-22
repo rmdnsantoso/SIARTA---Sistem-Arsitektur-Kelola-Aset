@@ -102,7 +102,7 @@ export default function AssetMaintenance() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500 mb-1">Manajemen Eskalasi</p>
-          <h1 className="text-2xl font-bold text-gray-900">Aset Bermasalah</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Aset Bermasalah</h1>
           <p className="text-sm text-gray-400 mt-0.5">Daftar laporan aset rusak yang menunggu tindak lanjut pemeliharaan.</p>
         </div>
         <button 
@@ -117,13 +117,13 @@ export default function AssetMaintenance() {
 
       {/* ── Table / List View ───────────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex-1">
-        <div className="lg:hidden p-4 space-y-4 bg-gray-50/30">
+        <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
           {paginatedTickets.map((t) => (
-            <div key={t.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
-              <div className="flex justify-between items-start gap-4">
+            <div key={t.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
+              <div className="flex justify-between items-start gap-3 sm:gap-4">
                 <div className="min-w-0">
-                  <h3 className="font-extrabold text-gray-900 text-base leading-tight">{t.assetName}</h3>
-                  <div className="text-xs font-mono text-gray-500 mt-1">{t.serialNumber ? `S/N: ${t.serialNumber}` : 'S/N: N/A'}</div>
+                  <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{t.assetName}</h3>
+                  <div className="text-[10px] sm:text-xs font-mono text-gray-500 mt-0.5 sm:mt-1">{t.serialNumber ? `S/N: ${t.serialNumber}` : 'S/N: N/A'}</div>
                 </div>
                 <div className="text-right shrink-0">
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 whitespace-nowrap">
@@ -132,15 +132,15 @@ export default function AssetMaintenance() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                 <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">ID Eskalasi</p>
-                  <p className="font-bold text-gray-900 text-sm font-mono">{t.id}</p>
+                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">ID Eskalasi</p>
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm font-mono">{t.id}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Dilaporkan Oleh</p>
-                  <p className="font-bold text-gray-900 text-sm">{t.reporter}</p>
-                  <p className="text-xs text-gray-500">{t.dateReported}</p>
+                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Dilaporkan Oleh</p>
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm">{t.reporter}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500">{t.dateReported}</p>
                 </div>
               </div>
 
@@ -151,7 +151,7 @@ export default function AssetMaintenance() {
 
               <button 
                 onClick={() => setSelectedTicket(t)}
-                className="w-full py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full py-1.5 sm:py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
               >
                 Buka Detail
               </button>
@@ -217,15 +217,15 @@ export default function AssetMaintenance() {
 
         {/* Pagination Footer */}
         {totalPages > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
-            <span className="text-sm text-gray-500 font-medium">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+            <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
               Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, tickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, tickets.length)}</span> dari <span className="font-bold text-gray-900">{tickets.length}</span> laporan
             </span>
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Sebelumnya
               </button>
@@ -249,7 +249,7 @@ export default function AssetMaintenance() {
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages || tickets.length === 0}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Selanjutnya
               </button>
@@ -265,8 +265,8 @@ export default function AssetMaintenance() {
             
             <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Detail Laporan Kerusakan</h3>
-                <p className="text-xs text-gray-500 font-mono mt-0.5">{selectedTicket.id}</p>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">Detail Laporan Kerusakan</h3>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-mono mt-0.5">{selectedTicket.id}</p>
               </div>
               <button onClick={() => setSelectedTicket(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-lg transition-colors">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -277,7 +277,7 @@ export default function AssetMaintenance() {
               {/* Left: Photo & Asset Info */}
               <div className="w-full md:w-1/2 bg-gray-50 border-r border-gray-100 flex flex-col">
                 {selectedTicket.photoUrl ? (
-                  <div className="w-full aspect-square bg-gray-200 relative">
+                  <div className="w-full h-48 sm:h-auto sm:aspect-square bg-gray-200 relative shrink-0">
                     <img src={selectedTicket.photoUrl} alt="Kerusakan" className="w-full h-full object-cover" />
                     {selectedTicket.timestamp && (
                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-2 py-1.5 font-mono text-center backdrop-blur-sm">
@@ -286,13 +286,13 @@ export default function AssetMaintenance() {
                     )}
                   </div>
                 ) : (
-                  <div className="w-full aspect-square bg-gray-200 flex items-center justify-center text-gray-400">
+                  <div className="w-full h-48 sm:h-auto sm:aspect-square bg-gray-200 flex items-center justify-center text-gray-400 shrink-0">
                     Tidak ada foto
                   </div>
                 )}
-                <div className="p-6">
-                  <h4 className="text-xl font-extrabold text-gray-900">{selectedTicket.assetName}</h4>
-                  <p className="text-sm font-mono text-gray-500 mt-1">S/N: {selectedTicket.serialNumber || 'N/A'}</p>
+                <div className="p-4 sm:p-6">
+                  <h4 className="text-lg sm:text-xl font-extrabold text-gray-900 leading-tight">{selectedTicket.assetName}</h4>
+                  <p className="text-xs sm:text-sm font-mono text-gray-500 mt-1">S/N: {selectedTicket.serialNumber || 'N/A'}</p>
                   
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Pelapor</p>
@@ -304,7 +304,7 @@ export default function AssetMaintenance() {
               </div>
 
               {/* Right: Notes & Actions */}
-              <div className="w-full md:w-1/2 p-6 flex flex-col">
+              <div className="w-full md:w-1/2 p-4 sm:p-6 flex flex-col">
                 <div className="flex-1">
                   <h5 className="text-sm font-bold text-gray-900 mb-2">Kronologi / Deskripsi Kerusakan</h5>
                   <div className="bg-amber-50 border border-amber-100 text-amber-900 p-4 rounded-xl text-sm leading-relaxed mb-6">
@@ -320,14 +320,14 @@ export default function AssetMaintenance() {
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={() => handleAction('Dimusnahkan')}
-                        className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
+                        className="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         <span className="text-xs font-bold">Musnahkan (Write-off)</span>
                       </button>
                       <button 
                         onClick={() => handleAction('Selesai')}
-                        className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors shadow-sm"
+                        className="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-3 rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors shadow-sm"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                         <span className="text-xs font-bold text-center leading-tight mt-1">Selesai &<br/>Kembalikan</span>
@@ -351,8 +351,8 @@ export default function AssetMaintenance() {
       {/* ── Modal Input Temuan Kerusakan ── */}
       {isReportModalOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-red-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-red-50 shrink-0">
               <h3 className="text-lg font-bold text-red-900 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 Catat Temuan Kerusakan
@@ -361,7 +361,7 @@ export default function AssetMaintenance() {
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between items-end">
                   <span>Nama/ID Aset <span className="text-red-500">*</span></span>
@@ -435,8 +435,8 @@ export default function AssetMaintenance() {
                 />
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-              <button onClick={() => setIsReportModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+              <button onClick={() => setIsReportModalOpen(false)} className="px-3 sm:px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
               <button onClick={handleSaveReport} className="px-4 py-2 text-sm font-bold text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-40"
                 disabled={!reportForm.assetId || !reportForm.notes}>
                 Simpan & Eskalasi

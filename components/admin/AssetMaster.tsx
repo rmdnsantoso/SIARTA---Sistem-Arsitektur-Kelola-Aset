@@ -288,7 +288,7 @@ export default function AssetMaster() {
       </div>
 
       {/* ── E-Commerce Style Grid Layout ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {filtered.map(a => {
           const isLow = a.availableStock === 0
           
@@ -320,7 +320,7 @@ export default function AssetMaster() {
               </div>
               
               {/* Product Info */}
-              <div className="p-4 flex-1 flex flex-col">
+              <div className="p-3 sm:p-4 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-[10px] text-gray-400 font-mono">{a.id}</span>
                 </div>
@@ -336,7 +336,7 @@ export default function AssetMaster() {
                   <div className="flex flex-col xl:flex-row gap-2 mt-2">
                     <button
                       onClick={() => setSelectedAsset(a)}
-                      className="flex-1 py-2 px-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-2 min-w-0"
+                      className="flex-1 py-1.5 sm:py-2 px-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 min-w-0"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                       <span className="truncate">Kelola Unit & QR</span>
@@ -347,14 +347,14 @@ export default function AssetMaster() {
                           setEditingAssetId(a.id);
                           setEditForm({ name: a.name, rackLocation: a.rackLocation, imageUrl: a.imageUrl || '' });
                         }}
-                        className="flex-1 xl:flex-none px-3 py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                        className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
                         title="Edit Profil Barang"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                       </button>
                       <button
                         onClick={() => handleDeleteAsset(a.id)}
-                        className="flex-1 xl:flex-none px-3 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
+                        className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
                         title="Hapus Barang"
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -378,15 +378,15 @@ export default function AssetMaster() {
       </div>
 
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] sm:max-h-none">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">Input Barang Baru</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Input Barang Baru</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 space-y-4 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
               
               {/* Tipe Pelacakan Selection */}
               <div>
@@ -475,28 +475,28 @@ export default function AssetMaster() {
 
       {/* ── Manage Units & QR Modal ── */}
       {selectedAsset && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full overflow-hidden flex flex-col h-[95vh] sm:h-auto sm:max-h-[90vh] max-w-4xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[95vh] max-w-4xl">
             {/* Header Modal */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs tracking-wider ${
+            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50 shrink-0">
+              <div className="flex items-center gap-4 sm:gap-5">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xs tracking-wider ${
                   selectedAsset.trackingType === 'SERIALIZED' ? 'bg-indigo-600' : 'bg-orange-500'
                 }`}>
                   {selectedAsset.trackingType === 'SERIALIZED' ? 'SER' : 'NON'}
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 leading-tight">{selectedAsset.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight truncate">{selectedAsset.name}</h3>
                   <p className="text-sm text-gray-500 font-mono">{selectedAsset.id} &middot; Rak {selectedAsset.rackLocation}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-gray-50 p-2 rounded-full">
+              <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-white p-2 rounded-full border border-gray-200">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
             {/* Content for both SERIALIZED and NON_SERIALIZED */}
-            <div className="flex-1 overflow-y-auto bg-gray-50 p-6 flex flex-col gap-4">
+            <div className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm shrink-0">
                   <div>
                     <h4 className="font-bold text-gray-900 text-sm">Daftar Unit Tersimpan ({selectedAsset.totalStock})</h4>
@@ -677,9 +677,9 @@ export default function AssetMaster() {
                     </table>
 
                     {/* Mobile Cards for Units */}
-                    <div className="md:hidden p-4 space-y-4">
+                    <div className="md:hidden p-2 sm:p-4 space-y-3 sm:space-y-4">
                       {selectedAsset.trackingType === 'NON_SERIALIZED' ? (
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                        <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
                           <div className="flex justify-between items-start gap-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 bg-white border border-gray-200 rounded p-1 shadow-sm shrink-0">
@@ -727,7 +727,7 @@ export default function AssetMaster() {
                       ).map(unit => {
                         const isAvailable = unit.status === 'Tersedia'
                         return (
-                          <div key={unit.unitId} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-4">
+                          <div key={unit.unitId} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
                             <div className="flex justify-between items-start gap-4">
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-white border border-gray-200 rounded p-1 shadow-sm shrink-0">
@@ -736,7 +736,6 @@ export default function AssetMaster() {
                                       <div key={j} className={Math.random() > 0.5 ? 'bg-gray-800' : 'bg-transparent'} />
                                     ))}
                                   </div>
-                                  <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.id} (Master)</span>
                                 </div>
                                 <div className="min-w-0">
                                   <h3 className="font-mono font-bold text-sm text-indigo-700 leading-tight">{unit.unitId}</h3>
@@ -838,10 +837,10 @@ export default function AssetMaster() {
 
       {/* ── Edit Profil Barang Modal ── */}
       {editingAssetId && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">Edit Profil Barang</h3>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900">Edit Data Barang</h3>
               <button onClick={() => setEditingAssetId(null)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
@@ -886,8 +885,8 @@ export default function AssetMaster() {
 
       {/* ── Riwayat Unit Modal ── */}
       {historyModalUnit && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col h-[90vh] sm:h-auto sm:max-h-[85vh]">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -901,7 +900,7 @@ export default function AssetMaster() {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto flex-1 bg-gray-50">
+            <div className="p-4 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1 bg-gray-50">
               {historyModalUnit.history.length === 0 ? (
                 <div className="text-center py-10">
                   <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
