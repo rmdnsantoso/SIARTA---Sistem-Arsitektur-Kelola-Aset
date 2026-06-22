@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import AdminSidebar from '../../components/admin/AdminSidebar'
-import TopHeader from '../../components/dashboard/TopHeader'
-import AnalyticsContent from '../../components/dashboard/AnalyticsContent'
+import TopHeader from '../../components/shared/TopHeader'
+import AnalyticsContent from '../../components/shared/AnalyticsContent'
 import UserManagement from '../../components/admin/UserManagement'
 import AssetMaster from '../../components/admin/AssetMaster'
 import BorrowingProcess from '../../components/admin/BorrowingProcess'

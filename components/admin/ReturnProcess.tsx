@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Ticket } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
-import StatCard from '../dashboard/StatCard'
+import StatCard from '../shared/StatCard'
 
 interface Props {
   tickets?: Ticket[]

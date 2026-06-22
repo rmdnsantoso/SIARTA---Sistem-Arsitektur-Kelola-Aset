@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
-import StatCard from '../dashboard/StatCard'
+import StatCard from '../shared/StatCard'
 interface Props {
   tickets: Ticket[]
   onUpdateTickets: React.Dispatch<React.SetStateAction<Ticket[]>>
@@ -17,7 +17,7 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
   }
   return (
     <div className="flex flex-col items-start gap-1">
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${map[status] || map.Menunggu}`}>
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${map[status] || map.Menunggu}`}>
         {status}
       </span>
       {status === 'Menunggu' && (
