@@ -7,6 +7,7 @@ import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
 import { initialTickets } from '../../lib/dummyData'
+import NotificationDropdown from '../../components/peminjam/NotificationDropdown'
 
 export default function PeminjamDashboard() {
   const [activeNav, setActiveNav] = useState('Katalog Alat')
@@ -26,14 +27,18 @@ export default function PeminjamDashboard() {
         activeNav={activeNav}
         setActiveNav={setActiveNav}
       />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen}
           userName="Ahmad"
           roleName="Peminjam"
         />
-        
+
+        <div className="absolute top-3 right-[88px] sm:right-[104px] z-10">
+          <NotificationDropdown tickets={tickets} peminjamName="Ahmad" />
+        </div>
+
         <div className="flex-1 overflow-auto p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900">{activeNav}</h1>
@@ -52,4 +57,3 @@ export default function PeminjamDashboard() {
     </div>
   )
 }
-
