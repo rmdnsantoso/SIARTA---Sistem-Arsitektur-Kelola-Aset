@@ -112,7 +112,7 @@ export default function ApprovalDashboard() {
           {activeNav === 'Verifikasi Pinjam' && (
             <>
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 shrink-0">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 shrink-0">
                 {stats.map((card) => (
                   <StatCard key={card.label} {...card} />
                 ))}
