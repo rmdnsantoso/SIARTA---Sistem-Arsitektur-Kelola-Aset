@@ -7,8 +7,9 @@ interface HistoryTicket {
   id: string
   assetName: string
   serialNumber?: string
-  dateCompleted: string
-  status: 'Selesai Diperbaiki' | 'Dimusnahkan'
+  dateReported: string
+  dateCompleted?: string
+  status: 'Laporan Masuk' | 'Selesai Diperbaiki' | 'Dimusnahkan'
   notes: string
   reporter: string
   photoUrl?: string
@@ -16,19 +17,15 @@ interface HistoryTicket {
 }
 
 const historyData: HistoryTicket[] = [
-  { id: 'ESC-004', assetName: 'Proyektor Epson', serialNumber: 'PRJ-05', dateCompleted: '10 Jun 2026', status: 'Dimusnahkan', notes: 'Lampu dan lensa pecah total akibat jatuh dari ketinggian.', reporter: 'Agus (Admin)', photoUrl: 'https://images.unsplash.com/photo-1544257121-654859a22f35?w=500&q=80', timestamp: '09 Jun 2026 14:20:00' },
-  { id: 'ESC-009', assetName: 'Mesin Las Travo Rhino', serialNumber: 'RN-004', dateCompleted: '13 Jun 2026', status: 'Dimusnahkan', notes: 'Mati total dan korslet berasap.', reporter: 'Siti (Admin)', photoUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&q=80' },
-  { id: 'ESC-013', assetName: 'Helm Proyek MSA', dateCompleted: '15 Jun 2026', status: 'Dimusnahkan', notes: 'Retak struktural, tidak aman untuk keselamatan pekerja.', reporter: 'Budi (Admin)' },
-  { id: 'ESC-019', assetName: 'Kursi Kantor Ergonomis', serialNumber: 'KRS-15', dateCompleted: '17 Jun 2026', status: 'Dimusnahkan', notes: 'Patah pada sumbu utama hidrolik.', reporter: 'Agus (Admin)' },
-  { id: 'ESC-A01', assetName: 'Laptop Dell Latitude', serialNumber: 'DLL-012', dateCompleted: '01 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Baterai drop mati mendadak dan kipas sangat berisik.', reporter: 'Siti (Admin)', photoUrl: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&q=80', timestamp: '28 May 2026 09:15:22' },
-  { id: 'ESC-A02', assetName: 'Printer HP LaserJet', serialNumber: 'HP-L01', dateCompleted: '02 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Hasil cetakan bergaris hitam memanjang.', reporter: 'Budi (Admin)' },
-  { id: 'ESC-A03', assetName: 'Bor Listrik Bosch', serialNumber: 'BS-09', dateCompleted: '05 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Kabel power terkelupas dan percikan api di motor.', reporter: 'Agus (Admin)' },
-  { id: 'ESC-A04', assetName: 'Monitor LG 24"', serialNumber: 'MN-LG-04', dateCompleted: '06 Jun 2026', status: 'Dimusnahkan', notes: 'Panel LCD pecah tertimpa barang.', reporter: 'Siti (Admin)' },
-  { id: 'ESC-A05', assetName: 'Genset Yamaha', serialNumber: 'GN-Y01', dateCompleted: '08 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Mesin sering mati sendiri saat beban puncak.', reporter: 'Budi (Admin)' },
-  { id: 'ESC-A06', assetName: 'HT Icom V80', serialNumber: 'IC-02', dateCompleted: '09 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Antena bengkok patah dan suara kresek-kresek.', reporter: 'Agus (Admin)' },
+  { id: 'ESC-001', assetName: 'Gas Detector MSA Altair', serialNumber: 'SN-002', dateReported: '14 Jun 2026', status: 'Laporan Masuk', notes: 'Sensor O2 error saat kalibrasi, pembacaan tidak stabil.', reporter: 'Siti (Admin)', photoUrl: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=500&q=80' },
+  { id: 'ESC-002', assetName: 'Bor Listrik Makita', serialNumber: 'BR-014', dateReported: '15 Jun 2026', status: 'Laporan Masuk', notes: 'Kabel power terkelupas parah, berasap saat dinyalakan.', reporter: 'Agus (Admin)', photoUrl: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&q=80', timestamp: '15 Jun 2026 10:20:05' },
+  { id: 'ESC-004', assetName: 'Proyektor Epson', serialNumber: 'PRJ-05', dateReported: '09 Jun 2026', dateCompleted: '10 Jun 2026', status: 'Dimusnahkan', notes: 'Lampu dan lensa pecah total akibat jatuh dari ketinggian.', reporter: 'Agus (Admin)', photoUrl: 'https://images.unsplash.com/photo-1544257121-654859a22f35?w=500&q=80', timestamp: '09 Jun 2026 14:20:00' },
+  { id: 'ESC-A01', assetName: 'Laptop Dell Latitude', serialNumber: 'DLL-012', dateReported: '28 May 2026', dateCompleted: '01 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Baterai drop mati mendadak dan kipas sangat berisik.', reporter: 'Siti (Admin)', photoUrl: 'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=500&q=80', timestamp: '28 May 2026 09:15:22' },
+  { id: 'ESC-A02', assetName: 'Printer HP LaserJet', serialNumber: 'HP-L01', dateReported: '30 May 2026', dateCompleted: '02 Jun 2026', status: 'Selesai Diperbaiki', notes: 'Hasil cetakan bergaris hitam memanjang.', reporter: 'Budi (Admin)' },
+  { id: 'ESC-A04', assetName: 'Monitor LG 24"', serialNumber: 'MN-LG-04', dateReported: '01 Jun 2026', dateCompleted: '06 Jun 2026', status: 'Dimusnahkan', notes: 'Panel LCD pecah tertimpa barang.', reporter: 'Siti (Admin)' },
 ]
 
-export default function MaintenanceHistory() {
+export default function MaintenanceHistoryAreaHead() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [selectedTicket, setSelectedTicket] = useState<HistoryTicket | null>(null)
@@ -49,12 +46,19 @@ export default function MaintenanceHistory() {
   return (
     <div className="space-y-6 font-sans relative animate-fade-in">
       {/* ── Statcards ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
         <StatCard 
           label="Total Riwayat Tercatat" 
           value={historyData.length} 
           iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
           colorTheme="default"
+        />
+        <StatCard 
+          label="Laporan Masuk" 
+          value={historyData.filter(d => d.status === 'Laporan Masuk').length} 
+          iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+          colorTheme="amber"
+          sub="Menunggu tindakan admin"
         />
         <StatCard 
           label="Selesai Diperbaiki" 
@@ -96,18 +100,19 @@ export default function MaintenanceHistory() {
                 className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64 shadow-sm transition-colors"
               />
             </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value)
-                setCurrentPage(1)
-              }}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-blue-500 w-full lg:w-auto"
-            >
-              <option value="Semua">Semua Status</option>
-              <option value="Selesai Diperbaiki">Selesai Diperbaiki</option>
-              <option value="Dimusnahkan">Dimusnahkan</option>
-            </select>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-blue-500 w-full lg:w-auto"
+                >
+                  <option>Semua</option>
+                  <option>Laporan Masuk</option>
+                  <option>Selesai Diperbaiki</option>
+                  <option>Dimusnahkan</option>
+                </select>
           </div>
         </div>
 
@@ -122,7 +127,8 @@ export default function MaintenanceHistory() {
                 <div className="text-right shrink-0">
                   <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider font-bold border whitespace-nowrap ${
                     item.status === 'Selesai Diperbaiki' ? 'bg-green-50 text-green-700 border-green-200' :
-                    'bg-gray-100 text-gray-600 border-gray-200'
+                    item.status === 'Laporan Masuk' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                    'bg-red-50 text-red-700 border-red-200'
                   }`}>
                     {item.status}
                   </span>
@@ -131,12 +137,12 @@ export default function MaintenanceHistory() {
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                 <div>
-                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">ID Eskalasi</p>
-                  <p className="font-bold text-gray-900 text-xs sm:text-sm font-mono">{item.id}</p>
+                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Tgl Dilaporkan</p>
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm">{item.dateReported}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Tgl Selesai</p>
-                  <p className="font-bold text-gray-900 text-xs sm:text-sm">{item.dateCompleted}</p>
+                  <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Selesai/Dimusnahkan</p>
+                  <p className="font-bold text-gray-900 text-xs sm:text-sm">{item.dateCompleted || '-'}</p>
                 </div>
               </div>
 
@@ -170,16 +176,16 @@ export default function MaintenanceHistory() {
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Aset Terkait</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Pelapor</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Status Akhir</th>
-                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tanggal Eksekusi</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tanggal Masuk</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Selesai/Dimusnahkan</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider min-w-[250px]">Keterangan Kerusakan</th>
                 <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {/* Removed redundant empty state check, handled internally by loop length > 0 typically but keep if needed */}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400 font-medium">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400 font-medium">
                     Tidak ada riwayat yang ditemukan.
                   </td>
                 </tr>
@@ -198,15 +204,19 @@ export default function MaintenanceHistory() {
                     <p className="text-sm font-medium text-gray-900">{item.reporter}</p>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider font-bold border ${
-                      item.status === 'Selesai Diperbaiki' ? 'bg-green-50 text-green-700 border-green-200' :
-                      'bg-gray-100 text-gray-600 border-gray-200'
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider font-bold border shadow-sm ${
+                      item.status === 'Selesai Diperbaiki' ? 'bg-green-50 text-green-700 border-green-200' : 
+                      item.status === 'Laporan Masuk' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      'bg-red-50 text-red-700 border-red-200'
                     }`}>
                       {item.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <p className="text-sm font-medium text-gray-900">{item.dateCompleted}</p>
+                    <p className="text-sm font-bold text-gray-900">{item.dateReported}</p>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <p className="text-sm font-bold text-gray-900">{item.dateCompleted || '-'}</p>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-sm text-gray-700 leading-relaxed line-clamp-2" title={item.notes}>{item.notes}</p>
@@ -271,7 +281,7 @@ export default function MaintenanceHistory() {
       {/* ── Detail Modal ────────────────────────────────────────────────── */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-w-2xl max-h-[85vh]">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-w-2xl max-h-[90vh]">
             
             <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
               <div>
@@ -310,7 +320,7 @@ export default function MaintenanceHistory() {
                   </div>
                   <div className="mt-3">
                     <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Tanggal Eksekusi</p>
-                    <p className="text-sm font-medium text-gray-900">{selectedTicket.dateCompleted}</p>
+                    <p className="text-sm font-medium text-gray-900">{selectedTicket.dateCompleted || '-'}</p>
                   </div>
                 </div>
               </div>
@@ -320,9 +330,10 @@ export default function MaintenanceHistory() {
                 <div className="flex-1">
                   <h5 className="text-sm font-bold text-gray-900 mb-2">Status Akhir</h5>
                   <div className="mb-6">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] uppercase tracking-wider font-bold border ${
-                      selectedTicket.status === 'Selesai Diperbaiki' ? 'bg-green-50 text-green-700 border-green-200' :
-                      'bg-gray-100 text-gray-600 border-gray-200'
+                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest border shadow-sm ${
+                      selectedTicket.status === 'Selesai Diperbaiki' ? 'bg-green-100 text-green-700 border-green-200' : 
+                      selectedTicket.status === 'Laporan Masuk' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                      'bg-red-100 text-red-700 border-red-200'
                     }`}>
                       {selectedTicket.status}
                     </span>

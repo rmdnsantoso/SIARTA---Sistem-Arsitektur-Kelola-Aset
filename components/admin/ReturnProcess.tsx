@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Ticket } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
-import StatCard from '../dashboard/StatCard'
+import StatCard from '../shared/StatCard'
 
 interface Props {
   tickets?: Ticket[]
@@ -349,7 +349,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
       {/* MODAL PENGEMBALIAN */}
       {modalTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-h-[90vh] max-w-lg">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-h-[85vh] max-w-lg">
             
             {/* Modal Header */}
             <div className="px-4 sm:px-6 py-4 sm:py-5 border-b shrink-0 bg-gray-900 text-white">

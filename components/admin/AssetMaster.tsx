@@ -76,7 +76,7 @@ const initialAssets: Asset[] = [
 
 const TRACKING_FILTERS = ['Semua', 'SERIALIZED', 'NON_SERIALIZED']
 
-export default function AssetMaster() {
+export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boolean }) {
   const [assets, setAssets] = useState<Asset[]>(initialAssets)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
@@ -250,24 +250,28 @@ export default function AssetMaster() {
       {/* ── Toolbar ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="px-4 py-4 sm:px-6 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div className="relative w-full sm:w-72">
-              <input
-                type="text"
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Cari ID atau nama aset..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Cari nama atau ID aset..."
-                className="w-full border border-gray-300 rounded-md pl-9 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               />
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center justify-center gap-2 shadow-sm shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              Tambah Barang
-            </button>
+            {!isViewOnly && (
+              <button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                Input Barang Baru
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             {TRACKING_FILTERS.map(f => (
@@ -339,27 +343,29 @@ export default function AssetMaster() {
                       className="flex-1 py-1.5 sm:py-2 px-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 min-w-0"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                      <span className="truncate">Kelola Unit & QR</span>
+                      <span className="truncate">{isViewOnly ? 'Lihat Unit' : 'Kelola Unit & QR'}</span>
                     </button>
-                    <div className="flex gap-2 justify-center shrink-0">
-                      <button
-                        onClick={() => {
-                          setEditingAssetId(a.id);
-                          setEditForm({ name: a.name, rackLocation: a.rackLocation, imageUrl: a.imageUrl || '' });
-                        }}
-                        className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
-                        title="Edit Profil Barang"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAsset(a.id)}
-                        className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
-                        title="Hapus Barang"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
-                    </div>
+                    {!isViewOnly && (
+                      <div className="flex gap-2 justify-center shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditingAssetId(a.id);
+                            setEditForm({ name: a.name, rackLocation: a.rackLocation, imageUrl: a.imageUrl || '' });
+                          }}
+                          className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                          title="Edit Profil Barang"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAsset(a.id)}
+                          className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
+                          title="Hapus Barang"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -379,7 +385,7 @@ export default function AssetMaster() {
 
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-base sm:text-lg font-bold text-gray-900">Input Barang Baru</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -476,7 +482,7 @@ export default function AssetMaster() {
       {/* ── Manage Units & QR Modal ── */}
       {selectedAsset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[95vh] max-w-4xl">
+          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[85vh] max-w-3xl">
             {/* Header Modal */}
             <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50 shrink-0">
               <div className="flex items-center gap-4 sm:gap-5">
@@ -515,27 +521,26 @@ export default function AssetMaster() {
                         />
                       </div>
                     )}
-                    {selectedAsset.trackingType === 'SERIALIZED' && (
-                      <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+                    {!isViewOnly && selectedAsset.trackingType === 'SERIALIZED' && (
+                      <div className="flex items-center gap-2 sm:border-l border-gray-200 sm:pl-3 w-full sm:w-auto">
                         <input 
                           type="number" 
-                          id="add-units-qty"
+                          id="add-qty-input"
                           defaultValue="1" 
-                          className="w-16 border border-gray-300 rounded-lg text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
+                          min="1"
+                          className="w-20 border border-gray-300 rounded text-sm px-2 focus:ring-2 focus:ring-indigo-500 outline-none" 
                         />
-                        <button 
+                        <button
                           onClick={() => {
-                            const input = document.getElementById('add-units-qty') as HTMLInputElement;
+                            const input = document.getElementById('add-qty-input') as HTMLInputElement;
                             const count = parseInt(input.value) || 0;
-                            if (count === 0) return;
-                            if (count < 0) return alert('Kuantitas unit Serialized tidak bisa dikurangi secara bulk.');
-                            handleAddUnitSerialized(selectedAsset.id, count);
+                            if (count > 0) handleAddUnitSerialized(selectedAsset.id, count);
                             input.value = '1';
                           }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 rounded-lg text-sm font-bold transition-colors border border-indigo-200 whitespace-nowrap"
+                          className="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                          Tambah Unit
+                          Tambah Unit Fisik
                         </button>
                       </div>
                     )}
@@ -572,38 +577,40 @@ export default function AssetMaster() {
                               </td>
                               <td className="px-6 py-4 text-center">
                                   <div className="flex flex-col items-center gap-1">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-green-100 text-green-800">
                                       {selectedAsset.availableStock} Tersedia
                                     </span>
                                     {selectedAsset.totalStock - selectedAsset.availableStock > 0 && (
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800">
                                         {selectedAsset.totalStock - selectedAsset.availableStock} Dipinjam
                                       </span>
                                     )}
                                   </div>
                               </td>
                               <td className="px-6 py-4 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-2">
-                                  <input 
-                                    type="number" 
-                                    id="adjust-qty-bulk-table"
-                                    defaultValue="1" 
-                                    className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
-                                  />
-                                  <button
-                                    onClick={() => {
-                                      const input = document.getElementById('adjust-qty-bulk-table') as HTMLInputElement;
-                                      const count = parseInt(input.value) || 0;
-                                      if (count === 0) return;
-                                      handleAdjustBulkStock(selectedAsset.id, count);
-                                      input.value = '1';
-                                    }}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-1.5 rounded-md hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
-                                    title="Tambah/Kurangi Stok Massal"
-                                  >
-                                    Update Stok
-                                  </button>
-                                </div>
+                                {!isViewOnly && (
+                                  <div className="flex items-center justify-end gap-2">
+                                    <input 
+                                      type="number" 
+                                      id="adjust-qty-bulk-table"
+                                      defaultValue="1" 
+                                      className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
+                                    />
+                                    <button
+                                      onClick={() => {
+                                        const input = document.getElementById('adjust-qty-bulk-table') as HTMLInputElement;
+                                        const count = parseInt(input.value) || 0;
+                                        if (count === 0) return;
+                                        handleAdjustBulkStock(selectedAsset.id, count);
+                                        input.value = '1';
+                                      }}
+                                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-1.5 rounded-md hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
+                                      title="Tambah/Kurangi Stok Massal"
+                                    >
+                                      Update Stok
+                                    </button>
+                                  </div>
+                                )}
                               </td>
                             </tr>
                         ) : selectedAsset.units.filter(u => 
@@ -627,20 +634,24 @@ export default function AssetMaster() {
                               </td>
                               <td className="px-6 py-4">
                                 {selectedAsset.trackingType === 'SERIALIZED' ? (
-                                  <input 
-                                    type="text"
-                                    value={unit.serialNumber}
-                                    onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
-                                    placeholder="Masukkan S/N Pabrik..."
-                                    className="w-full max-w-[200px] border border-gray-300 rounded text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono placeholder:font-sans placeholder:text-gray-300 transition-all"
-                                  />
+                                  isViewOnly ? (
+                                    <span className="text-gray-900 font-mono text-sm">{unit.serialNumber || '-'}</span>
+                                  ) : (
+                                    <input 
+                                      type="text"
+                                      value={unit.serialNumber}
+                                      onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                                      placeholder="Masukkan S/N Pabrik..."
+                                      className="w-full max-w-[200px] border border-gray-300 rounded text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono placeholder:font-sans placeholder:text-gray-300 transition-all"
+                                    />
+                                  )
                                 ) : (
                                   <span className="text-gray-400 font-mono text-sm italic">N/A (Non-Serialized)</span>
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  isAvailable ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                                  unit.status === 'Tersedia' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                   {unit.status}
                                 </span>
@@ -648,26 +659,31 @@ export default function AssetMaster() {
                               <td className="px-6 py-4 whitespace-nowrap text-right">
                                 <div className="flex items-center justify-end gap-2">
                                   <button
-                                    onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 py-1.5 rounded-md hover:bg-gray-100 hover:text-gray-900 transition-colors shadow-sm"
-                                    title="Cetak Satuan"
-                                  >
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                  </button>
-                                  <button
                                     onClick={() => setHistoryModalUnit(unit)}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 py-1.5 rounded-md hover:bg-blue-50 hover:text-blue-700 transition-colors shadow-sm"
-                                    title="Lihat Riwayat"
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1.5 rounded-md hover:bg-blue-100 transition-colors"
+                                    title="Lihat Riwayat & Log Unit"
                                   >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Riwayat
                                   </button>
-                                  <button
-                                    onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 py-1.5 rounded-md hover:bg-red-50 hover:text-red-700 transition-colors shadow-sm"
-                                    title="Musnahkan/Hapus Unit"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                  </button>
+                                  {!isViewOnly && (
+                                    <button
+                                      onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
+                                      className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 py-1.5 rounded-md hover:bg-gray-50 transition-colors shadow-sm"
+                                      title="Cetak Stiker QR Individual"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                      Cetak
+                                    </button>
+                                  )}
+                                  {!isViewOnly && (
+                                    <button
+                                      onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
+                                      className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 py-1.5 rounded-md hover:bg-red-50 hover:text-red-700 transition-colors shadow-sm"
+                                      title="Musnahkan/Hapus Unit"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -700,26 +716,28 @@ export default function AssetMaster() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex justify-end gap-2 items-center">
-                            <input 
-                              type="number" 
-                              id="adjust-qty-bulk-mobile"
-                              defaultValue="1" 
-                              className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
-                            />
-                            <button
-                              onClick={() => {
-                                const input = document.getElementById('adjust-qty-bulk-mobile') as HTMLInputElement;
-                                const count = parseInt(input.value) || 0;
-                                if (count === 0) return;
-                                handleAdjustBulkStock(selectedAsset.id, count);
-                                input.value = '1';
-                              }}
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
-                            >
-                              Update Stok
-                            </button>
-                          </div>
+                          {!isViewOnly && (
+                            <div className="flex justify-end gap-2 items-center mt-4">
+                              <input 
+                                type="number" 
+                                id="adjust-qty-bulk-mobile"
+                                defaultValue="1" 
+                                className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
+                              />
+                              <button
+                                onClick={() => {
+                                  const input = document.getElementById('adjust-qty-bulk-mobile') as HTMLInputElement;
+                                  const count = parseInt(input.value) || 0;
+                                  if (count === 0) return;
+                                  handleAdjustBulkStock(selectedAsset.id, count);
+                                  input.value = '1';
+                                }}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
+                              >
+                                Update Stok
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : selectedAsset.units.filter(u => 
                         u.unitId.toLowerCase().includes(unitSearchQuery.toLowerCase()) || 
@@ -750,36 +768,41 @@ export default function AssetMaster() {
                               </div>
                             </div>
                             <div>
-                              <input 
-                                type="text"
-                                value={unit.serialNumber}
-                                onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
-                                placeholder="Masukkan S/N Pabrik..."
-                                className="w-full border border-gray-300 rounded text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans transition-all"
-                              />
+                              {isViewOnly ? (
+                                <p className="text-sm font-mono text-gray-900 border border-transparent px-3 py-2">S/N: {unit.serialNumber || '-'}</p>
+                              ) : (
+                                <input 
+                                  type="text"
+                                  value={unit.serialNumber}
+                                  onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                                  placeholder="Masukkan S/N Pabrik..."
+                                  className="w-full border border-gray-300 rounded text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans transition-all"
+                                />
+                              )}
                             </div>
-                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-                              <button
-                                onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
-                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-w-0"
-                              >
-                                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                <span className="truncate">Cetak</span>
-                              </button>
+                            <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2 pt-2 border-t border-gray-100">
                               <button
                                 onClick={() => setHistoryModalUnit(unit)}
-                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm min-w-0"
+                                className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm min-w-0"
                               >
-                                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span className="truncate">Riwayat</span>
+                                Riwayat
                               </button>
-                              <button
-                                onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
-                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors shadow-sm min-w-0"
-                              >
-                                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                <span className="truncate">Hapus</span>
-                              </button>
+                              {!isViewOnly && (
+                                <>
+                                  <button
+                                    onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
+                                    className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-w-0"
+                                  >
+                                    Cetak
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
+                                    className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-red-50 transition-colors shadow-sm min-w-0"
+                                  >
+                                    Hapus
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         )
@@ -797,7 +820,7 @@ export default function AssetMaster() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {selectedAsset.trackingType === 'NON_SERIALIZED' && (
+                {!isViewOnly && selectedAsset.trackingType === 'NON_SERIALIZED' && (
                   <div className="order-1 flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white h-10 w-full sm:w-auto">
                     <span className="px-3 text-sm text-gray-500 bg-gray-50 border-r border-gray-300 h-full flex items-center font-medium whitespace-nowrap">Jml Cetak</span>
                     <input 
@@ -810,25 +833,27 @@ export default function AssetMaster() {
                   </div>
                 )}
                 <button onClick={() => setSelectedAsset(null)} className="order-3 sm:order-2 w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Selesai</button>
-                <button
-                  onClick={() => { 
-                    if (selectedAsset.trackingType === 'SERIALIZED') {
-                      alert(`Mencetak BATCH ${selectedAsset.totalStock} stiker QR untuk ${selectedAsset.name}...`); 
-                      setSelectedAsset(null);
-                    } else {
-                      const input = document.getElementById('print-qty') as HTMLInputElement;
-                      const count = parseInt(input?.value) || 0;
-                      if (count > 0) {
-                        alert(`Mencetak ${count} lembar stiker QR Master...`);
+                {!isViewOnly && (
+                  <button
+                    onClick={() => { 
+                      if (selectedAsset.trackingType === 'SERIALIZED') {
+                        alert(`Mencetak BATCH ${selectedAsset.totalStock} stiker QR untuk ${selectedAsset.name}...`); 
                         setSelectedAsset(null);
+                      } else {
+                        const input = document.getElementById('print-qty') as HTMLInputElement;
+                        const count = parseInt(input?.value) || 0;
+                        if (count > 0) {
+                          alert(`Mencetak ${count} lembar stiker QR Master...`);
+                          setSelectedAsset(null);
+                        }
                       }
-                    }
-                  }}
-                  className="order-2 sm:order-3 w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                  <span className="truncate">{selectedAsset.trackingType === 'SERIALIZED' ? `Cetak Semua Label (${selectedAsset.totalStock})` : 'Cetak Label Master'}</span>
-                </button>
+                    }}
+                    className="order-2 sm:order-3 w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                    <span className="truncate">{selectedAsset.trackingType === 'SERIALIZED' ? `Cetak Semua Label (${selectedAsset.totalStock})` : 'Cetak Label Master'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -838,7 +863,7 @@ export default function AssetMaster() {
       {/* ── Edit Profil Barang Modal ── */}
       {editingAssetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-base sm:text-lg font-bold text-gray-900">Edit Data Barang</h3>
               <button onClick={() => setEditingAssetId(null)} className="text-gray-400 hover:text-gray-600">

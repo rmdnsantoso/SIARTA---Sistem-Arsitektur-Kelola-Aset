@@ -1,4 +1,4 @@
-import StatCard from '../dashboard/StatCard'
+import StatCard from '../shared/StatCard'
 
 export default function AdminInfographics() {
   const stats = [

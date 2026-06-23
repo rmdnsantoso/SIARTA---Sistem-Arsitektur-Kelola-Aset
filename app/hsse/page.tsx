@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import HSSESidebar from '../../components/hsse/HSSESidebar'
-import TopHeader from '../../components/dashboard/TopHeader'
+import TopHeader from '../../components/shared/TopHeader'
 import { initialTickets } from '../../lib/dummyData'
 import BorrowingProcess from '../../components/admin/BorrowingProcess'
 import ReturnProcess from '../../components/admin/ReturnProcess'
