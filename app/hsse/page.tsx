@@ -22,8 +22,15 @@ export default function HSSEDashboard() {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900">
+      {sidebarOpen && (
+  <div
+    className="fixed inset-0 bg-black/40 z-30 md:hidden"
+    onClick={() => setSidebarOpen(false)}
+  />
+)}
       <HSSESidebar
         sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         pendingCount={hssePendingCount}
