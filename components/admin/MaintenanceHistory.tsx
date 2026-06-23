@@ -271,7 +271,7 @@ export default function MaintenanceHistory() {
       {/* ── Detail Modal ────────────────────────────────────────────────── */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-w-2xl max-h-[90vh]">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-w-2xl max-h-[85vh]">
             
             <div className="px-6 py-4 border-b flex items-center justify-between bg-gray-50">
               <div>

@@ -385,7 +385,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
 
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-base sm:text-lg font-bold text-gray-900">Input Barang Baru</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
@@ -482,7 +482,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       {/* ── Manage Units & QR Modal ── */}
       {selectedAsset && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[95vh] max-w-4xl">
+          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[85vh] max-w-3xl">
             {/* Header Modal */}
             <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50 shrink-0">
               <div className="flex items-center gap-4 sm:gap-5">
@@ -522,7 +522,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                       </div>
                     )}
                     {!isViewOnly && selectedAsset.trackingType === 'SERIALIZED' && (
-                      <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+                      <div className="flex items-center gap-2 sm:border-l border-gray-200 sm:pl-3 w-full sm:w-auto">
                         <input 
                           type="number" 
                           id="add-qty-input"
@@ -780,10 +780,10 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                 />
                               )}
                             </div>
-                            <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                            <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2 pt-2 border-t border-gray-100">
                               <button
                                 onClick={() => setHistoryModalUnit(unit)}
-                                className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm min-w-0"
+                                className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm min-w-0"
                               >
                                 Riwayat
                               </button>
@@ -791,13 +791,13 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                 <>
                                   <button
                                     onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
-                                    className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-w-0"
+                                    className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-w-0"
                                   >
                                     Cetak
                                   </button>
                                   <button
                                     onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
-                                    className="flex-1 inline-flex justify-center items-center gap-1 text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 py-2 rounded-lg hover:bg-red-50 transition-colors shadow-sm min-w-0"
+                                    className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-red-50 transition-colors shadow-sm min-w-0"
                                   >
                                     Hapus
                                   </button>
@@ -863,7 +863,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       {/* ── Edit Profil Barang Modal ── */}
       {editingAssetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
               <h3 className="text-base sm:text-lg font-bold text-gray-900">Edit Data Barang</h3>
               <button onClick={() => setEditingAssetId(null)} className="text-gray-400 hover:text-gray-600">

@@ -512,7 +512,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       {/* MODAL ALOKASI / KONFIRMASI / DETAIL */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full max-h-[90vh] max-w-4xl' : 'w-full max-w-sm'}`}>
+          <div className={`bg-white shadow-2xl flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl ${modal.type === 'setujui' || modal.type === 'detail' ? 'w-full max-h-[85vh] max-w-3xl' : 'w-full max-w-sm'}`}>
             
             {/* Modal Header */}
             <div className={`px-4 sm:px-6 py-4 sm:py-5 border-b shrink-0 ${
@@ -546,7 +546,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Scan Unit ID / QR Code</label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                       <input 
                         type="text" 
                         value={currentScan}
@@ -554,7 +554,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         placeholder="Scan atau ketik SN..."
                         className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 outline-none"
                       />
-                      <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50">Tambah</button>
+                      <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50 whitespace-nowrap shrink-0">Tambah</button>
                     </div>
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
@@ -584,19 +584,19 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-xl">
                     <p className="text-sm text-blue-800 font-medium mb-2">Scan 1 QR Fisik Saja (Otomatis mewakili seluruh {modal.ticket.jumlah} unit)</p>
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
                       <input 
                         type="text" 
                         value={currentScan}
                         onChange={e => setCurrentScan(e.target.value)}
                         placeholder="Scan Stiker QR..."
-                        className="flex-1 px-4 py-2 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                        className="flex-1 px-4 py-2 sm:py-3 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                         disabled={allocatedSerials.length >= 1}
                       />
                       <button 
                         onClick={handleAddSerial}
                         disabled={!currentScan.trim() || allocatedSerials.length >= 1}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold disabled:opacity-50"
+                        className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-xl text-sm font-bold disabled:opacity-50 whitespace-nowrap shrink-0"
                       >
                         Verifikasi Sekaligus
                       </button>

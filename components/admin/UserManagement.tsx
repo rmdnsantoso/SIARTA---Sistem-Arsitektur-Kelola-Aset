@@ -293,7 +293,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       {/* DETAIL MODAL (Tengah) */}
       {selectedUser && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden transform transition-transform">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden transform transition-transform">
             
             {/* Header */}
             <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50/50 shrink-0">
