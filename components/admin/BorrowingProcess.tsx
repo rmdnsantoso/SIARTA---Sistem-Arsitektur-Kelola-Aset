@@ -4,14 +4,15 @@ import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
+import InlineQRScanner from '../shared/InlineQRScanner'
 
 interface Props {
   tickets?: Ticket[]
 }
 
-type ActionModal = {
+type ModalState = {
   ticket: Ticket
-  type: 'setujui' | 'tolak' | 'serah_terima'
+  type: 'setujui' | 'tolak' | 'serah_terima' | 'detail'
 }
 
 function ConflictWarning({ conflictWith }: { conflictWith: string }) {
@@ -33,15 +34,11 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
   
   // State khusus Alokasi Fisik
   const [catatan, setCatatan] = useState('')
+  const [modal, setModal] = useState<ModalState | null>(null)
 
   const [allocatedSerials, setAllocatedSerials] = useState<string[]>([])
   const [currentScan, setCurrentScan] = useState('')
-  
-  // Modal State
-  const [modal, setModal] = useState<{
-    type: 'setujui' | 'tolak' | 'serah_terima' | 'detail',
-    ticket: Ticket
-  } | null>(null)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   
   const [toast, setToast] = useState<string | null>(null)
   
@@ -470,21 +467,21 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
               <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
                 Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> pengajuan
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                 <button 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="h-8 px-3 flex items-center justify-center rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 >
                   Sebelumnya
                 </button>
                 
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center justify-center gap-1">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all shrink-0 ${
                         currentPage === page 
                           ? 'bg-blue-600 text-white shadow-md' 
                           : 'text-gray-500 hover:bg-gray-200 bg-transparent'
@@ -497,8 +494,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages || filteredTickets.length === 0}
-                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  disabled={currentPage === totalPages}
+                  className="h-8 px-3 flex items-center justify-center rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 >
                   Selanjutnya
                 </button>
@@ -532,7 +529,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
               </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-6 space-y-4 sm:space-y-6">
               {modal.type !== 'detail' && (
                 <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
                   <div className="text-sm font-bold text-gray-900">{modal.ticket.alat}</div>
@@ -547,15 +544,41 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Scan Unit ID / QR Code</label>
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                      <input 
-                        type="text" 
-                        value={currentScan}
-                        onChange={e => setCurrentScan(e.target.value)}
-                        placeholder="Scan atau ketik SN..."
-                        className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
+                      <div className="flex-1 relative">
+                        <input 
+                          type="text" 
+                          value={currentScan}
+                          onChange={e => setCurrentScan(e.target.value)}
+                          placeholder="Ketik SN..."
+                          className="w-full pl-3 sm:pl-4 pr-12 py-2 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                        <button 
+                          onClick={() => setIsScannerOpen(true)}
+                          disabled={allocatedSerials.length >= modal.ticket.jumlah}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                          title="Scan dengan Kamera"
+                        >
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </button>
+                      </div>
                       <button onClick={handleAddSerial} disabled={!currentScan.trim() || allocatedSerials.length >= modal.ticket.jumlah} className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-900 text-white rounded-xl text-sm font-bold disabled:opacity-50 whitespace-nowrap shrink-0">Tambah</button>
                     </div>
+                    {isScannerOpen && (
+                      <InlineQRScanner
+                        isOpen={isScannerOpen}
+                        onClose={() => setIsScannerOpen(false)}
+                        onScanSuccess={(text) => {
+                          const limit = modal.ticket.jumlah;
+                          if (allocatedSerials.length < limit && !allocatedSerials.includes(text.trim())) {
+                            setAllocatedSerials(prev => [...prev, text.trim()]);
+                            setIsScannerOpen(false); // Auto close after scan
+                          }
+                        }}
+                      />
+                    )}
                   </div>
                   <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
                     <div className="text-xs font-bold text-gray-500 mb-3 flex justify-between">
@@ -585,14 +608,27 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                   <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-xl">
                     <p className="text-sm text-blue-800 font-medium mb-2">Scan 1 QR Fisik Saja (Otomatis mewakili seluruh {modal.ticket.jumlah} unit)</p>
                     <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
-                      <input 
-                        type="text" 
-                        value={currentScan}
-                        onChange={e => setCurrentScan(e.target.value)}
-                        placeholder="Scan Stiker QR..."
-                        className="flex-1 px-4 py-2 sm:py-3 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                        disabled={allocatedSerials.length >= 1}
-                      />
+                      <div className="flex-1 relative">
+                        <input 
+                          type="text" 
+                          value={currentScan}
+                          onChange={e => setCurrentScan(e.target.value)}
+                          placeholder="Ketik Stiker QR..."
+                          className="w-full pl-4 pr-12 py-2 sm:py-3 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          disabled={allocatedSerials.length >= 1}
+                        />
+                        <button 
+                          onClick={() => setIsScannerOpen(true)}
+                          disabled={allocatedSerials.length >= 1}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                          title="Scan dengan Kamera"
+                        >
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </button>
+                      </div>
                       <button 
                         onClick={handleAddSerial}
                         disabled={!currentScan.trim() || allocatedSerials.length >= 1}
@@ -601,6 +637,20 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         Verifikasi Sekaligus
                       </button>
                     </div>
+
+                    {isScannerOpen && (
+                      <InlineQRScanner
+                        isOpen={isScannerOpen}
+                        onClose={() => setIsScannerOpen(false)}
+                        onScanSuccess={(text) => {
+                          if (allocatedSerials.length < 1 && !allocatedSerials.includes(text.trim())) {
+                            setAllocatedSerials(prev => [...prev, text.trim()]);
+                            setIsScannerOpen(false); // Auto close after scan
+                          }
+                        }}
+                      />
+                    )}
+
                     {allocatedSerials.length > 0 && (
                       <div className="flex items-center gap-2 text-sm text-green-700 bg-green-100 px-3 py-2 rounded-lg font-bold">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -708,6 +758,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
           </div>
         </div>
       )}
+
+      {/* Scanner Modal Removed */}
     </div>
   )
 }

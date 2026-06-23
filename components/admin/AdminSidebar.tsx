@@ -105,7 +105,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
           <NavIcon label={item.label} active={isActive} />
           {sidebarOpen && <span className="truncate">{item.label}</span>}
           {sidebarOpen && item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
-            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
+            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-md ${
               isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
             }`}>
               {pendingCount}
@@ -132,7 +132,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
         )}
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto overscroll-y-contain">
         {renderNavItems(mainNavItems)}
         
         <div className="my-4 border-t border-gray-200"></div>

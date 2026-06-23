@@ -114,10 +114,10 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       </div>
 
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col">
-        <div className="px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white z-10 shrink-0">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white z-10 shrink-0 rounded-t-2xl">
           <div>
-            <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">Direktori Pengguna</h2>
-            <p className="text-sm text-gray-500 mt-1">Kelola data, peran, dan akses sistem untuk seluruh pengguna.</p>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">Direktori Pengguna</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Kelola data, peran, dan akses sistem untuk seluruh pengguna.</p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-4 lg:mt-0">
             <div className="relative w-full sm:w-auto">
@@ -133,7 +133,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
             {!isViewOnly && (
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors whitespace-nowrap shadow-sm flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="px-4 sm:px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors whitespace-nowrap shadow-sm flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 Registrasi Pegawai
@@ -142,7 +142,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
           </div>
       </div>
 
-      <div className="bg-gray-50/50 p-6 space-y-4">
+      <div className="bg-gray-50/50 p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 rounded-b-2xl">
         {/* Header Kolom (Hanya Tampil di Desktop) */}
         <div className="hidden lg:flex items-center px-6 text-xs font-extrabold text-gray-400 uppercase tracking-wider">
           <div className="w-[30%]">Identitas Pegawai</div>
@@ -155,7 +155,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
         {/* Daftar Pegawai (Berbentuk Card Terpisah) */}
         <div className="space-y-3">
           {paginatedUsers.length === 0 ? (
-            <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+            <div className="py-8 sm:py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
               <p className="text-gray-500 font-medium">Tidak ada pegawai yang cocok dengan pencarian "{searchQuery}"</p>
             </div>
@@ -166,16 +166,24 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
               onClick={() => openDetail(u)}
               className="flex flex-col lg:flex-row lg:items-center bg-white p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group gap-2.5 sm:gap-3 lg:gap-0"
             >
-              {/* Kolom 1: Identitas */}
-              <div className="w-full lg:w-[30%] flex items-center gap-2.5 sm:gap-3 lg:gap-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-gradient-to-br from-indigo-50 to-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-700 font-extrabold text-sm sm:text-base lg:text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                  {u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm lg:text-base font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors truncate">{u.name}</div>
-                  <div className="text-xs font-mono font-medium text-gray-500 mt-0.5">
-                    NIP: {u.nip} <span className="text-gray-300 mx-1 hidden sm:inline">•</span> <span className="text-gray-400 font-sans block sm:inline mt-0.5 sm:mt-0">{u.jabatan}</span>
+              {/* Kolom 1: Identitas & Chevron (Mobile) */}
+              <div className="w-full lg:w-[30%] flex items-center justify-between lg:justify-start gap-2.5 sm:gap-3 lg:gap-4">
+                <div className="flex items-center gap-2.5 sm:gap-3 lg:gap-4 min-w-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-gradient-to-br from-indigo-50 to-blue-100 border-2 border-blue-200 flex items-center justify-center text-blue-700 font-extrabold text-sm sm:text-base lg:text-lg shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                    {u.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm lg:text-base font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors truncate">{u.name}</div>
+                    <div className="text-xs font-mono font-medium text-gray-500 mt-0.5">
+                      NIP: {u.nip} <span className="text-gray-300 mx-1 hidden sm:inline">•</span> <span className="text-gray-400 font-sans block sm:inline mt-0.5 sm:mt-0">{u.jabatan}</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Chevron for Mobile Only */}
+                <div className="lg:hidden shrink-0">
+                  <button className="p-1.5 text-gray-400 bg-gray-50 rounded-full border border-gray-200 shadow-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                  </button>
                 </div>
               </div>
 
@@ -183,7 +191,9 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
               <div className="hidden lg:block w-full lg:w-[25%]">
                 <div className="text-sm text-gray-700 font-bold truncate">{u.office}</div>
                 <div className="text-xs text-gray-500 mt-0.5 truncate">{u.regional}</div>
-                <div className="text-xs text-gray-600 mt-1.5 font-mono bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100 font-medium">WA: {u.wa}</div>
+                <div className="mt-1.5">
+                  <span className="inline-flex items-center px-2 py-1 text-[10px] text-gray-600 font-mono bg-gray-50 rounded-md border border-gray-200 shadow-sm font-bold">WA: {u.wa}</span>
+                </div>
               </div>
 
               <div className="hidden lg:flex w-full lg:w-[20%] items-center">
@@ -214,14 +224,9 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
 
               {/* Mobile Only View */}
               <div className="lg:hidden flex flex-col gap-2.5 border-t border-gray-100 pt-3">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm text-gray-700 font-bold truncate">{u.office}</div>
-                    <div className="text-xs text-gray-500 truncate">{u.regional}</div>
-                  </div>
-                  <button className="p-1.5 text-gray-400 bg-gray-50 rounded-full border border-gray-200 shrink-0 shadow-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                  </button>
+                <div className="min-w-0">
+                  <div className="text-sm text-gray-700 font-bold truncate">{u.office}</div>
+                  <div className="text-xs text-gray-500 truncate">{u.regional}</div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-extrabold border shadow-sm ${
@@ -238,9 +243,9 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                     <div className={`w-1.5 h-1.5 rounded-full ${u.status === 'Aktif' ? 'bg-green-500' : 'bg-red-500'}`} />
                     {u.status}
                   </span>
-                  <div className="text-[10px] text-gray-600 font-mono bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100 font-medium">
+                  <span className="inline-flex items-center px-2 py-1 text-[10px] text-gray-600 font-mono bg-gray-50 rounded-md border border-gray-200 shadow-sm font-bold">
                     WA: {u.wa}
-                  </div>
+                  </span>
                 </div>
               </div>
             </div>
@@ -253,21 +258,21 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
             <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
               Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredUsers.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)}</span> dari <span className="font-bold text-gray-900">{filteredUsers.length}</span> pengguna
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <button 
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="h-8 px-3 flex items-center justify-center rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
               >
                 Sebelumnya
               </button>
               
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center justify-center gap-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all shrink-0 ${
                       currentPage === page 
                         ? 'bg-blue-600 text-white shadow-md' 
                         : 'text-gray-500 hover:bg-gray-200 bg-transparent'
@@ -281,7 +286,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
               <button 
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="h-8 px-3 flex items-center justify-center rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
               >
                 Selanjutnya
               </button>
@@ -293,7 +298,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       {/* DETAIL MODAL (Tengah) */}
       {selectedUser && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden transform transition-transform">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden transform transition-transform">
             
             {/* Header */}
             <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50/50 shrink-0">
@@ -317,7 +322,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-8 space-y-6 sm:space-y-8">
               {/* Quick Actions */}
               {!isViewOnly && (
                 <div className="grid grid-cols-2 gap-4">
@@ -503,7 +508,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
               </button>
             </div>
             
-            <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1">
+            <div className="p-6 sm:p-8 overflow-y-auto overscroll-y-contain space-y-6 sm:space-y-8 flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">NIP (Username) <span className="text-red-500">*</span></label>

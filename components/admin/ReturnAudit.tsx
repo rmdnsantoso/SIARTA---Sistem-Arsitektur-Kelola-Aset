@@ -343,7 +343,7 @@ export default function ReturnAudit() {
                       <p className="text-xs text-gray-500">{h.tanggal}</p>
                       <p className="text-xs text-gray-400">{h.totalPindai} dari {h.totalDatabase} terpindai</p>
                     </div>
-                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${
+                    <span className={`px-3 py-1 text-xs font-bold rounded-md border ${
                       h.selisih === 0
                         ? 'bg-green-50 text-green-700 border-green-200'
                         : 'bg-red-50 text-red-600 border-red-200'

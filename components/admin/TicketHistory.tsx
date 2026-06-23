@@ -313,7 +313,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
               <p className="text-sm opacity-90 mt-1">Tiket: {modalTicket.id} | Diajukan: {modalTicket.tanggalPinjam}</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain p-6 space-y-6 bg-white">
               {/* Tracking Flow Visualizer */}
               <div className="relative border-l-2 border-gray-200 ml-3 space-y-8 pb-4">
                 {modalTicket.trackingLogs && modalTicket.trackingLogs.length > 0 ? (
