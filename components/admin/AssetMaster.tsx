@@ -392,7 +392,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-y-contain">
               
               {/* Tipe Pelacakan Selection */}
               <div>
@@ -502,7 +502,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             </div>
             
             {/* Content for both SERIALIZED and NON_SERIALIZED */}
-            <div className="flex-1 overflow-y-auto bg-gray-50 p-4 sm:p-6 flex flex-col gap-4">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain bg-gray-50 p-4 sm:p-6 flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm shrink-0">
                   <div>
                     <h4 className="font-bold text-gray-900 text-sm">Daftar Unit Tersimpan ({selectedAsset.totalStock})</h4>
@@ -547,7 +547,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                   </div>
                 </div>
                   <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
-                    <div className="overflow-x-auto overflow-y-auto flex-1 h-0">
+                    <div className="overflow-x-auto overflow-y-auto overscroll-y-contain flex-1 h-0">
                       <table className="hidden md:table min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                           <tr>
@@ -870,7 +870,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-6 space-y-4 overflow-y-auto">
+            <div className="p-6 space-y-4 overflow-y-auto overscroll-y-contain">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nama Barang <span className="text-red-500">*</span></label>
                 <input
@@ -925,7 +925,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
               </button>
             </div>
             
-            <div className="p-4 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8 flex-1 bg-gray-50">
+            <div className="p-4 sm:p-8 overflow-y-auto overscroll-y-contain space-y-6 sm:space-y-8 flex-1 bg-gray-50">
               {historyModalUnit.history.length === 0 ? (
                 <div className="text-center py-10">
                   <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>

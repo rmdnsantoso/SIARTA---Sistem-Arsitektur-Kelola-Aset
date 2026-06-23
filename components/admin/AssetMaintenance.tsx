@@ -273,7 +273,7 @@ export default function AssetMaintenance() {
               </button>
             </div>
 
-            <div className="flex flex-col md:flex-row overflow-y-auto">
+            <div className="flex flex-col md:flex-row overflow-y-auto overscroll-y-contain">
               {/* Left: Photo & Asset Info */}
               <div className="w-full md:w-1/2 bg-gray-50 border-r border-gray-100 flex flex-col">
                 {selectedTicket.photoUrl ? (
@@ -361,7 +361,7 @@ export default function AssetMaintenance() {
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-y-contain">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between items-end">
                   <span>Nama/ID Aset <span className="text-red-500">*</span></span>

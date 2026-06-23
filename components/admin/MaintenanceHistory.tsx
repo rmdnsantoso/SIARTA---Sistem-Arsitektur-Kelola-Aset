@@ -283,7 +283,7 @@ export default function MaintenanceHistory() {
               </button>
             </div>
 
-            <div className="flex flex-col md:flex-row overflow-y-auto">
+            <div className="flex flex-col md:flex-row overflow-y-auto overscroll-y-contain">
               {/* Left: Photo & Asset Info */}
               <div className="w-full md:w-1/2 bg-gray-50 border-r border-gray-100 flex flex-col">
                 {selectedTicket.photoUrl ? (

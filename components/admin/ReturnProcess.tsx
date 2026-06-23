@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { Ticket } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
+import InlineQRScanner from '../shared/InlineQRScanner'
 
 interface Props {
   tickets?: Ticket[]
@@ -23,7 +24,8 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
   
   const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isScanning, setIsScanning] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [scannerContext, setScannerContext] = useState<'main' | 'detail'>('main')
 
   // Simulate scanning a specific SN
   const verifySN = (sn: string) => {
@@ -38,14 +40,36 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
   const handleScanInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      const sn = scanInput.trim()
       if (modalTicket?.assetType === 'NON_SERIALIZED') {
-        verifySN(scanInput)
+        verifySN(sn)
         setScanInput('')
-      } else if (modalTicket?.allocatedUnits?.includes(scanInput)) {
-        verifySN(scanInput)
+      } else if (modalTicket?.allocatedUnits?.includes(sn)) {
+        verifySN(sn)
         setScanInput('')
       } else {
-        alert(`Serial Number ${scanInput} tidak valid untuk tiket ini.`)
+        alert(`Serial Number ${sn} tidak valid untuk tiket ini.`)
+      }
+    }
+  }
+
+  const handleScanSuccess = (text: string) => {
+    const sn = text.trim();
+    if (scannerContext === 'main') {
+      const scannedTicket = localTickets.find(t => t.allocatedUnits?.includes(sn) || t.id === sn);
+      if (scannedTicket) {
+        handleOpenProcess(scannedTicket, sn);
+        showToast(`Aset ${sn} ditemukan, memproses pengembalian...`);
+      } else {
+        alert(`Aset dengan kode ${sn} tidak ditemukan dalam daftar peminjaman aktif.`);
+      }
+    } else {
+      if (modalTicket?.assetType === 'NON_SERIALIZED') {
+        verifySN(sn)
+      } else if (modalTicket?.allocatedUnits?.includes(sn)) {
+        verifySN(sn)
+      } else {
+        alert(`Serial Number ${sn} tidak valid untuk tiket ini.`)
       }
     }
   }
@@ -96,19 +120,14 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
   }
 
 
-  const simulateScan = () => {
-    setIsScanning(true)
-    setTimeout(() => {
-      setIsScanning(false)
-      // Auto-find TKT-006 (Welding Mask Pro)
-      const scannedTicket = localTickets.find(t => t.id === 'TKT-006')
-      if (scannedTicket) {
-        handleOpenProcess(scannedTicket, 'SN-WLD-005')
-        showToast('Berhasil men-scan Barcode SN-WLD-005')
-      } else {
-        showToast('Barcode tidak ditemukan di sistem.')
-      }
-    }, 2000)
+  const openMainScanner = () => {
+    setScannerContext('main')
+    setIsScannerOpen(true)
+  }
+
+  const openDetailScanner = () => {
+    setScannerContext('detail')
+    setIsScannerOpen(true)
   }
 
   // Calculate stats based on current active list
@@ -154,15 +173,28 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                   className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64 transition-all"
                 />
               </div>
-              <button 
-                onClick={simulateScan}
-                className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-md shadow hover:bg-gray-800 transition-colors w-full lg:w-auto shrink-0"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h4a1 1 0 010 2H5v3a1 1 0 01-2 0V4zm14-1a1 1 0 011 1v3a1 1 0 01-2 0V5h-3a1 1 0 010-2h4zM3 20a1 1 0 001 1h4a1 1 0 000-2H5v-3a1 1 0 00-2 0v4zm14 1a1 1 0 001-1v-4a1 1 0 00-2 0v3h-3a1 1 0 000 2h4z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h8" /></svg>
-                Scan Barcode
-              </button>
+                <button 
+                  onClick={openMainScanner}
+                  className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-sm shadow-blue-600/20 hover:bg-blue-700 transition-colors w-full sm:w-auto justify-center"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Scan Barcode
+                </button>
             </div>
           </div>
+          
+          {isScannerOpen && scannerContext === 'main' && (
+            <div className="p-4 border-b border-gray-200 bg-gray-50/50">
+              <InlineQRScanner
+                isOpen={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScanSuccess={handleScanSuccess}
+              />
+            </div>
+          )}
 
           <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
             {paginatedTickets.map((ticket) => (
@@ -359,7 +391,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
 
 
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 flex-1 overflow-y-auto overscroll-y-contain">
               <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100 flex justify-between items-center">
                 <div>
                   <div className="text-sm font-bold text-gray-900">{modalTicket.alat}</div>
@@ -379,17 +411,32 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                     <span className="text-sm font-bold text-gray-900">Evaluasi Fisik Aset (Scan Satu Per Satu)</span>
                     <div className="relative w-full sm:w-auto">
-                      <svg className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       <input 
                         type="text" 
                         placeholder="Scan S/N di sini..."
                         value={scanInput}
                         onChange={e => setScanInput(e.target.value)}
                         onKeyDown={handleScanInput}
-                        className="pl-8 pr-3 py-2.5 sm:py-1.5 text-base sm:text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48"
+                        className="w-full bg-white border border-gray-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12"
                       />
+                      <button 
+                        onClick={openDetailScanner}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
+                  {isScannerOpen && scannerContext === 'detail' && (
+                    <InlineQRScanner
+                      isOpen={isScannerOpen}
+                      onClose={() => setIsScannerOpen(false)}
+                      onScanSuccess={handleScanSuccess}
+                    />
+                  )}
                   <div className="p-4 space-y-3 max-h-60 overflow-y-auto">
                     {modalTicket.allocatedUnits?.map(sn => {
                       const isVerified = verifiedSNs.includes(sn)
@@ -404,11 +451,6 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                                 {sn}
                               </span>
                             </div>
-                            {!isVerified && (
-                              <button onClick={() => verifySN(sn)} className="text-[10px] px-3 py-1.5 bg-white border border-gray-300 rounded shadow-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                                Simulasi Scan
-                              </button>
-                            )}
                             {isVerified && <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Terverifikasi</span>}
                           </div>
                         </div>
@@ -424,18 +466,35 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                   <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                     <span className="text-sm font-bold text-blue-900">Scan 1 Unit Saja (Mewakili Semua)</span>
                     <div className="relative w-full sm:w-auto">
-                      <svg className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                       <input 
-                        type="text" 
+                        type="text"
+                        className="w-full bg-white border border-blue-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12 disabled:bg-gray-100"
                         placeholder="Scan S/N di sini..."
                         value={scanInput}
                         onChange={e => setScanInput(e.target.value)}
                         onKeyDown={handleScanInput}
                         disabled={verifiedSNs.length > 0}
-                        className="pl-8 pr-3 py-2.5 sm:py-1.5 text-base sm:text-xs border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48 disabled:bg-gray-100 bg-white"
                       />
+                      <button 
+                        onClick={openDetailScanner}
+                        disabled={verifiedSNs.length > 0}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                        title="Scan dengan Kamera"
+                      >
+                        <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
+                  {isScannerOpen && scannerContext === 'detail' && (
+                    <InlineQRScanner
+                      isOpen={isScannerOpen}
+                      onClose={() => setIsScannerOpen(false)}
+                      onScanSuccess={handleScanSuccess}
+                    />
+                  )}
                   <div className="p-4">
                     {verifiedSNs.length > 0 ? (
                       <div className="flex items-center gap-3 bg-green-50 p-4 rounded-xl border border-green-200">
@@ -483,34 +542,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
         </div>
       )}
 
-      {/* Scanning Overlay Modal */}
-      {isScanning && (
-        <div className="fixed inset-0 z-[100] bg-gray-900/90 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white p-8 rounded-2xl max-w-sm w-full mx-4 shadow-2xl flex flex-col items-center text-center">
-            <div className="relative w-48 h-48 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl mb-6 overflow-hidden flex items-center justify-center">
-              {/* Fake barcode lines */}
-              <div className="flex gap-1 h-20 opacity-50">
-                {[1,3,1,2,1,4,1,1,2,1,3,2,1].map((w, i) => (
-                  <div key={i} className="bg-gray-900 h-full" style={{ width: `${w * 4}px` }}></div>
-                ))}
-              </div>
-              {/* Scanning Laser */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-scan"></div>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Membaca Barcode...</h3>
-            <p className="text-sm text-gray-500">Arahkan kamera ke stiker barcode aset yang dikembalikan.</p>
-          </div>
-          <style dangerouslySetInnerHTML={{__html: `
-            @keyframes scan {
-              0% { top: 10%; }
-              50% { top: 90%; }
-              100% { top: 10%; }
-            }
-            .animate-scan { animation: scan 1.5s ease-in-out infinite; }
-          `}} />
-        </div>
-      )}
-
+      {/* Scanner Modal Removed */}
     </div>
   )
 }
