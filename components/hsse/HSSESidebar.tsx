@@ -37,16 +37,22 @@ const historyMenus = [
 
   {/* Menu Utama */}
   <div className="space-y-1.5">
-    {mainMenus.map((m) => (
-          <button
-            key={m.name}
-            onClick={() => setActiveNav(m.name)}
-            className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
-              activeNav === m.name
-                ? 'bg-green-50 text-green-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-          >
+{mainMenus.map((m) => (
+  <button
+    key={m.name}
+    onClick={() => {
+      setActiveNav(m.name);
+      // Logika untuk menutup sidebar di layar mobile/tablet
+      if (window.innerWidth < 768 && setSidebarOpen) {
+        setSidebarOpen(false);
+      }
+    }}
+    className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
+      activeNav === m.name
+        ? 'bg-green-50 text-green-700'
+        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+    }`}
+  >
             <div className={`shrink-0 flex items-center justify-center ${activeNav === m.name ? 'text-green-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={activeNav === m.name ? 2.5 : 2} d={m.icon} />
@@ -79,16 +85,22 @@ const historyMenus = [
 
       {/* Menu Riwayat */}
       <div className="space-y-1.5">
-        {historyMenus.map((m) => (
-          <button
-            key={m.name}
-            onClick={() => setActiveNav(m.name)}
-            className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
-              activeNav === m.name
-                ? 'bg-green-50 text-green-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-            }`}
-          >
+{historyMenus.map((m) => (
+  <button
+    key={m.name}
+    onClick={() => {
+      setActiveNav(m.name);
+      // Logika untuk menutup sidebar di layar mobile/tablet
+      if (window.innerWidth < 768 && setSidebarOpen) {
+        setSidebarOpen(false);
+      }
+    }}
+    className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
+      activeNav === m.name
+        ? 'bg-green-50 text-green-700'
+        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+    }`}
+  >
             <div
               className={`shrink-0 flex items-center justify-center ${
                 activeNav === m.name
