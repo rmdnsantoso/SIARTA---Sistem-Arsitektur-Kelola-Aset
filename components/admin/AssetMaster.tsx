@@ -35,7 +35,7 @@ const generateUnits = (assetId: string, count: number, availableCount: number, i
   return Array.from({ length: count }).map((_, i) => {
     const isAvailable = i < availableCount;
     const history: UnitHistory[] = isAvailable ? [] : [
-      { date: '12 Juni 2026 14:30', action: 'Dipinjam', user: 'Budi Santoso', notes: 'Proyek Instalasi Listrik' }
+      { date: '12 Juni 2026 14:30', action: 'Dipinjam', user: 'Budi Santoso' }
     ];
     return {
       unitId: `${assetId}-${String(i + 1).padStart(2, '0')}`,
@@ -481,54 +481,62 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
 
       {/* ── Manage Units & QR Modal ── */}
       {selectedAsset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[85vh] max-w-3xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[82vh]">
             {/* Header Modal */}
-            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50 shrink-0">
-              <div className="flex items-center gap-4 sm:gap-5">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xs tracking-wider ${
+            <div className="px-5 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+              <div className="flex items-center gap-3.5 sm:gap-5">
+                <div className={`w-11 h-11 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-xs tracking-wider shrink-0 shadow-sm ${
                   selectedAsset.trackingType === 'SERIALIZED' ? 'bg-indigo-600' : 'bg-orange-500'
                 }`}>
                   {selectedAsset.trackingType === 'SERIALIZED' ? 'SER' : 'NON'}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight truncate">{selectedAsset.name}</h3>
-                  <p className="text-sm text-gray-500 font-mono">{selectedAsset.id} &middot; Rak {selectedAsset.rackLocation}</p>
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight truncate">{selectedAsset.name}</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">{selectedAsset.id} &middot; Rak {selectedAsset.rackLocation}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-white p-2 rounded-full border border-gray-200">
+              <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-gray-50 p-2 rounded-full border border-gray-100 shrink-0 hover:bg-gray-100 transition-colors">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
             {/* Content for both SERIALIZED and NON_SERIALIZED */}
-            <div className="flex-1 overflow-y-auto overscroll-y-contain bg-gray-50 p-4 sm:p-6 flex flex-col gap-4">
-                <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm shrink-0">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain bg-gray-50/50 p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
+                <div className="flex flex-col lg:flex-row gap-3 justify-between lg:items-center bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm shrink-0">
                   <div>
-                    <h4 className="font-bold text-gray-900 text-sm">Daftar Unit Tersimpan ({selectedAsset.totalStock})</h4>
-                    <p className="text-xs text-gray-500">Nomor seri dan status spesifik tiap fisik barang</p>
+                    <h4 className="font-bold text-gray-900 text-sm">
+                      {selectedAsset.trackingType === 'NON_SERIALIZED' 
+                        ? `Informasi Stok Master (${selectedAsset.totalStock} Unit)` 
+                        : `Daftar Unit Tersimpan (${selectedAsset.totalStock})`}
+                    </h4>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {selectedAsset.trackingType === 'NON_SERIALIZED' 
+                        ? 'Pengelolaan kuantitas stok massal tanpa pelacakan nomor seri' 
+                        : 'Nomor seri dan status spesifik tiap fisik barang'}
+                    </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
                     {selectedAsset.trackingType !== 'NON_SERIALIZED' && (
-                      <div className="relative">
+                      <div className="relative flex-1 min-w-[140px]">
                         <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                         <input 
                           type="text" 
                           value={unitSearchQuery}
                           onChange={e => setUnitSearchQuery(e.target.value)}
-                          placeholder="Cari S/N atau ID Unit..." 
-                          className="w-full sm:w-56 pl-9 pr-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                          placeholder="Cari S/N atau ID..." 
+                          className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                         />
                       </div>
                     )}
                     {!isViewOnly && selectedAsset.trackingType === 'SERIALIZED' && (
-                      <div className="flex items-center gap-2 sm:border-l border-gray-200 sm:pl-3 w-full sm:w-auto">
+                      <div className="flex items-center gap-1.5 lg:border-l border-gray-100 lg:pl-4 shrink-0">
                         <input 
                           type="number" 
                           id="add-qty-input"
                           defaultValue="1" 
                           min="1"
-                          className="w-20 border border-gray-300 rounded text-sm px-2 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                          className="w-12 sm:w-16 border border-gray-200 rounded-xl text-xs sm:text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center font-bold bg-gray-50/50 focus:bg-white transition-all" 
                         />
                         <button
                           onClick={() => {
@@ -537,323 +545,338 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                             if (count > 0) handleAddUnitSerialized(selectedAsset.id, count);
                             input.value = '1';
                           }}
-                          className="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1"
+                          className="bg-indigo-600 text-white px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-1.5"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                          Tambah Unit Fisik
+                          Tambah Unit
                         </button>
                       </div>
                     )}
                   </div>
                 </div>
-                  <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
-                    <div className="overflow-x-auto overflow-y-auto overscroll-y-contain flex-1 h-0">
-                      <table className="hidden md:table min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unit ID / QR</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nomor Seri Pabrik (S/N)</th>
-                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
-                        {selectedAsset.trackingType === 'NON_SERIALIZED' ? (
-                            <tr className="hover:bg-gray-50 transition-colors group">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 bg-white border border-gray-200 rounded p-1 shadow-sm">
-                                    <div className="w-full h-full grid grid-cols-5 gap-[1px]">
-                                      {Array.from({ length: 25 }).map((_, j) => (
-                                        <div key={j} className={Math.random() > 0.5 ? 'bg-orange-500' : 'bg-transparent'} />
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.id} (Master)</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                  <span className="text-gray-400 font-mono text-sm italic">N/A (Non-Serialized)</span>
-                              </td>
-                              <td className="px-6 py-4 text-center">
-                                  <div className="flex flex-col items-center gap-1">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-green-100 text-green-800">
-                                      {selectedAsset.availableStock} Tersedia
-                                    </span>
-                                    {selectedAsset.totalStock - selectedAsset.availableStock > 0 && (
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800">
-                                        {selectedAsset.totalStock - selectedAsset.availableStock} Dipinjam
-                                      </span>
-                                    )}
-                                  </div>
-                              </td>
-                              <td className="px-6 py-4 text-right whitespace-nowrap">
-                                {!isViewOnly && (
-                                  <div className="flex items-center justify-end gap-2">
-                                    <input 
-                                      type="number" 
-                                      id="adjust-qty-bulk-table"
-                                      defaultValue="1" 
-                                      className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        const input = document.getElementById('adjust-qty-bulk-table') as HTMLInputElement;
-                                        const count = parseInt(input.value) || 0;
-                                        if (count === 0) return;
-                                        handleAdjustBulkStock(selectedAsset.id, count);
-                                        input.value = '1';
-                                      }}
-                                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-1.5 rounded-md hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
-                                      title="Tambah/Kurangi Stok Massal"
-                                    >
-                                      Update Stok
-                                    </button>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                        ) : selectedAsset.units.filter(u => 
-                          u.unitId.toLowerCase().includes(unitSearchQuery.toLowerCase()) || 
-                          u.serialNumber.toLowerCase().includes(unitSearchQuery.toLowerCase())
-                        ).map(unit => {
-                          const isAvailable = unit.status === 'Tersedia'
-                          return (
-                            <tr key={unit.unitId} className="hover:bg-gray-50 transition-colors group">
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-12 h-12 bg-white border border-gray-200 rounded p-1 shadow-sm">
-                                    <div className="w-full h-full grid grid-cols-5 gap-[1px]">
-                                      {Array.from({ length: 25 }).map((_, j) => (
-                                        <div key={j} className={Math.random() > 0.5 ? 'bg-gray-800' : 'bg-transparent'} />
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <span className="font-mono font-bold text-sm text-indigo-700">{unit.unitId}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                {selectedAsset.trackingType === 'SERIALIZED' ? (
-                                  isViewOnly ? (
-                                    <span className="text-gray-900 font-mono text-sm">{unit.serialNumber || '-'}</span>
-                                  ) : (
-                                    <input 
-                                      type="text"
-                                      value={unit.serialNumber}
-                                      onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
-                                      placeholder="Masukkan S/N Pabrik..."
-                                      className="w-full max-w-[200px] border border-gray-300 rounded text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none font-mono placeholder:font-sans placeholder:text-gray-300 transition-all"
-                                    />
-                                  )
-                                ) : (
-                                  <span className="text-gray-400 font-mono text-sm italic">N/A (Non-Serialized)</span>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
-                                  unit.status === 'Tersedia' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {unit.status}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => setHistoryModalUnit(unit)}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1.5 rounded-md hover:bg-blue-100 transition-colors"
-                                    title="Lihat Riwayat & Log Unit"
-                                  >
-                                    Riwayat
-                                  </button>
-                                  {!isViewOnly && (
-                                    <button
-                                      onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
-                                      className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 py-1.5 rounded-md hover:bg-gray-50 transition-colors shadow-sm"
-                                      title="Cetak Stiker QR Individual"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                      Cetak
-                                    </button>
-                                  )}
-                                  {!isViewOnly && (
-                                    <button
-                                      onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
-                                      className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 py-1.5 rounded-md hover:bg-red-50 hover:text-red-700 transition-colors shadow-sm"
-                                      title="Musnahkan/Hapus Unit"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
 
-                    {/* Mobile Cards for Units */}
-                    <div className="md:hidden p-2 sm:p-4 space-y-3 sm:space-y-4">
+                {/* Desktop Table */}
+                <div className="hidden md:block bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex-1">
+                  <div className="overflow-x-auto overflow-y-auto overscroll-y-contain max-h-[40vh]">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Unit ID / QR</th>
+                          <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nomor Seri Pabrik (S/N)</th>
+                          <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
                       {selectedAsset.trackingType === 'NON_SERIALIZED' ? (
-                        <div className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
-                          <div className="flex justify-between items-start gap-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-white border border-gray-200 rounded p-1 shadow-sm shrink-0">
-                                <div className="w-full h-full grid grid-cols-5 gap-[1px]">
-                                  {Array.from({ length: 25 }).map((_, j) => (
-                                    <div key={j} className={Math.random() > 0.5 ? 'bg-orange-500' : 'bg-transparent'} />
-                                  ))}
+                          <tr className="hover:bg-gray-50/80 transition-colors group">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-orange-50 border border-orange-200/60 rounded-xl p-2 shadow-sm flex items-center justify-center text-orange-600">
+                                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                                 </div>
+                                <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.id} (Master)</span>
                               </div>
-                              <div className="min-w-0">
-                                <h3 className="font-mono font-bold text-sm text-indigo-700 leading-tight">{selectedAsset.id}</h3>
-                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">(Master) N/A</div>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-green-100 text-green-800">
-                                {selectedAsset.availableStock} Tersedia
-                              </span>
-                            </div>
-                          </div>
-                          {!isViewOnly && (
-                            <div className="flex justify-end gap-2 items-center mt-4">
-                              <input 
-                                type="number" 
-                                id="adjust-qty-bulk-mobile"
-                                defaultValue="1" 
-                                className="w-16 border border-gray-300 rounded text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center" 
-                              />
-                              <button
-                                onClick={() => {
-                                  const input = document.getElementById('adjust-qty-bulk-mobile') as HTMLInputElement;
-                                  const count = parseInt(input.value) || 0;
-                                  if (count === 0) return;
-                                  handleAdjustBulkStock(selectedAsset.id, count);
-                                  input.value = '1';
-                                }}
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
-                              >
-                                Update Stok
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <span className="text-gray-400 font-mono text-sm italic">N/A (Non-Serialized)</span>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-green-100 text-green-800">
+                                    {selectedAsset.availableStock} Tersedia
+                                  </span>
+                                  {selectedAsset.totalStock - selectedAsset.availableStock > 0 && (
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-800">
+                                      {selectedAsset.totalStock - selectedAsset.availableStock} Dipinjam
+                                    </span>
+                                  )}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                              {!isViewOnly && (
+                                <div className="flex items-center justify-end gap-2">
+                                  <input 
+                                    type="number" 
+                                    id="adjust-qty-bulk-table"
+                                    defaultValue="1" 
+                                    min="1"
+                                    className="w-16 border border-gray-200 rounded-xl text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center bg-gray-50 focus:bg-white transition-all" 
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      const input = document.getElementById('adjust-qty-bulk-table') as HTMLInputElement;
+                                      const count = parseInt(input.value) || 0;
+                                      if (count <= 0) return;
+                                      handleAdjustBulkStock(selectedAsset.id, count);
+                                      input.value = '1';
+                                    }}
+                                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-xl hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
+                                    title="Tambah Stok Baru (Pembelian Masuk)"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                    Tambah Stok
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
                       ) : selectedAsset.units.filter(u => 
                         u.unitId.toLowerCase().includes(unitSearchQuery.toLowerCase()) || 
                         u.serialNumber.toLowerCase().includes(unitSearchQuery.toLowerCase())
                       ).map(unit => {
                         const isAvailable = unit.status === 'Tersedia'
                         return (
-                          <div key={unit.unitId} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
-                            <div className="flex justify-between items-start gap-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white border border-gray-200 rounded p-1 shadow-sm shrink-0">
+                          <tr key={unit.unitId} className="hover:bg-gray-50/80 transition-colors group">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
                                   <div className="w-full h-full grid grid-cols-5 gap-[1px]">
                                     {Array.from({ length: 25 }).map((_, j) => (
                                       <div key={j} className={Math.random() > 0.5 ? 'bg-gray-800' : 'bg-transparent'} />
                                     ))}
                                   </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <h3 className="font-mono font-bold text-sm text-indigo-700 leading-tight">{unit.unitId}</h3>
-                                </div>
+                                <span className="font-mono font-bold text-sm text-indigo-700">{unit.unitId}</span>
                               </div>
-                              <div className="text-right shrink-0">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${
-                                  isAvailable ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {unit.status}
-                                </span>
-                              </div>
-                            </div>
-                            <div>
-                              {isViewOnly ? (
-                                <p className="text-sm font-mono text-gray-900 border border-transparent px-3 py-2">S/N: {unit.serialNumber || '-'}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              {selectedAsset.trackingType === 'SERIALIZED' ? (
+                                isViewOnly ? (
+                                  <span className="text-gray-900 font-mono text-sm">{unit.serialNumber || '-'}</span>
+                                ) : (
+                                  <input 
+                                    type="text"
+                                    value={unit.serialNumber}
+                                    onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                                    placeholder="Masukkan S/N Pabrik..."
+                                    className="w-full max-w-[200px] border border-gray-200 rounded-xl text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans bg-gray-50 focus:bg-white transition-all"
+                                  />
+                                )
                               ) : (
-                                <input 
-                                  type="text"
-                                  value={unit.serialNumber}
-                                  onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
-                                  placeholder="Masukkan S/N Pabrik..."
-                                  className="w-full border border-gray-300 rounded text-sm px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans transition-all"
-                                />
+                                <span className="text-gray-400 font-mono text-sm italic">N/A (Non-Serialized)</span>
                               )}
-                            </div>
-                            <div className="flex flex-wrap justify-end gap-1.5 sm:gap-2 pt-2 border-t border-gray-100">
-                              <button
-                                onClick={() => setHistoryModalUnit(unit)}
-                                className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-blue-600 bg-white border border-blue-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm min-w-0"
-                              >
-                                Riwayat
-                              </button>
-                              {!isViewOnly && (
-                                <>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold tracking-wider ${
+                                unit.status === 'Tersedia' ? 'bg-green-50 text-green-700 border border-green-200/60' : 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                              }`}>
+                                {unit.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => setHistoryModalUnit(unit)}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+                                  title="Lihat Riwayat & Log Unit"
+                                >
+                                  Riwayat
+                                </button>
+                                {!isViewOnly && (
                                   <button
                                     onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
-                                    className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-gray-700 bg-white border border-gray-300 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-w-0"
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors shadow-sm"
+                                    title="Cetak Stiker QR Individual"
                                   >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                                     Cetak
                                   </button>
+                                )}
+                                {!isViewOnly && (
                                   <button
                                     onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
-                                    className="inline-flex justify-center items-center gap-1 text-[11px] sm:text-xs font-semibold text-red-600 bg-white border border-red-200 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-red-50 transition-colors shadow-sm min-w-0"
+                                    className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl hover:bg-red-100 hover:text-red-700 transition-colors shadow-sm"
+                                    title="Musnahkan/Hapus Unit"
                                   >
-                                    Hapus
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                   </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         )
                       })}
-                    </div>
-                    </div>
-                  </div>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            <div className="px-6 py-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row gap-4 justify-between items-center shrink-0">
+
+              {/* Mobile Cards for Units */}
+              <div className="md:hidden space-y-3">
+                {selectedAsset.trackingType === 'NON_SERIALIZED' ? (
+                  <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 hover:border-gray-200 transition-all">
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 bg-orange-50 border border-orange-200/60 rounded-xl p-2 shadow-2xs shrink-0 flex items-center justify-center text-orange-600">
+                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-mono font-bold text-base text-gray-900 leading-tight">{selectedAsset.id}</h3>
+                          <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Stok Non-Serial</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold tracking-wider bg-green-50 text-green-700 border border-green-200/60">
+                          {selectedAsset.availableStock} Tersedia
+                        </span>
+                        {selectedAsset.totalStock - selectedAsset.availableStock > 0 && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold tracking-wider bg-amber-50 text-amber-700 border border-amber-200/60">
+                            {selectedAsset.totalStock - selectedAsset.availableStock} Dipinjam
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {!isViewOnly && (
+                      <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-gray-100">
+                        <div className="text-xs text-gray-500 font-medium pb-1 sm:pb-0 sm:flex-1 sm:self-center">Tambah stok baru (pembelian):</div>
+                        <div className="flex items-center gap-2 justify-end">
+                          <input 
+                            type="number" 
+                            id="adjust-qty-bulk-mobile"
+                            defaultValue="1" 
+                            min="1"
+                            className="w-16 border border-gray-200 rounded-xl text-xs sm:text-sm px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-center font-bold bg-gray-50/50 focus:bg-white transition-all" 
+                          />
+                          <button
+                            onClick={() => {
+                              const input = document.getElementById('adjust-qty-bulk-mobile') as HTMLInputElement;
+                              const count = parseInt(input.value) || 0;
+                              if (count <= 0) return;
+                              handleAdjustBulkStock(selectedAsset.id, count);
+                              input.value = '1';
+                            }}
+                            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-xl hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            Tambah Stok
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : selectedAsset.units.filter(u => 
+                  u.unitId.toLowerCase().includes(unitSearchQuery.toLowerCase()) || 
+                  u.serialNumber.toLowerCase().includes(unitSearchQuery.toLowerCase())
+                ).map(unit => {
+                  const isAvailable = unit.status === 'Tersedia'
+                  return (
+                    <div key={unit.unitId} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:border-gray-200 transition-all">
+                      <div className="flex justify-between items-center gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 bg-gray-50 border border-gray-200/60 rounded-xl p-1.5 shadow-2xs shrink-0 flex items-center justify-center">
+                            <div className="w-full h-full grid grid-cols-5 gap-[1px]">
+                              {Array.from({ length: 25 }).map((_, j) => (
+                                <div key={j} className={Math.random() > 0.5 ? 'bg-indigo-600' : 'bg-transparent'} />
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-mono font-bold text-sm text-gray-900 leading-tight block">{unit.unitId}</span>
+                            <span className="text-[10px] text-gray-400 font-mono block">Fisik Aset</span>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider shrink-0 ${
+                          isAvailable ? 'bg-green-50 text-green-700 border border-green-200/60' : 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                        }`}>
+                          {unit.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 pt-2.5 border-t border-gray-100">
+                        <div className="flex-1 min-w-0">
+                          {isViewOnly ? (
+                            <span className="text-xs font-mono text-gray-700 truncate block">S/N: {unit.serialNumber || '-'}</span>
+                          ) : (
+                            <input 
+                              type="text"
+                              value={unit.serialNumber}
+                              onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                              placeholder="S/N Pabrik..."
+                              className="w-full border border-gray-200 rounded-xl text-xs px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans bg-gray-50/50 focus:bg-white transition-all"
+                            />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => setHistoryModalUnit(unit)}
+                            className="px-2.5 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+                          >
+                            Riwayat
+                          </button>
+                          {!isViewOnly && (
+                            <>
+                              <button
+                                onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
+                                className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 rounded-xl hover:bg-gray-100 transition-colors"
+                              >
+                                Cetak
+                              </button>
+                              <button
+                                onClick={() => handleRemoveUnitSerialized(selectedAsset.id, unit.unitId)}
+                                className="px-2.5 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                              >
+                                Hapus
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="px-5 sm:px-8 py-4 border-t border-gray-100 bg-white flex flex-col sm:flex-row gap-3 justify-between items-center shrink-0">
               <div className="text-xs text-gray-500 text-center sm:text-left w-full sm:w-auto">
                 {selectedAsset.trackingType === 'SERIALIZED' ? (
-                  <p>Pencetakan akan mencantumkan <strong>Unit ID</strong> dan <strong>S/N Pabrik</strong> pada stiker.</p>
+                  <p>Pencetakan mencantumkan <strong>Unit ID</strong> & <strong>S/N Pabrik</strong>.</p>
                 ) : (
-                  <p>Pencetakan akan mencetak <strong>copy dari QR Master</strong> yang 100% sama.</p>
+                  <p>Pencetakan mencetak <strong>copy dari QR Master</strong>.</p>
                 )}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                {!isViewOnly && selectedAsset.trackingType === 'NON_SERIALIZED' && (
-                  <div className="order-1 flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white h-10 w-full sm:w-auto">
-                    <span className="px-3 text-sm text-gray-500 bg-gray-50 border-r border-gray-300 h-full flex items-center font-medium whitespace-nowrap">Jml Cetak</span>
-                    <input 
-                      type="number" 
-                      id="print-qty"
-                      defaultValue={selectedAsset.totalStock} 
-                      min="1"
-                      className="w-full sm:w-16 text-sm px-2 py-2.5 outline-none text-center font-bold text-gray-900 focus:bg-indigo-50" 
-                    />
-                  </div>
-                )}
-                <button onClick={() => setSelectedAsset(null)} className="order-3 sm:order-2 w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Selesai</button>
-                {!isViewOnly && (
-                  <button
-                    onClick={() => { 
-                      if (selectedAsset.trackingType === 'SERIALIZED') {
-                        alert(`Mencetak BATCH ${selectedAsset.totalStock} stiker QR untuk ${selectedAsset.name}...`); 
-                        setSelectedAsset(null);
-                      } else {
+              <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto justify-end">
+                {!isViewOnly && selectedAsset.trackingType === 'NON_SERIALIZED' ? (
+                  <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+                    <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-gray-50 h-10 w-24 shrink-0">
+                      <span className="px-2.5 text-xs text-gray-500 border-r border-gray-200 h-full flex items-center font-medium whitespace-nowrap">Jml</span>
+                      <input 
+                        type="number" 
+                        id="print-qty"
+                        defaultValue={selectedAsset.totalStock} 
+                        min="1"
+                        className="w-full text-xs px-2 py-2 outline-none text-center font-bold text-gray-900 bg-white focus:bg-indigo-50/50" 
+                      />
+                    </div>
+                    <button
+                      onClick={() => { 
                         const input = document.getElementById('print-qty') as HTMLInputElement;
                         const count = parseInt(input?.value) || 0;
                         if (count > 0) {
                           alert(`Mencetak ${count} lembar stiker QR Master...`);
                           setSelectedAsset(null);
                         }
-                      }
-                    }}
-                    className="order-2 sm:order-3 w-full sm:w-auto px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                    <span className="truncate">{selectedAsset.trackingType === 'SERIALIZED' ? `Cetak Semua Label (${selectedAsset.totalStock})` : 'Cetak Label Master'}</span>
-                  </button>
+                      }}
+                      className="flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                      <span>Cetak Label Master</span>
+                    </button>
+                  </div>
+                ) : (
+                  !isViewOnly && (
+                    <button
+                      onClick={() => { 
+                        alert(`Mencetak BATCH ${selectedAsset.totalStock} stiker QR untuk ${selectedAsset.name}...`); 
+                        setSelectedAsset(null);
+                      }}
+                      className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                      <span>Cetak Semua ({selectedAsset.totalStock})</span>
+                    </button>
+                  )
                 )}
+                <button onClick={() => setSelectedAsset(null)} className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 rounded-xl hover:bg-gray-100 text-center transition-colors">Selesai</button>
               </div>
             </div>
           </div>
@@ -951,7 +974,6 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           <span className="text-[10px] text-gray-400 font-mono">{h.date}</span>
                         </div>
                         <p className="text-sm text-gray-700 font-medium">{h.user}</p>
-                        {h.notes && <p className="text-xs text-gray-500 mt-1 italic">"{h.notes}"</p>}
                       </div>
                     </div>
                   ))}
