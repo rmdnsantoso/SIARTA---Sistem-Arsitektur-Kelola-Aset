@@ -91,22 +91,6 @@ const bottomNavItems = [
 export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, setSidebarOpen, pendingCount }: AdminSidebarProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false)
 
-  const mobilePrimaryTabs = [
-    { label: 'Verifikasi Pinjam', shortLabel: 'Verifikasi' },
-    { label: 'Pengembalian Aset', shortLabel: 'Kembali' },
-    { label: 'Master Aset', shortLabel: 'Master' },
-    { label: 'Analitik', shortLabel: 'Analitik' },
-  ]
-
-  const mobileMoreItems = [
-    { label: 'Pemeliharaan Aset' },
-    { label: 'Kelola Pengguna' },
-    { label: 'Riwayat Peminjaman' },
-    { label: 'Riwayat Pemeliharaan' },
-  ]
-
-  const isMoreActive = mobileMoreItems.some(item => item.label === activeNav)
-
   const renderNavItems = (items: { label: string }[]) => {
     return items.map((item) => {
       const isActive = activeNav === item.label
@@ -137,8 +121,25 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
     })
   }
 
+  const mobilePrimaryTabs = [
+    { label: 'Verifikasi Pinjam', shortLabel: 'Verifikasi' },
+    { label: 'Pengembalian Aset', shortLabel: 'Kembali' },
+    { label: 'Master Aset', shortLabel: 'Master' },
+    { label: 'Analitik', shortLabel: 'Analitik' },
+  ]
+
+  const mobileMoreItems = [
+    { label: 'Pemeliharaan Aset' },
+    { label: 'Kelola Pengguna' },
+    { label: 'Riwayat Peminjaman' },
+    { label: 'Riwayat Pemeliharaan' },
+  ]
+
+  const isMoreActive = mobileMoreItems.some(item => item.label === activeNav)
+
   return (
     <>
+      {/* Desktop & Tablet Sidebar */}
       <aside className={`hidden md:flex fixed md:relative z-30 h-full ${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
         <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
           <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shrink-0">
@@ -177,6 +178,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
         )}
       </aside>
 
+      {/* Mobile Bottom Navbar (5 Tabs Grid) */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 md:hidden grid grid-cols-5 px-1 py-1.5 shadow-lg">
         {mobilePrimaryTabs.map((item) => {
           const isActive = activeNav === item.label && !showMoreMenu
@@ -204,6 +206,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
           )
         })}
 
+        {/* Tab "Lainnya" */}
         <button
           onClick={() => setShowMoreMenu(!showMoreMenu)}
           className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all relative ${
@@ -222,6 +225,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
         </button>
       </nav>
 
+      {/* Mobile "Lainnya" Bottom Sheet Modal */}
       {showMoreMenu && (
         <div className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-sm md:hidden transition-opacity duration-300" onClick={() => setShowMoreMenu(false)}>
           <div 
