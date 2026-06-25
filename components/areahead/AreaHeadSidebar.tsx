@@ -126,7 +126,7 @@ export default function Sidebar({ sidebarOpen, activeNav, setActiveNav, setSideb
           {sidebarOpen && (
             <div className="overflow-hidden">
               <p className="text-base font-bold tracking-tight text-gray-900">SIARTA</p>
-              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Area Head</p>
+              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Area Head Dashboard</p>
             </div>
           )}
         </div>

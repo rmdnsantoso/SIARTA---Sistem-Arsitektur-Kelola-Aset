@@ -150,7 +150,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
           {sidebarOpen && (
             <div className="overflow-hidden">
               <p className="text-base font-bold tracking-tight text-gray-900">SIARTA</p>
-              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Pusat Kendali</p>
+              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Administrator Dashboard</p>
             </div>
           )}
         </div>
