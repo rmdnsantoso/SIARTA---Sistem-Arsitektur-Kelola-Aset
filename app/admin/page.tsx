@@ -30,14 +30,6 @@ export default function AdminDashboard() {
         setActiveNav={setActiveNav}
         pendingCount={adminPendingCount}
       />
-      
-      {/* Mobile Sidebar Backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-gray-900/50 z-20 xl:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopHeader 
@@ -45,9 +37,10 @@ export default function AdminDashboard() {
           setSidebarOpen={setSidebarOpen} 
           userName="Siti Aminah" 
           roleName="Admin" 
+          hideHamburgerOnMobile={true}
         />
         
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
           {activeNav !== 'Analitik' && (
             <div className="mb-4 sm:mb-6">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
