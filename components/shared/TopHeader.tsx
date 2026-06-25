@@ -7,9 +7,10 @@ interface TopHeaderProps {
   setSidebarOpen: (val: boolean) => void
   userName?: string
   roleName?: string
+  hideHamburgerOnMobile?: boolean
 }
 
-export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleName }: TopHeaderProps) {
+export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleName, hideHamburgerOnMobile }: TopHeaderProps) {
   const router = useRouter()
 
   return (
@@ -17,14 +18,14 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleN
       <div className="flex items-center gap-4">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded text-gray-500 hover:bg-gray-100 transition-colors"
+          className={`p-2 rounded text-gray-500 hover:bg-gray-100 transition-colors ${hideHamburgerOnMobile ? 'hidden xl:block' : ''}`}
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-gray-900 hidden sm:block">Portal SIARTA</h1>
+          <h1 className={`text-xl font-bold text-gray-900 ${hideHamburgerOnMobile ? 'block' : 'hidden sm:block'}`}>Portal SIARTA</h1>
         </div>
       </div>
       <div className="flex items-center gap-4">
