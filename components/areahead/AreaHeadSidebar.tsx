@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState } from 'react'
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -65,6 +67,22 @@ const bottomNavItems = [
 ]
 
 export default function Sidebar({ sidebarOpen, activeNav, setActiveNav, setSidebarOpen, pendingCount }: SidebarProps) {
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
+
+  const mobilePrimaryTabs = [
+    { label: 'Verifikasi Pinjam', shortLabel: 'Verifikasi' },
+    { label: 'Master Aset', shortLabel: 'Master' },
+    { label: 'Kelola Pengguna', shortLabel: 'Pengguna' },
+    { label: 'Analitik', shortLabel: 'Analitik' },
+  ]
+
+  const mobileMoreItems = [
+    { label: 'Riwayat Peminjaman' },
+    { label: 'Riwayat Pemeliharaan' },
+  ]
+
+  const isMoreActive = mobileMoreItems.some(item => item.label === activeNav)
+
   const renderNavItems = (items: { label: string }[]) => {
     return items.map((item) => {
       const isActive = activeNav === item.label
@@ -84,7 +102,7 @@ export default function Sidebar({ sidebarOpen, activeNav, setActiveNav, setSideb
           <NavIcon label={item.label} active={isActive} />
           {sidebarOpen && <span className="truncate">{item.label}</span>}
           {sidebarOpen && item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
-            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${
+            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-md ${
               isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
             }`}>
               {pendingCount}
@@ -97,14 +115,8 @@ export default function Sidebar({ sidebarOpen, activeNav, setActiveNav, setSideb
 
   return (
     <>
-      {/* Mobile overlay */}
-      {sidebarOpen && setSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-gray-900/50 z-20 xl:hidden transition-opacity"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      <aside className={`fixed xl:relative z-30 h-full ${sidebarOpen ? 'w-64 translate-x-0' : 'w-64 xl:w-20 -translate-x-full xl:translate-x-0'} shrink-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
+      {/* Desktop & Tablet Sidebar */}
+      <aside className={`hidden md:flex fixed md:relative z-30 h-full ${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
         <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
           <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -141,6 +153,93 @@ export default function Sidebar({ sidebarOpen, activeNav, setActiveNav, setSideb
           </div>
         )}
       </aside>
+
+      {/* Mobile Bottom Navbar (5 Tabs Grid) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 md:hidden grid grid-cols-5 px-1 py-1.5 shadow-lg">
+        {mobilePrimaryTabs.map((item) => {
+          const isActive = activeNav === item.label && !showMoreMenu
+          return (
+            <button
+              key={item.label}
+              onClick={() => {
+                setActiveNav(item.label)
+                setShowMoreMenu(false)
+              }}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all relative group ${
+                isActive ? 'bg-blue-50 text-blue-700 font-bold shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
+              }`}
+            >
+              <NavIcon label={item.label} active={isActive} />
+              <span className="text-[10px] text-center leading-tight mt-1 truncate w-full">
+                {item.shortLabel}
+              </span>
+              {item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
+                <span className="absolute top-1 right-2 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )
+        })}
+
+        {/* Tab "Lainnya" */}
+        <button
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all relative ${
+            showMoreMenu || isMoreActive ? 'bg-blue-50 text-blue-700 font-bold shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
+          }`}
+        >
+          <svg className={`w-5 h-5 ${showMoreMenu || isMoreActive ? 'text-blue-600' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+          </svg>
+          <span className="text-[10px] text-center leading-tight mt-1 truncate w-full">
+            Lainnya
+          </span>
+          {isMoreActive && !showMoreMenu && (
+            <span className="absolute top-2 right-3 w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+          )}
+        </button>
+      </nav>
+
+      {/* Mobile "Lainnya" Bottom Sheet Modal */}
+      {showMoreMenu && (
+        <div className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-sm md:hidden transition-opacity duration-300" onClick={() => setShowMoreMenu(false)}>
+          <div 
+            className="absolute bottom-[72px] left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <span className="font-bold text-gray-900 text-sm">Menu Lainnya</span>
+              <button onClick={() => setShowMoreMenu(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded-full">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-2 space-y-1">
+              {mobileMoreItems.map((item) => {
+                const isActive = activeNav === item.label
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      setActiveNav(item.label)
+                      setShowMoreMenu(false)
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                      isActive ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <NavIcon label={item.label} active={isActive} />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
+

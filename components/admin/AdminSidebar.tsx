@@ -139,8 +139,8 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <aside className={`hidden xl:relative z-30 h-full ${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 xl:flex flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
+      {/* Desktop & Tablet Sidebar */}
+      <aside className={`hidden md:flex fixed md:relative z-30 h-full ${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
         <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
           <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -179,7 +179,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
       </aside>
 
       {/* Mobile Bottom Navbar (5 Tabs Grid) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 xl:hidden grid grid-cols-5 px-1 py-1.5 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 md:hidden grid grid-cols-5 px-1 py-1.5 shadow-lg">
         {mobilePrimaryTabs.map((item) => {
           const isActive = activeNav === item.label && !showMoreMenu
           return (
@@ -227,7 +227,7 @@ export default function AdminSidebar({ sidebarOpen, activeNav, setActiveNav, set
 
       {/* Mobile "Lainnya" Bottom Sheet Modal */}
       {showMoreMenu && (
-        <div className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-sm xl:hidden transition-opacity duration-300" onClick={() => setShowMoreMenu(false)}>
+        <div className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-sm md:hidden transition-opacity duration-300" onClick={() => setShowMoreMenu(false)}>
           <div 
             className="absolute bottom-[72px] left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
             onClick={(e) => e.stopPropagation()}

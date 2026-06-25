@@ -95,10 +95,11 @@ export default function ApprovalDashboard() {
           setSidebarOpen={setSidebarOpen} 
           userName="John Doe"
           roleName="Area Head"
+          hideHamburgerOnMobile={true}
         />
 
         {/* Dashboard Content */}
-        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
           
           {activeNav !== 'Analitik' && activeNav !== 'Verifikasi Pinjam' && (
             <div className="mb-4 sm:mb-6">
