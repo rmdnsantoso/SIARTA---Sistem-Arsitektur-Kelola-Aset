@@ -1,4 +1,5 @@
 import { Ticket } from '../types/ticket'
+export type { Ticket }
 
 export const initialTickets: Ticket[] = [
   {
