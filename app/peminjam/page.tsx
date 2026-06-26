@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PeminjamSidebar from '../../components/peminjam/PeminjamSidebar'
 import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
@@ -14,6 +14,10 @@ export default function PeminjamDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState(initialTickets)
 
+  useEffect(() => {
+    setTickets(initialTickets)
+  }, [])
+
   const handleAddTicket = (newTicketData: any) => {
     const newId = `TK-${String(tickets.length + 1).padStart(3, '0')}`
     const newTicket = { id: newId, ...newTicketData }
@@ -21,11 +25,12 @@ export default function PeminjamDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900">
+    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900 relative">
       <PeminjamSidebar
         sidebarOpen={sidebarOpen}
         activeNav={activeNav}
         setActiveNav={setActiveNav}
+        setSidebarOpen={setSidebarOpen}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopHeader 
@@ -33,16 +38,15 @@ export default function PeminjamDashboard() {
           setSidebarOpen={setSidebarOpen}
           userName="Ahmad"
           roleName="Peminjam"
+          hideNotificationBell={true}
+          hideHamburgerOnMobile={true}
+          customNotificationNode={<NotificationDropdown tickets={tickets} peminjamName="Ahmad" />}
         />
 
-        <div className="absolute top-3 right-[88px] sm:right-[104px] z-10">
-          <NotificationDropdown tickets={tickets} peminjamName="Ahmad" />
-        </div>
-
-        <div className="flex-1 overflow-auto p-8">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">{activeNav}</h1>
-            <p className="text-sm text-gray-500 mt-1">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
               {activeNav === 'Katalog Alat' && 'Pilih alat dan ajukan peminjaman dengan mudah.'}
               {activeNav === 'Tiket Saya' && 'Pantau status pengajuan peminjaman Anda di sini.'}
               {activeNav === 'Riwayat Pinjam' && 'Catatan riwayat peminjaman Anda sebelumnya.'}

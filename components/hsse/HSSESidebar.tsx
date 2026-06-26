@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState } from 'react'
 
 interface HSSESidebarProps {
   sidebarOpen: boolean
@@ -8,150 +10,236 @@ interface HSSESidebarProps {
   pendingCount?: number
 }
 
+function NavIcon({ label, active }: { label: string; active: boolean }) {
+  const cls = active ? 'text-blue-600' : 'text-gray-500'
+  switch (label) {
+    case 'Verifikasi Peminjaman':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    case 'Pengembalian Aset':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+        </svg>
+      )
+    case 'Master Aset':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      )
+    case 'Pemeliharaan Aset':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      )
+    case 'Riwayat Peminjaman':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      )
+    case 'Riwayat Pemeliharaan':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    default:
+      return null
+  }
+}
+
+const mainNavItems = [
+  { label: 'Verifikasi Peminjaman' },
+  { label: 'Pengembalian Aset' },
+  { label: 'Master Aset' },
+  { label: 'Pemeliharaan Aset' },
+]
+
+const bottomNavItems = [
+  { label: 'Riwayat Peminjaman' },
+  { label: 'Riwayat Pemeliharaan' },
+]
+
 export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, setActiveNav, pendingCount = 0 }: HSSESidebarProps) {
-  const mainMenus = [
-  { name: 'Verifikasi Peminjaman', icon: '...' },
-  { name: 'Pengembalian Aset', icon: '...' },
-  { name: 'Master Aset', icon: '...' },
-  { name: 'Pemeliharaan Aset', icon: '...' },
-]
+  const [showMoreMenu, setShowMoreMenu] = useState(false)
 
-const historyMenus = [
-  { name: 'Riwayat Peminjaman', icon: '...' },
-  { name: 'Riwayat Pemeliharaan', icon: '...' },
-]
+  const renderNavItems = (items: { label: string }[]) => {
+    return items.map((item) => {
+      const isActive = activeNav === item.label
+      return (
+        <button
+          key={item.label}
+          onClick={() => {
+            setActiveNav(item.label);
+            if (window.innerWidth < 1024 && setSidebarOpen) {
+              setSidebarOpen(false);
+            }
+          }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+            isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          <NavIcon label={item.label} active={isActive} />
+          {sidebarOpen && <span className="truncate">{item.label}</span>}
+          {sidebarOpen && item.label === 'Verifikasi Peminjaman' && pendingCount > 0 && (
+            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-md ${
+              isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
+            }`}>
+              {pendingCount}
+            </span>
+          )}
+        </button>
+      )
+    })
+  }
+
+  const mobilePrimaryTabs = [
+    { label: 'Verifikasi Peminjaman', shortLabel: 'Verifikasi' },
+    { label: 'Pengembalian Aset', shortLabel: 'Kembali' },
+    { label: 'Master Aset', shortLabel: 'Master' },
+    { label: 'Pemeliharaan Aset', shortLabel: 'Pemeliharaan' },
+  ]
+
+  const mobileMoreItems = [
+    { label: 'Riwayat Peminjaman' },
+    { label: 'Riwayat Pemeliharaan' },
+  ]
+
+  const isMoreActive = mobileMoreItems.some(item => item.label === activeNav)
+
   return (
-    
-    <aside
-  className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shrink-0
-  fixed md:static z-40 h-screen
-  ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'}`}
->
-      <div className="h-16 flex items-center justify-center border-b border-gray-200 shrink-0">
-        <div className={`w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm transition-all duration-300`}>
-          H
-        </div>
-      </div>
-
-      <nav className="flex-1 py-6 px-3 overflow-y-auto">
-
-  {/* Menu Utama */}
-  <div className="space-y-1.5">
-{mainMenus.map((m) => (
-  <button
-    key={m.name}
-    onClick={() => {
-      setActiveNav(m.name);
-      // Logika untuk menutup sidebar di layar mobile/tablet
-      if (window.innerWidth < 768 && setSidebarOpen) {
-        setSidebarOpen(false);
-      }
-    }}
-    className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
-      activeNav === m.name
-        ? 'bg-green-50 text-green-700'
-        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-    }`}
-  >
-            <div className={`shrink-0 flex items-center justify-center ${activeNav === m.name ? 'text-green-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={activeNav === m.name ? 2.5 : 2} d={m.icon} />
-              </svg>
-            </div>
-            {sidebarOpen && (
-              <span
-  className={`ml-3 text-sm tracking-wide ${
-    activeNav === m.name ? 'font-bold' : 'font-medium'
-  }`}
->
-  {m.name}
-</span>
-            )}
-            
-            {sidebarOpen && m.name === 'Verifikasi Peminjaman' && pendingCount > 0 && (
-              <span className={`absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center min-w-[20px] h-5 rounded-full text-[10px] font-bold ${
-                activeNav === m.name ? 'bg-green-200 text-green-800' : 'bg-red-100 text-red-600'
-              }`}>
-                {pendingCount}
-              </span>
-            )}
-          </button>
-        ))}
-
-              </div>
-
-      {/* Garis Pembatas */}
-      <div className="my-4 border-t border-gray-200"></div>
-
-      {/* Menu Riwayat */}
-      <div className="space-y-1.5">
-{historyMenus.map((m) => (
-  <button
-    key={m.name}
-    onClick={() => {
-      setActiveNav(m.name);
-      // Logika untuk menutup sidebar di layar mobile/tablet
-      if (window.innerWidth < 768 && setSidebarOpen) {
-        setSidebarOpen(false);
-      }
-    }}
-    className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative ${
-      activeNav === m.name
-        ? 'bg-green-50 text-green-700'
-        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-    }`}
-  >
-            <div
-              className={`shrink-0 flex items-center justify-center ${
-                activeNav === m.name
-                  ? 'text-green-600'
-                  : 'text-gray-400 group-hover:text-gray-600'
-              }`}
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={activeNav === m.name ? 2.5 : 2}
-                  d={m.icon}
-                />
-              </svg>
-            </div>
-
-            {sidebarOpen && (
-              <span
-  className={`ml-3 text-sm tracking-wide ${
-    activeNav === m.name ? 'font-bold' : 'font-medium'
-  }`}
->
-                {m.name}
-              </span>
-            )}
-            
-          </button>
-        ))}
-      </div>
-      
-      </nav>
-      
-      <div className="p-4 border-t border-gray-100">
-        <div className={`bg-gray-50 rounded-xl p-3 flex items-center gap-3 border border-gray-100 ${sidebarOpen ? '' : 'justify-center'}`}>
-          <div className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-xs shrink-0">
-            DR
+    <>
+      {/* Desktop & Tablet Sidebar */}
+      <aside className={`hidden md:flex fixed md:relative z-30 h-full ${sidebarOpen ? 'w-64' : 'w-20'} shrink-0 flex-col bg-white border-r border-gray-200 transition-all duration-300`}>
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
+          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
           </div>
           {sidebarOpen && (
-            <div className="overflow-hidden hidden md:block">
-              <p className="text-sm font-bold hidden md:block text-gray-900 truncate">Hendra</p>
-              <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider truncate">HSSE</p>
+            <div className="overflow-hidden">
+              <p className="text-base font-bold tracking-tight text-gray-900">SIARTA</p>
+              <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">HSSE Dashboard</p>
             </div>
           )}
         </div>
-      </div>
-    </aside>
+
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto overscroll-y-contain">
+          {renderNavItems(mainNavItems)}
+          
+          <div className="my-4 border-t border-gray-200"></div>
+          
+          {renderNavItems(bottomNavItems)}
+        </nav>
+
+        {sidebarOpen && (
+          <div className="p-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded bg-blue-600 flex items-center justify-center shrink-0">
+                <span className="text-sm font-bold text-white">HR</span>
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-semibold text-gray-900 truncate">Hendra</p>
+                <p className="text-xs text-gray-500 truncate">HSSE</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {/* Mobile Bottom Navbar (5 Tabs Grid) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-gray-200 md:hidden grid grid-cols-5 px-1 py-1.5 shadow-lg">
+        {mobilePrimaryTabs.map((item) => {
+          const isActive = activeNav === item.label && !showMoreMenu
+          return (
+            <button
+              key={item.label}
+              onClick={() => {
+                setActiveNav(item.label)
+                setShowMoreMenu(false)
+              }}
+              className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all relative group ${
+                isActive ? 'bg-blue-50 text-blue-700 font-bold shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
+              }`}
+            >
+              <NavIcon label={item.label} active={isActive} />
+              <span className="text-[10px] text-center leading-tight mt-1 truncate w-full">
+                {item.shortLabel}
+              </span>
+              {item.label === 'Verifikasi Peminjaman' && pendingCount > 0 && (
+                <span className="absolute top-1 right-2 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )
+        })}
+
+        {/* Tab "Lainnya" */}
+        <button
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all relative ${
+            showMoreMenu || isMoreActive ? 'bg-blue-50 text-blue-700 font-bold shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium'
+          }`}
+        >
+          <svg className={`w-5 h-5 ${showMoreMenu || isMoreActive ? 'text-blue-600' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+          </svg>
+          <span className="text-[10px] text-center leading-tight mt-1 truncate w-full">
+            Lainnya
+          </span>
+          {isMoreActive && !showMoreMenu && (
+            <span className="absolute top-2 right-3 w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+          )}
+        </button>
+      </nav>
+
+      {/* Mobile "Lainnya" Bottom Sheet Modal */}
+      {showMoreMenu && (
+        <div className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-sm md:hidden transition-opacity duration-300" onClick={() => setShowMoreMenu(false)}>
+          <div 
+            className="absolute bottom-[72px] left-4 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+              <span className="font-bold text-gray-900 text-sm">Menu Lainnya</span>
+              <button onClick={() => setShowMoreMenu(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded-full">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-2 space-y-1">
+              {mobileMoreItems.map((item) => {
+                const isActive = activeNav === item.label
+                return (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      setActiveNav(item.label)
+                      setShowMoreMenu(false)
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                      isActive ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <NavIcon label={item.label} active={isActive} />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

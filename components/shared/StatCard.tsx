@@ -21,18 +21,18 @@ export default function StatCard({ label, value, iconPath, colorTheme = 'default
   const theme = themes[colorTheme] || themes.default
 
   return (
-    <div className={`bg-white border ${theme.border} rounded-xl p-3 sm:p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md`}>
+    <div className={`bg-white border ${theme.border} rounded-2xl p-3.5 sm:p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md`}>
       <div className="flex items-start sm:items-center justify-between mb-2 sm:mb-4 gap-2">
-        <h3 className="text-[10px] sm:text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wide leading-tight">{label}</h3>
-        <div className={`p-1.5 sm:p-2.5 rounded-lg ${theme.iconBg} shrink-0`}>
+        <h3 className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-widest leading-tight">{label}</h3>
+        <div className={`p-1.5 sm:p-2.5 rounded-xl ${theme.iconBg} shrink-0`}>
           <svg className={`w-4 h-4 sm:w-5 sm:h-5 ${theme.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={iconPath} />
           </svg>
         </div>
       </div>
       <div className="flex flex-col gap-0.5 sm:gap-1">
-        <p className={`text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight ${theme.text}`}>{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+        <p className={`text-lg sm:text-2xl lg:text-3xl font-extrabold tracking-tight ${theme.text}`}>{value}</p>
+        {sub && <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">{sub}</p>}
       </div>
     </div>
   )
