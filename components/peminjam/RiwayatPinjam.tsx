@@ -27,7 +27,6 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
   )
 }
 export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
-  const [localTickets] = useState<Ticket[]>(tickets)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
   // Pagination State
@@ -37,7 +36,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
   // Filter completed/rejected tickets for Ahmad
   const historyStatuses = ['Selesai', 'Dikembalikan', 'Ditolak']
-  const myHistoryTickets = localTickets.filter(t => t.peminjam === 'Ahmad' && historyStatuses.includes(t.overallStatus))
+  const myHistoryTickets = tickets.filter(t => t.peminjam === 'Ahmad' && historyStatuses.includes(t.overallStatus))
   const filteredTickets = myHistoryTickets.filter(t => {
     const matchesSearch = 
       t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -58,23 +57,25 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
     { label: 'Laporan Kerusakan', value: totalLaporRusak, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'amber' as const },
   ]
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {stats.map((card) => (
           <StatCard key={card.label} {...card} />
         ))}
       </div>
       {/* Main Table Container */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="px-6 py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+        <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Riwayat Peminjaman Alat</h2>
-            <p className="text-sm text-gray-500">Melihat rekapitulasi seluruh pengajuan peminjaman Anda yang sudah selesai atau ditolak.</p>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Riwayat Peminjaman Alat</h2>
+            <p className="text-xs sm:text-sm text-gray-500">Melihat rekapitulasi seluruh pengajuan peminjaman Anda yang sudah selesai atau ditolak.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 mt-2 lg:mt-0 w-full lg:w-auto">
+            <div className="relative w-full lg:w-auto">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </div>
               <input 
                 type="text" 
                 placeholder="Cari ID atau Nama Aset..." 
@@ -83,7 +84,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                   setSearchQuery(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64"
+                className="pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full lg:w-64 transition-all outline-none"
               />
             </div>
             <select
@@ -92,7 +93,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                 setFilterStatus(e.target.value)
                 setCurrentPage(1)
               }}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors outline-none focus:ring-2 focus:ring-blue-500 w-full lg:w-auto"
             >
               <option value="Semua">Semua Status</option>
               <option value="Dikembalikan">Dikembalikan</option>
@@ -100,7 +101,65 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
             </select>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
+          {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
+            <div key={ticket.id} className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
+              <div className="flex justify-between items-start gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{ticket.alat}</h3>
+                  <div className="text-xs font-medium text-blue-600 mt-1">{ticket.id}</div>
+                </div>
+                <div className="shrink-0">
+                  <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 p-2.5 bg-gray-50 rounded-lg sm:rounded-xl text-xs">
+                <div>
+                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Lokasi</p>
+                  <p className="font-bold text-gray-900">{ticket.lokasi}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Kuantitas</p>
+                  <p className="font-bold text-gray-900">{ticket.jumlah} unit</p>
+                </div>
+                <div className="col-span-2 border-t border-gray-200/60 pt-2 mt-1">
+                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
+                  <p className="font-bold text-gray-900">{ticket.tanggalPinjam} <span className="text-gray-400 font-normal">s/d</span> {ticket.tanggalKembali}</p>
+                </div>
+              </div>
+
+              {ticket.isReportedDamaged && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 text-red-700 text-xs font-bold border border-red-100 rounded-lg w-fit">
+                  <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.33-2.694-1.33-3.464 0L3.34 16c-.77 1.33.192 3 1.732 3z" />
+                  </svg>
+                  Alat Dilaporkan Rusak
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-gray-100">
+                <button 
+                  onClick={() => setModalTicket(ticket)}
+                  className="w-full py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Lihat Histori Lengkap
+                </button>
+              </div>
+            </div>
+          ))}
+          {filteredTickets.length === 0 && (
+            <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+              <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              <p className="text-gray-500 font-medium text-sm">Tidak ada riwayat peminjaman yang ditemukan.</p>
+            </div>
+          )}
+        </div>
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
@@ -176,25 +235,25 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
         </div>
         {/* Pagination Footer */}
         {Math.ceil(filteredTickets.length / itemsPerPage) > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
-            <span className="text-sm text-gray-500 font-medium">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-3 rounded-b-lg">
+            <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
               Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> riwayat
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Sebelumnya
               </button>
               
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 sm:gap-1">
                 {Array.from({ length: Math.ceil(filteredTickets.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
+                    className={`w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-bold transition-all ${
                       currentPage === page 
                         ? 'bg-blue-600 text-white shadow-md' 
                         : 'text-gray-500 hover:bg-gray-200 bg-transparent'
@@ -207,7 +266,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
               <button 
                 onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredTickets.length / itemsPerPage), p + 1))}
                 disabled={currentPage === Math.ceil(filteredTickets.length / itemsPerPage) || filteredTickets.length === 0}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Selanjutnya
               </button>
@@ -217,39 +276,33 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
       </div>
       {/* TRACKING DETAILS MODAL */}
       {modalTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-w-4xl max-h-[85vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+          <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl w-full max-w-3xl max-h-[90vh]">
             
             {/* Modal Header */}
-            <div className="px-6 py-5 border-b shrink-0 bg-gray-950 text-white flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-800 shrink-0 bg-gray-950 text-white flex justify-between items-center">
               <div>
-                <h3 className="text-xl font-extrabold">Histori Lengkap Peminjaman</h3>
-                <p className="text-sm opacity-90 mt-1">ID Tiket: {modalTicket.id} | Status Akhir: {modalTicket.overallStatus}</p>
+                <h3 className="text-base sm:text-lg font-extrabold">Histori Lengkap Peminjaman</h3>
+                <p className="text-xs opacity-90 mt-0.5">ID Tiket: {modalTicket.id} | Status Akhir: {modalTicket.overallStatus}</p>
               </div>
-              <button 
-                onClick={() => setModalTicket(null)}
-                className="text-white hover:bg-gray-800 bg-gray-900 p-2 rounded-full transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
               {/* Damage Report View if present */}
               {modalTicket.isReportedDamaged && modalTicket.damageReport && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-start">
-                  <div className="w-full md:w-40 h-28 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-red-100 shadow-sm relative">
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start shadow-2xs">
+                  <div className="w-full sm:w-36 h-28 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-red-100 shadow-2xs relative">
                     <img 
                       src={modalTicket.damageReport.imageUrl} 
                       alt="Bukti Kerusakan" 
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded-md uppercase">
+                  <div className="flex-1 space-y-1 w-full">
+                    <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded-md uppercase tracking-wide">
                       Laporan Kerusakan Terkirim
                     </span>
-                    <h5 className="font-bold text-gray-900 text-sm mt-1">Deskripsi Kerusakan Alat:</h5>
-                    <p className="text-sm text-gray-700 leading-relaxed italic">
+                    <h5 className="font-bold text-gray-900 text-xs sm:text-sm mt-1">Deskripsi Kerusakan Alat:</h5>
+                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
                       "{modalTicket.damageReport.description}"
                     </p>
                     <p className="text-[10px] text-gray-400 mt-2 font-mono">
@@ -260,44 +313,44 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
               )}
               {/* Logs timeline */}
               <div>
-                <h4 className="font-bold text-gray-900 mb-4 text-sm">Kronologi Aktivitas Tiket</h4>
-                <div className="relative border-l-2 border-gray-200 ml-3 space-y-6 pb-2">
+                <h4 className="font-bold text-gray-900 mb-3 text-xs sm:text-sm uppercase tracking-wide text-gray-600">Kronologi Aktivitas Tiket</h4>
+                <div className="relative border-l-2 border-gray-200 ml-3 space-y-4 sm:space-y-5 pb-1">
                   {modalTicket.trackingLogs && modalTicket.trackingLogs.length > 0 ? (
                     modalTicket.trackingLogs.map((log, idx) => (
-                      <div key={idx} className="relative pl-6">
-                        <span className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white ${
+                      <div key={idx} className="relative pl-5 sm:pl-6">
+                        <span className={`absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-2xs ${
                           log.status.toLowerCase().includes('kembali') ? 'bg-blue-500' :
                           log.status.toLowerCase().includes('ditolak') ? 'bg-red-500' :
                           'bg-green-500'
                         }`} />
-                        <div className="bg-white border border-gray-100 p-4 rounded-xl shadow-sm">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-bold text-gray-900 text-sm">{log.stage}</h4>
-                            <span className="text-[10px] font-bold text-gray-400">{log.timestamp}</span>
+                        <div className="bg-white border border-gray-100 p-3.5 sm:p-4 rounded-xl shadow-2xs hover:shadow-sm transition-shadow">
+                          <div className="flex justify-between items-start mb-1.5">
+                            <h4 className="font-bold text-gray-900 text-xs sm:text-sm">{log.stage}</h4>
+                            <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">{log.timestamp}</span>
                           </div>
-                          <p className="text-sm text-gray-600 leading-relaxed mb-2">{log.status}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg w-fit">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                          <p className="text-xs sm:text-sm text-gray-600 leading-relaxed mb-2.5">{log.status}</p>
+                          <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg w-fit border border-gray-100">
+                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                             Oleh: {log.actor}
                           </div>
                           {log.notes && (
-                            <div className="mt-2 text-xs bg-amber-50 text-amber-800 p-2 rounded border border-amber-100 italic">
-                              " {log.notes} "
+                            <div className="mt-2 text-xs bg-amber-50 text-amber-800 p-2.5 rounded-lg border border-amber-100 italic shadow-2xs">
+                              "{log.notes}"
                             </div>
                           )}
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="pl-6 text-sm text-gray-500 italic">Belum ada riwayat aktivitas detail.</div>
+                    <div className="pl-5 sm:pl-6 text-xs sm:text-sm text-gray-500 italic">Belum ada riwayat aktivitas detail.</div>
                   )}
                 </div>
               </div>
             </div>
-            <div className="p-6 border-t border-gray-100 bg-gray-50 flex shrink-0">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex shrink-0">
               <button
                 onClick={() => setModalTicket(null)}
-                className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors"
+                className="w-full py-2 sm:py-2.5 bg-gray-900 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-gray-800 transition-colors shadow-sm"
               >
                 Tutup Histori
               </button>

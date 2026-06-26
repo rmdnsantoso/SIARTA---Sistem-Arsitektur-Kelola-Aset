@@ -210,24 +210,24 @@ export default function NotificationDropdown({ tickets, peminjamName }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-900">Notifikasi</h3>
+        <div className="fixed right-3 top-16 w-[290px] sm:absolute sm:inset-auto sm:right-0 sm:top-12 sm:w-96 bg-white rounded-2xl border border-gray-100 shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between p-3 sm:p-4 bg-slate-50 border-b border-gray-100">
+            <h3 className="text-xs sm:text-sm font-extrabold text-gray-900">Notifikasi Sistem</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                className="text-[10px] sm:text-[11px] font-bold text-blue-600 hover:text-blue-700 transition-colors"
               >
-                Tandai semua dibaca
+                Tandai dibaca
               </button>
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
+          <div className="max-h-[280px] sm:max-h-[360px] overflow-y-auto divide-y divide-gray-100">
             {notifications.length === 0 && (
-              <div className="px-4 py-10 text-center">
+              <div className="p-6 text-center">
                 <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Belum ada notifikasi</p>
+                <p className="text-xs text-gray-400">Belum ada notifikasi</p>
               </div>
             )}
 
@@ -235,20 +235,20 @@ export default function NotificationDropdown({ tickets, peminjamName }: Props) {
               <button
                 key={n.id}
                 onClick={() => handleMarkRead(n.id)}
-                className={`w-full text-left px-4 py-3 flex gap-3 hover:bg-gray-50 transition-colors ${!n.isRead ? 'bg-blue-50/40' : ''}`}
+                className={`w-full text-left p-3 sm:p-4 flex gap-2.5 sm:gap-3 hover:bg-slate-50/80 transition-all ${!n.isRead ? 'bg-blue-50/30' : ''}`}
               >
-                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${BG[n.type]}`}>
+                <div className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mt-0.5 ${BG[n.type]}`}>
                   {ICONS[n.type]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-sm truncate ${!n.isRead ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>
+                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                    <p className={`text-[11px] sm:text-xs font-bold truncate ${!n.isRead ? 'text-gray-900' : 'text-gray-600'}`}>
                       {n.title}
                     </p>
-                    {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />}
+                    {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.message}</p>
-                  <p className="text-[10px] text-gray-400 mt-1">{n.timestamp}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 leading-relaxed line-clamp-2">{n.message}</p>
+                  <p className="text-[9px] sm:text-[10px] font-semibold text-gray-400 mt-1">{n.timestamp}</p>
                 </div>
               </button>
             ))}

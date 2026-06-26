@@ -164,6 +164,78 @@ export const initialTickets: Ticket[] = [
     tanggalPinjam: '25 Jun 2026', tanggalKembali: '30 Jun 2026',
     lokasi: 'Area Eksplorasi', currentStage: 'Admin', overallStatus: 'Menunggu',
     flow: [ { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' } ]
+  },
+  // ===== Data Dummy Khusus Peminjam (Ahmad) =====
+  {
+    id: 'TKT-101', peminjam: 'Ahmad', nip: '19950214021', jabatan: 'Teknisi Operasional',
+    alat: 'Helm Safety Pro (Class G)', jumlah: 1, stokTersedia: 10, assetType: 'NON_SERIALIZED', allocatedUnits: ['HLM-PRO-05'],
+    tanggalPinjam: '14 Jun 2026', tanggalKembali: '28 Jun 2026',
+    lokasi: 'Area Fabrikasi Utama', currentStage: 'Serah Terima', overallStatus: 'Dipinjam',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Disetujui' },
+      { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
+    ],
+    trackingLogs: [
+      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam oleh Ahmad.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 09:30 WIB' }
+    ]
+  },
+  {
+    id: 'TKT-102', peminjam: 'Ahmad', nip: '19950214021', jabatan: 'Teknisi Operasional',
+    alat: 'Gas Detector (MSA Altair 4X)', jumlah: 1, stokTersedia: 2, assetType: 'SERIALIZED', allocatedUnits: ['GD-MSA-004'],
+    tanggalPinjam: '20 Jun 2026', tanggalKembali: '25 Jun 2026',
+    lokasi: 'Wellpad Alpha', currentStage: 'Serah Terima', overallStatus: 'Disetujui',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Disetujui' },
+      { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Menunggu' }
+    ],
+    trackingLogs: [
+      { stage: 'Peminjam', status: 'Pengajuan pinjam dibuat.', actor: 'Ahmad', timestamp: '19 Jun 2026, 08:15 WIB' },
+      { stage: 'Admin', status: 'Stok tersedia, unit GD-MSA-004 dialokasikan.', actor: 'Siti Aminah (Admin)', timestamp: '19 Jun 2026, 09:00 WIB' },
+      { stage: 'HSSE', status: 'Telah lolos verifikasi keselamatan kerja.', actor: 'Hendra (HSSE)', timestamp: '19 Jun 2026, 11:20 WIB' },
+      { stage: 'Area Head', status: 'Disetujui untuk operasi wellpad.', actor: 'Pak Joko (Area Head)', timestamp: '19 Jun 2026, 14:00 WIB' }
+    ]
+  },
+  {
+    id: 'TKT-103', peminjam: 'Ahmad', nip: '19950214021', jabatan: 'Teknisi Operasional',
+    alat: 'Safety Harness Full Body', jumlah: 2, stokTersedia: 5, assetType: 'NON_SERIALIZED',
+    tanggalPinjam: '22 Jun 2026', tanggalKembali: '26 Jun 2026',
+    lokasi: 'Platform Delta-7', currentStage: 'Admin', overallStatus: 'Menunggu',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Menunggu' },
+      { stage: 'HSSE', status: 'Menunggu' }, { stage: 'Area Head', status: 'Menunggu' }
+    ],
+    trackingLogs: [
+      { stage: 'Peminjam', status: 'Pengajuan dibuat dan menunggu pemeriksaan Admin.', actor: 'Ahmad', timestamp: '21 Jun 2026, 16:10 WIB' }
+    ]
+  },
+  {
+    id: 'TKT-104', peminjam: 'Ahmad', nip: '19950214021', jabatan: 'Teknisi Operasional',
+    alat: 'Multimeter Digital Fluke', jumlah: 1, stokTersedia: 0, assetType: 'SERIALIZED',
+    tanggalPinjam: '15 Jun 2026', tanggalKembali: '18 Jun 2026',
+    lokasi: 'Substation C', currentStage: 'Admin', overallStatus: 'Ditolak',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Ditolak' },
+      { stage: 'HSSE', status: 'Menunggu' }, { stage: 'Area Head', status: 'Menunggu' }
+    ],
+    trackingLogs: [
+      { stage: 'Peminjam', status: 'Pengajuan pinjam dibuat.', actor: 'Ahmad', timestamp: '14 Jun 2026, 10:00 WIB' },
+      { stage: 'Admin', status: 'Ditolak karena seluruh unit Multimeter sedang dalam jadwal kalibrasi tahunan.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 11:30 WIB', notes: 'Bisa mengajukan kembali minggu depan' }
+    ]
+  },
+  {
+    id: 'TKT-105', peminjam: 'Ahmad', nip: '19950214021', jabatan: 'Teknisi Operasional',
+    alat: 'Chain Block 2T Heavy Duty', jumlah: 1, stokTersedia: 4, assetType: 'NON_SERIALIZED', allocatedUnits: ['CB-2T-08'],
+    tanggalPinjam: '01 Jun 2026', tanggalKembali: '05 Jun 2026',
+    lokasi: 'Dermaga Loading', currentStage: 'Selesai', overallStatus: 'Selesai',
+    flow: [
+      { stage: 'Peminjam', status: 'Disetujui' }, { stage: 'Admin', status: 'Disetujui' },
+      { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
+    ],
+    trackingLogs: [
+      { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Ahmad', timestamp: '31 Mei 2026, 09:00 WIB' },
+      { stage: 'Admin', status: 'Disetujui.', actor: 'Siti Aminah', timestamp: '31 Mei 2026, 10:00 WIB' },
+      { stage: 'Serah Terima', status: 'Aset dikembalikan dalam kondisi lengkap dan baik.', actor: 'Siti Aminah (Admin)', timestamp: '05 Jun 2026, 15:20 WIB', notes: 'Pengembalian tepat waktu' }
+    ]
   }
 ]
 

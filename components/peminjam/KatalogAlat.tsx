@@ -111,79 +111,84 @@ export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
     return matchTracking && matchSearch
   })
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-4 sm:space-y-6 font-sans">
       {/* ── Toolbar ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="px-6 py-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 flex-wrap">
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Cari nama atau ID aset..."
-              className="w-64 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            />
-            <div className="flex gap-1">
-              {TRACKING_FILTERS.map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFilterTracking(f)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    filterTracking === f
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {f === 'Semua' ? 'Semua' : f === 'SERIALIZED' ? 'Per Unit (Serialized)' : 'Per Unit (Non-Serialized)'}
-                </button>
-              ))}
+        <div className="px-4 py-4 sm:px-6 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Cari ID atau nama aset..." 
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              />
             </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {TRACKING_FILTERS.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilterTracking(f)}
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-center whitespace-nowrap ${
+                  filterTracking === f
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {f === 'Semua' ? 'Semua' : f === 'SERIALIZED' ? 'Per Unit (Serialized)' : 'Per Unit (Non-Serialized)'}
+              </button>
+            ))}
           </div>
         </div>
       </div>
       {/* ── E-Commerce Style Grid Layout ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {filtered.map(a => {
           const isLow = a.availableStock === 0
           
           return (
             <div key={a.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col group relative">
               {isLow && (
-                <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10">
+                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10">
                   STOK HABIS
                 </div>
               )}
               {/* Product Image Placeholder */}
-              <div className="h-40 bg-gray-50 border-b border-gray-100 flex items-center justify-center p-4 relative overflow-hidden group-hover:bg-gray-100 transition-colors">
+              <div className="h-28 sm:h-36 bg-gray-50 border-b border-gray-100 flex items-center justify-center p-3 relative overflow-hidden group-hover:bg-gray-100 transition-colors">
                 {a.imageUrl ? (
                   <img src={a.imageUrl} alt={a.name} className="w-full h-full object-contain" />
                 ) : (
-                  <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                   </svg>
                 )}
                 {/* Tracking Badge */}
-                <div className={`absolute top-2 right-2 px-2 py-1 rounded shadow text-[10px] font-bold tracking-wider ${
+                <div className={`absolute top-2 right-2 px-2 py-0.5 rounded shadow text-[10px] font-bold tracking-wider ${
                   a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-500 text-white'
                 }`}>
                   {a.trackingType === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
                 </div>
-                <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200">
-                  Rak {a.rackLocation}
+                <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-gray-600 border border-gray-200 shadow-sm">
+                  {a.rackLocation}
                 </div>
               </div>
               
               {/* Product Info */}
-              <div className="p-4 flex-1 flex flex-col">
+              <div className="p-3.5 sm:p-4 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-1">
                   <span className="text-[10px] text-gray-400 font-mono">{a.id}</span>
                 </div>
-                <h3 className="font-bold text-gray-900 leading-tight mb-3 line-clamp-2">{a.name}</h3>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-snug mb-3 line-clamp-2">{a.name}</h3>
                 
                 <div className="mt-auto">
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between py-1.5 border-t border-gray-100">
                     <span className="text-xs text-gray-500">Tersedia:</span>
-                    <span className={`text-lg font-extrabold ${a.availableStock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                    <span className={`text-base sm:text-lg font-extrabold ${a.availableStock > 0 ? 'text-green-600' : 'text-red-500'}`}>
                       {a.availableStock} <span className="text-xs font-medium text-gray-400">/ {a.totalStock}</span>
                     </span>
                   </div>
@@ -194,7 +199,7 @@ export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
                         setBorrowQty(1)
                       }}
                       disabled={a.availableStock === 0}
-                      className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm ${
+                      className={`w-full py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm ${
                         a.availableStock > 0 
                           ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' 
                           : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
@@ -221,58 +226,56 @@ export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
           </div>
         )}
       </div>
+
       {/* ── Borrow Modal ── */}
       {borrowAsset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Form Pengajuan Pinjam</h3>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">Form Pengajuan Pinjam</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{borrowAsset.name} ({borrowAsset.id})</p>
               </div>
-              <button onClick={() => setBorrowAsset(null)} className="text-gray-400 hover:text-gray-600">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
             </div>
             
-            <form onSubmit={handleBorrowSubmit}>
-              <div className="p-6 space-y-4">
+            <form onSubmit={handleBorrowSubmit} className="flex-1 overflow-y-auto overscroll-y-contain flex flex-col">
+              <div className="p-4 sm:p-6 space-y-3 sm:space-y-4 flex-1 bg-white">
                 {/* Info Stock */}
-                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex justify-between items-center text-sm text-blue-700">
-                  <span className="font-medium">Stok Tersedia Saat Ini:</span>
-                  <span className="font-extrabold text-base">{borrowAsset.availableStock} unit</span>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-2.5 sm:p-3 flex justify-between items-center text-blue-700 shadow-2xs">
+                  <span className="font-medium text-xs sm:text-sm">Stok Tersedia Saat Ini:</span>
+                  <span className="font-extrabold text-xs sm:text-base bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">{borrowAsset.availableStock} unit</span>
                 </div>
                 {/* Date Inputs */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mulai Pinjam <span className="text-red-500">*</span></label>
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Mulai Pinjam <span className="text-red-500">*</span></label>
                     <input
                       type="date"
                       required
                       value={startDate}
                       onChange={e => setStartDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full border border-gray-300 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Selesai Pinjam <span className="text-red-500">*</span></label>
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Selesai Pinjam <span className="text-red-500">*</span></label>
                     <input
                       type="date"
                       required
                       value={endDate}
                       onChange={e => setEndDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full border border-gray-300 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
                 {/* Quantity selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Jumlah Peminjaman <span className="text-red-500">*</span></label>
-                  <div className="flex items-center gap-3">
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Jumlah Peminjaman <span className="text-red-500">*</span></label>
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <button
                       type="button"
                       onClick={() => setBorrowQty(q => Math.max(1, q - 1))}
-                      className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 font-bold"
+                      className="w-8 h-8 sm:w-9 sm:h-9 border border-gray-300 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 active:bg-gray-200 font-bold text-sm bg-gray-50 transition-colors shadow-2xs"
                     >
                       -
                     </button>
@@ -285,12 +288,12 @@ export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
                         const val = parseInt(e.target.value) || 1
                         setBorrowQty(Math.min(borrowAsset.availableStock, Math.max(1, val)))
                       }}
-                      className="w-20 border border-gray-300 rounded-lg text-center h-10 font-bold text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-16 sm:w-20 border border-gray-300 rounded-xl text-center h-8 sm:h-9 font-bold text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setBorrowQty(q => Math.min(borrowAsset.availableStock, q + 1))}
-                      className="w-10 h-10 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-50 active:bg-gray-100 font-bold"
+                      className="w-8 h-8 sm:w-9 sm:h-9 border border-gray-300 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 active:bg-gray-200 font-bold text-sm bg-gray-50 transition-colors shadow-2xs"
                     >
                       +
                     </button>
@@ -298,29 +301,29 @@ export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
                 </div>
                 {/* Lokasi Penggunaan */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi Penggunaan / Kerja <span className="text-red-500">*</span></label>
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Lokasi Penggunaan / Kerja <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     required
                     value={location}
                     onChange={e => setLocation(e.target.value)}
                     placeholder="Mis. Platform Delta-7 atau Rig Nusantara-12"
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                   />
                 </div>
               </div>
               
-              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex gap-2 sm:gap-3 shrink-0">
                 <button 
                   type="button"
                   onClick={() => setBorrowAsset(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                  className="flex-1 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-2xs"
                 >
                   Batal
                 </button>
                 <button 
                   type="submit"
-                  className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded hover:bg-blue-700 shadow-sm"
+                  className="flex-1 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
                 >
                   Kirim Pengajuan
                 </button>
