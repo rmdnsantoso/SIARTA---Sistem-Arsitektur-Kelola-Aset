@@ -6,22 +6,50 @@ import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
-import { initialTickets } from '../../lib/dummyData'
 import NotificationDropdown from '../../components/peminjam/NotificationDropdown'
+import { getTicketsByUser } from '../../actions/core/ticket'
+import { getAvailableAssets } from '../../actions/core/asset'
+import { adaptTickets } from '../../types/db'
+import type { Ticket } from '../../types/ticket'
 
 export default function PeminjamDashboard() {
   const [activeNav, setActiveNav] = useState('Katalog Alat')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [tickets, setTickets] = useState(initialTickets)
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Ahmad pakai ID tetap dari seed (simulasi sesi login)
+  const AHMAD_USER_ID = 'usr-peminjam-01'
 
   useEffect(() => {
-    setTickets(initialTickets)
+    async function fetchData() {
+      try {
+        const dbTickets = await getTicketsByUser(AHMAD_USER_ID)
+        setTickets(adaptTickets(dbTickets))
+      } catch (err) {
+        console.error('Gagal memuat tiket:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   const handleAddTicket = (newTicketData: any) => {
     const newId = `TK-${String(tickets.length + 1).padStart(3, '0')}`
     const newTicket = { id: newId, ...newTicketData }
     setTickets((prev: any) => [newTicket, ...prev])
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-gray-500">Memuat data...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

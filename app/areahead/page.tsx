@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
-import { initialTickets } from '../../lib/dummyData'
 import Sidebar from '../../components/areahead/AreaHeadSidebar'
 import TopHeader from '../../components/shared/TopHeader'
 import StatCard from '../../components/shared/StatCard'
@@ -13,13 +12,30 @@ import AssetMaster from '../../components/admin/AssetMaster'
 import UserManagement from '../../components/admin/UserManagement'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistoryAreaHead from '../../components/areahead/MaintenanceHistoryAreaHead'
+import { getTicketsForAreaHead } from '../../actions/core/ticket'
+import { adaptTickets } from '../../types/db'
 
 export default function ApprovalDashboard() {
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [modal, setModal] = useState<{ ticket: Ticket; action: 'Setujui' | 'Tolak' } | null>(null)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const dbTickets = await getTicketsForAreaHead()
+        setTickets(adaptTickets(dbTickets))
+      } catch (err) {
+        console.error('Gagal memuat tiket area head:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
   const pendingCount = tickets.filter(
     (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'Area Head'
@@ -39,21 +55,21 @@ export default function ApprovalDashboard() {
     if (!modal) return
     const { ticket, action } = modal
     const newStatus: TicketStatus = action === 'Setujui' ? 'Disetujui' : 'Ditolak'
-    const newStage = action === 'Setujui' ? 'Serah Terima' : 'Area Head'
+    const newStage = action === 'Setujui' ? 'Menunggu Pengambilan di Gudang' : 'Ditolak oleh Area Head'
     
     setTickets((prev) =>
       prev.map((t) =>
         t.id !== ticket.id ? t : {
           ...t, 
           overallStatus: newStatus,
-          currentStage: newStage,
+          currentStage: newStage as any,
           flow: t.flow.map((f) => f.stage === 'Area Head' ? { ...f, status: newStatus } : f),
           trackingLogs: [
             ...(t.trackingLogs || []),
             {
               stage: 'Area Head',
               status: action === 'Setujui' ? 'Disetujui untuk operasi lapangan.' : 'Pengajuan ditolak oleh Area Head.',
-              actor: 'Area Head',
+              actor: 'Pak Joko (Area Head)',
               timestamp: new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB',
               notes: catatan
             }
@@ -77,9 +93,19 @@ export default function ApprovalDashboard() {
     { label: 'Konflik Stok', value: tickets.filter((t) => t.conflictWith && t.overallStatus === 'Menunggu').length, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'red' as const },
   ]
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-gray-500">Memuat data area head...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900">
-      
       <Sidebar 
         sidebarOpen={sidebarOpen} 
         setSidebarOpen={setSidebarOpen}
@@ -89,18 +115,15 @@ export default function ApprovalDashboard() {
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
-          userName="John Doe"
+          userName="Pak Joko"
           roleName="Area Head"
           hideHamburgerOnMobile={true}
         />
 
-        {/* Dashboard Content */}
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
-          
           {activeNav !== 'Analitik' && activeNav !== 'Verifikasi Pinjam' && (
             <div className="mb-4 sm:mb-6">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
@@ -112,13 +135,11 @@ export default function ApprovalDashboard() {
           
           {activeNav === 'Verifikasi Pinjam' && (
             <>
-              {/* Key Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 shrink-0">
                 {stats.map((card) => (
                   <StatCard key={card.label} {...card} />
                 ))}
               </div>
-
               <TicketTable tickets={tickets} handleAction={handleAction} />
             </>
           )}
@@ -127,7 +148,6 @@ export default function ApprovalDashboard() {
           {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} />}
           {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistoryAreaHead />}
-
         </div>
       </div>
 
