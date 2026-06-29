@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
   output   = "../app/generated/prisma"
@@ -13,3 +11,94 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  Admin
+  Peminjam
+  HSSE
+  AreaHead
+}
+
+enum AssetStatus {
+  Available   // Tersedia di gudang
+  Borrowed    // Sedang dipinjam di lapangan
+  Maintenance // Dalam pemeliharaan / kalibrasi / perbaikan (TIDAK ADA STATUS RUSAK)
+}
+
+enum TicketStatus {
+  Menunggu
+  Disetujui
+  Ditolak
+  Selesai
+  Dipinjam
+  Dikembalikan
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(Peminjam)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets   Ticket[] @relation("PeminjamTickets")
+}
+
+model Asset {
+  id           String      @id @default(uuid())
+  assetCode    String      @unique // e.g. AST-001
+  name         String
+  category     String      // e.g. Alat Ukur, Keselamatan
+  isSerialized Boolean     @default(true)
+  location     String      // e.g. Gudang Utama
+  quantity     Int         @default(1)
+  spec         String?     // Spesifikasi teknis
+  status       AssetStatus @default(Available)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  tickets      Ticket[]    @relation("AssetTickets")
+}
+
+model Ticket {
+  id            String       @id @default(uuid())
+  ticketCode    String       @unique // e.g. TK-001
+  peminjamId    String
+  peminjam      User         @relation("PeminjamTickets", fields: [peminjamId], references: [id])
+  assetId       String
+  asset         Asset        @relation("AssetTickets", fields: [assetId], references: [id])
+  jumlah        Int          @default(1)
+  tanggalPinjam String
+  tanggalKembali String
+  lokasi        String
+  overallStatus TicketStatus @default(Menunggu)
+  currentStage  String       @default("Menunggu Persetujuan Admin")
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  logs          TrackingLog[]
+}
+
+model TrackingLog {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  stage     String   // e.g. Admin, HSSE, Area Head
+  status    String   // Keterangan aksi (Disetujui, Ditolak, dll)
+  actor     String   // Nama dan Role pelaku
+  notes     String?  // Catatan opsional
+  timestamp String   // Waktu kejadian format string/WIB
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  title      String
+  desc       String
+  type       String   // info, success, warning, urgent
+  targetRole String   // Semua, Admin, Peminjam, HSSE, Area Head
+  unread     Boolean  @default(true)
+  time       String   // e.g. 10 mnt lalu
+  createdAt  DateTime @default(now())
+}
