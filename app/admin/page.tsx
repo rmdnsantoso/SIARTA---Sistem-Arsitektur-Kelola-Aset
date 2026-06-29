@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import TopHeader from '../../components/shared/TopHeader'
 import AnalyticsContent from '../../components/shared/AnalyticsContent'
@@ -11,15 +11,44 @@ import AssetMaintenance from '../../components/admin/AssetMaintenance'
 import ReturnProcess from '../../components/admin/ReturnProcess'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
-import { initialTickets } from '../../lib/dummyData'
+import { getAllTickets } from '../../actions/core/ticket'
+import { adaptTickets } from '../../types/db'
+import type { Ticket } from '../../types/ticket'
 
 export default function AdminDashboard() {
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const adminPendingCount = initialTickets.filter(
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const dbTickets = await getAllTickets()
+        setTickets(adaptTickets(dbTickets))
+      } catch (err) {
+        console.error('Gagal memuat tiket admin:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const adminPendingCount = tickets.filter(
     (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin'
   ).length
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-gray-500">Memuat data admin...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-gray-900 relative">
@@ -48,9 +77,9 @@ export default function AdminDashboard() {
             </div>
           )}
           
-          {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={initialTickets} />}
-          {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={initialTickets} />}
-          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={initialTickets} />}
+          {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={tickets} />}
+          {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={tickets} />}
+          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
           {activeNav === 'Kelola Pengguna' && <UserManagement />}
