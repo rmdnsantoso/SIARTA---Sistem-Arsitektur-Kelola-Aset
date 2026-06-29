@@ -36,9 +36,10 @@ const initialAssets: Asset[] = [
 const TRACKING_FILTERS = ['Semua', 'SERIALIZED', 'NON_SERIALIZED']
 interface KatalogAlatProps {
   onAddTicket: (newTicketData: Omit<Ticket, 'id'>) => void
+  assets?: Asset[]
 }
-export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
-  const [assets] = useState<Asset[]>(initialAssets)
+export default function KatalogAlat({ onAddTicket, assets: propAssets }: KatalogAlatProps) {
+  const assets = propAssets || initialAssets
   const [filterTracking, setFilterTracking] = useState('Semua')
   const [search, setSearch] = useState('')
   // Borrow Modal State
@@ -73,6 +74,7 @@ export default function KatalogAlat({ onAddTicket }: KatalogAlatProps) {
       nip: '19940102009',
       jabatan: 'Operasional',
       alat: borrowAsset.name,
+      assetId: borrowAsset.id,
       jumlah: borrowQty,
       stokTersedia: borrowAsset.availableStock,
       tanggalPinjam: formatDate(startDate),

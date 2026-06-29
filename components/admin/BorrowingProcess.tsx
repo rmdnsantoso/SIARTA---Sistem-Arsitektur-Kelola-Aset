@@ -5,6 +5,7 @@ import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
+import { verifyTicketByAdmin, rejectTicketByAdmin, verifyAssetBorrowHandover } from '../../actions/workflows/verifikasi'
 
 interface Props {
   tickets?: Ticket[]
@@ -102,9 +103,38 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
     }
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!modal) return
     const { ticket, type } = modal
+
+    if (type === 'setujui') {
+      if (ticket.dbId) {
+        const res = await verifyTicketByAdmin(ticket.dbId, 'Dialokasikan oleh Admin')
+        if (!res.success) {
+          alert(`Gagal memverifikasi tiket: ${res.error}`)
+          return
+        }
+      }
+      showToast(`✓ Tiket ${ticket.id} dialokasikan & diteruskan ke Area Head.`)
+    } else if (type === 'tolak') {
+      if (ticket.dbId) {
+        const res = await rejectTicketByAdmin(ticket.dbId, catatan)
+        if (!res.success) {
+          alert(`Gagal menolak tiket: ${res.error}`)
+          return
+        }
+      }
+      showToast(`✗ Tiket ${ticket.id} ditolak.`)
+    } else if (type === 'serah_terima') {
+      if (ticket.dbId) {
+        const res = await verifyAssetBorrowHandover(ticket.dbId)
+        if (!res.success) {
+          alert(`Gagal memverifikasi serah terima: ${res.error}`)
+          return
+        }
+      }
+      showToast(`✓ Serah terima tiket ${ticket.id} selesai. Barang resmi keluar gudang.`)
+    }
 
     setLocalTickets(prev => prev.map(t => {
       if (t.id !== ticket.id) return t
@@ -115,7 +145,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
           : allocatedSerials
         return {
           ...t,
-          currentStage: 'HSSE',
+          currentStage: 'Menunggu Persetujuan Area Head',
           allocatedUnits: units,
           flow: t.flow.map(f =>
             f.stage === 'Admin' ? { ...f, status: 'Disetujui' } : f
@@ -132,7 +162,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       } else if (type === 'serah_terima') {
         return {
           ...t,
-          overallStatus: 'Selesai',
+          overallStatus: 'Dipinjam',
+          currentStage: 'Dipinjam di Lapangan',
           flow: t.flow.map(f =>
             f.stage === 'Serah Terima' ? { ...f, status: 'Disetujui' } : f
           ),
@@ -140,10 +171,6 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
       }
       return t
     }))
-
-    if (type === 'setujui') showToast(`✓ Tiket ${ticket.id} dialokasikan & diteruskan ke HSSE.`)
-    else if (type === 'tolak') showToast(`✗ Tiket ${ticket.id} ditolak.`)
-    else showToast(`✓ Serah terima tiket ${ticket.id} selesai. Barang resmi keluar gudang.`)
     
     setModal(null)
   }

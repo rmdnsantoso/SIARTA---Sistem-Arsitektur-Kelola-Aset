@@ -51,6 +51,8 @@ function deriveFlow(currentStage: string, overallStatus: string): ApprovalFlow[]
 export function adaptTicket(t: TicketWithRelations): Ticket {
   return {
     id: t.ticketCode,
+    dbId: t.id,
+    assetId: t.assetId,
     peminjam: t.peminjam.name,
     jabatan: t.peminjam.role,           // Gunakan role sebagai jabatan
     alat: t.asset.name,

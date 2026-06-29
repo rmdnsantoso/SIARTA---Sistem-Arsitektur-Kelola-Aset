@@ -13,6 +13,7 @@ import UserManagement from '../../components/admin/UserManagement'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistoryAreaHead from '../../components/areahead/MaintenanceHistoryAreaHead'
 import { getTicketsForAreaHead } from '../../actions/core/ticket'
+import { approveTicketByAreaHead, rejectTicketByAreaHead } from '../../actions/workflows/approval'
 import { adaptTickets } from '../../types/db'
 
 export default function ApprovalDashboard() {
@@ -51,9 +52,28 @@ export default function ApprovalDashboard() {
     setModal({ ticket, action })
   }
 
-  const handleConfirm = (catatan?: string) => {
+  const handleConfirm = async (catatan?: string) => {
     if (!modal) return
     const { ticket, action } = modal
+
+    if (action === 'Setujui') {
+      if (ticket.dbId) {
+        const res = await approveTicketByAreaHead(ticket.dbId, catatan)
+        if (!res.success) {
+          alert(`Gagal menyetujui pengajuan: ${res.error}`)
+          return
+        }
+      }
+    } else {
+      if (ticket.dbId) {
+        const res = await rejectTicketByAreaHead(ticket.dbId, catatan || 'Ditolak Area Head')
+        if (!res.success) {
+          alert(`Gagal menolak pengajuan: ${res.error}`)
+          return
+        }
+      }
+    }
+
     const newStatus: TicketStatus = action === 'Setujui' ? 'Disetujui' : 'Ditolak'
     const newStage = action === 'Setujui' ? 'Menunggu Pengambilan di Gudang' : 'Ditolak oleh Area Head'
     

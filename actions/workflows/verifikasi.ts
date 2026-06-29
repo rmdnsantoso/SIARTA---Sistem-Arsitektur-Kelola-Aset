@@ -161,3 +161,41 @@ export async function setAssetToMaintenance(assetId: string, maintenanceNotes: s
     return { success: false, error: error.message }
   }
 }
+
+// 5. Admin menolak pengajuan tiket
+export async function rejectTicketByAdmin(ticketId: string, rejectReason: string) {
+  try {
+    const user = await requireRole([Role.Admin])
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
+    if (!ticket) throw new Error('Tiket tidak ditemukan.')
+    if (ticket.overallStatus !== TicketStatus.Menunggu) throw new Error('Status tiket tidak valid untuk penolakan.')
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        overallStatus: TicketStatus.Ditolak,
+        currentStage: 'Ditolak oleh Admin',
+        logs: {
+          create: {
+            stage: 'Admin',
+            status: `Ditolak Admin: ${rejectReason}`,
+            actor: `${user.name} (Admin)`,
+            timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
+            notes: rejectReason
+          }
+        }
+      }
+    })
+
+    await createNotification(
+      'Pengajuan Ditolak',
+      `Tiket ${ticket.ticketCode} ditolak oleh Admin. Alasan: ${rejectReason}`,
+      'urgent',
+      'Peminjam'
+    )
+
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}

@@ -9,6 +9,7 @@ import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
 import NotificationDropdown from '../../components/peminjam/NotificationDropdown'
 import { getTicketsByUser } from '../../actions/core/ticket'
 import { getAvailableAssets } from '../../actions/core/asset'
+import { createBorrowTicket } from '../../actions/workflows/peminjaman'
 import { adaptTickets } from '../../types/db'
 import type { Ticket } from '../../types/ticket'
 
@@ -16,6 +17,7 @@ export default function PeminjamDashboard() {
   const [activeNav, setActiveNav] = useState('Katalog Alat')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
+  const [assets, setAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Ahmad pakai ID tetap dari seed (simulasi sesi login)
@@ -24,10 +26,23 @@ export default function PeminjamDashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const dbTickets = await getTicketsByUser(AHMAD_USER_ID)
+        const [dbTickets, dbAssets] = await Promise.all([
+          getTicketsByUser(AHMAD_USER_ID),
+          getAvailableAssets()
+        ])
         setTickets(adaptTickets(dbTickets))
+        if (dbAssets.success && dbAssets.data) {
+          setAssets(dbAssets.data.map(a => ({
+            id: a.id,
+            name: a.name,
+            rackLocation: a.location,
+            totalStock: a.quantity,
+            availableStock: a.quantity,
+            trackingType: a.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED'
+          })))
+        }
       } catch (err) {
-        console.error('Gagal memuat tiket:', err)
+        console.error('Gagal memuat data:', err)
       } finally {
         setLoading(false)
       }
@@ -35,7 +50,33 @@ export default function PeminjamDashboard() {
     fetchData()
   }, [])
 
-  const handleAddTicket = (newTicketData: any) => {
+  const handleAddTicket = async (newTicketData: any) => {
+    try {
+      if (newTicketData.assetId) {
+        const res = await createBorrowTicket({
+          assetId: newTicketData.assetId,
+          jumlah: newTicketData.jumlah,
+          tanggalPinjam: newTicketData.tanggalPinjam,
+          tanggalKembali: newTicketData.tanggalKembali,
+          lokasi: newTicketData.lokasi,
+          notes: 'Pengajuan melalui Katalog Alat'
+        })
+        if (!res.success) {
+          console.error('Gagal membuat tiket di database:', res.error)
+          alert(`Gagal mengajukan pinjaman: ${res.error}`)
+          return
+        } else {
+          // Refresh tiket dari database
+          const updatedTickets = await getTicketsByUser(AHMAD_USER_ID)
+          setTickets(adaptTickets(updatedTickets))
+          return
+        }
+      }
+    } catch (err) {
+      console.error(err)
+    }
+
+    // Fallback UI update jika aset dummy / tanpa DB
     const newId = `TK-${String(tickets.length + 1).padStart(3, '0')}`
     const newTicket = { id: newId, ...newTicketData }
     setTickets((prev: any) => [newTicket, ...prev])
@@ -81,7 +122,7 @@ export default function PeminjamDashboard() {
             </p>
           </div>
           
-          {activeNav === 'Katalog Alat' && <KatalogAlat onAddTicket={handleAddTicket} />}
+          {activeNav === 'Katalog Alat' && <KatalogAlat onAddTicket={handleAddTicket} assets={assets.length > 0 ? assets : undefined} />}
           {activeNav === 'Tiket Saya' && <TiketSaya tickets={tickets} onUpdateTickets={setTickets} />}
           {activeNav === 'Riwayat Pinjam' && <RiwayatPinjam tickets={tickets} />}
         </div>

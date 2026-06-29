@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { setAssetToMaintenance } from '../../actions/workflows/verifikasi'
 
 type EscalationStatus = 'Menunggu Tindakan' | 'Selesai' | 'Dimusnahkan'
 
@@ -62,8 +63,15 @@ export default function AssetMaintenance() {
     setSelectedTicket(null)
   }
 
-  const handleSaveReport = () => {
+  const handleSaveReport = async () => {
     if (!reportForm.assetId || !reportForm.notes) return;
+
+    try {
+      await setAssetToMaintenance(reportForm.assetId, reportForm.notes)
+    } catch (err) {
+      console.error(err)
+    }
+
     const newId = `ESC-0${Math.floor(Math.random() * 90) + 10}`
     const newTicket: EscalationTicket = {
       id: newId,
