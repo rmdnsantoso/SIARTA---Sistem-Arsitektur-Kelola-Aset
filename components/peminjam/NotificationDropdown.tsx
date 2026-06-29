@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell, CheckCircle2, XCircle, Clock, AlertTriangle, Info } from 'lucide-react'
 import { Ticket } from '../../types/ticket'
 
@@ -162,6 +163,7 @@ const BG: Record<NotificationType, string> = {
 }
 
 export default function NotificationDropdown({ tickets, peminjamName }: Props) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
   const ref = useRef<HTMLDivElement>(null)
@@ -197,7 +199,13 @@ export default function NotificationDropdown({ tickets, peminjamName }: Props) {
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(prev => !prev)}
+        onClick={() => {
+          if (window.innerWidth < 1024) {
+            router.push('/notifikasi?role=Peminjam')
+          } else {
+            setOpen(prev => !prev)
+          }
+        }}
         className="relative p-2 rounded text-gray-500 hover:bg-gray-100 transition-colors"
         title="Notifikasi"
       >

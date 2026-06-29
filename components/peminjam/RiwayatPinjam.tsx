@@ -3,9 +3,11 @@ import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
+
 interface Props {
   tickets?: Ticket[]
 }
+
 function StatusBadge({ status, stage }: { status: TicketStatus, stage: string }) {
   const map: Record<TicketStatus, string> = {
     Menunggu: 'bg-yellow-50 text-yellow-700 border-yellow-200',
@@ -26,14 +28,18 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
     </div>
   )
 }
+
 export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
+  
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+  
   // Modal State for details
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
+  
   // Filter completed/rejected tickets for Ahmad
   const historyStatuses = ['Selesai', 'Dikembalikan', 'Ditolak']
   const myHistoryTickets = tickets.filter(t => t.peminjam === 'Ahmad' && historyStatuses.includes(t.overallStatus))
@@ -45,25 +51,27 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
     if (filterStatus === 'Semua') return matchesSearch
     return t.overallStatus === filterStatus && matchesSearch
   })
+
   // Calculate metrics
   const totalSelesai = myHistoryTickets.filter(t => t.overallStatus === 'Selesai' || t.overallStatus === 'Dikembalikan').length
   const totalDitolak = myHistoryTickets.filter(t => t.overallStatus === 'Ditolak').length
-  const totalLaporRusak = myHistoryTickets.filter(t => t.isReportedDamaged).length
   const totalHistory = myHistoryTickets.length
+
   const stats = [
     { label: 'Total Riwayat', value: totalHistory, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' as const },
     { label: 'Selesai Dikembalikan', value: totalSelesai, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'green' as const },
     { label: 'Pengajuan Ditolak', value: totalDitolak, iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'red' as const },
-    { label: 'Laporan Kerusakan', value: totalLaporRusak, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'amber' as const },
   ]
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {stats.map((card) => (
           <StatCard key={card.label} {...card} />
         ))}
       </div>
+
       {/* Main Table Container */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
@@ -101,6 +109,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
             </select>
           </div>
         </div>
+
         <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
           {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
             <div key={ticket.id} className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
@@ -129,15 +138,6 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                 </div>
               </div>
 
-              {ticket.isReportedDamaged && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-50 text-red-700 text-xs font-bold border border-red-100 rounded-lg w-fit">
-                  <svg className="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.33-2.694-1.33-3.464 0L3.34 16c-.77 1.33.192 3 1.732 3z" />
-                  </svg>
-                  Alat Dilaporkan Rusak
-                </div>
-              )}
-
               <div className="pt-2 border-t border-gray-100">
                 <button 
                   onClick={() => setModalTicket(ticket)}
@@ -159,11 +159,12 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
             </div>
           )}
         </div>
+
         <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                {['ID Tiket', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status Akhir', 'Kerusakan', 'Detail'].map((h, i) => (
+                {['ID Tiket', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status Akhir', 'Detail'].map((h, i) => (
                   <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -195,19 +196,6 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
                   </td>
-                  {/* Kerusakan */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {ticket.isReportedDamaged ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-red-50 text-red-700 text-xs font-semibold border border-red-100 rounded-md">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Rusak
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">Tidak ada</span>
-                    )}
-                  </td>
                   {/* Detail */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button 
@@ -225,7 +213,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
               ))}
               {filteredTickets.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     Tidak ada riwayat peminjaman yang ditemukan.
                   </td>
                 </tr>
@@ -233,6 +221,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
             </tbody>
           </table>
         </div>
+
         {/* Pagination Footer */}
         {Math.ceil(filteredTickets.length / itemsPerPage) > 0 && (
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-3 rounded-b-lg">
@@ -274,6 +263,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
           </div>
         )}
       </div>
+
       {/* TRACKING DETAILS MODAL */}
       {modalTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
@@ -286,31 +276,8 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                 <p className="text-xs opacity-90 mt-0.5">ID Tiket: {modalTicket.id} | Status Akhir: {modalTicket.overallStatus}</p>
               </div>
             </div>
+
             <div className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-6 space-y-4 sm:space-y-6 bg-white">
-              {/* Damage Report View if present */}
-              {modalTicket.isReportedDamaged && modalTicket.damageReport && (
-                <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4 items-start shadow-2xs">
-                  <div className="w-full sm:w-36 h-28 bg-gray-100 rounded-xl overflow-hidden shrink-0 border border-red-100 shadow-2xs relative">
-                    <img 
-                      src={modalTicket.damageReport.imageUrl} 
-                      alt="Bukti Kerusakan" 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 space-y-1 w-full">
-                    <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-bold rounded-md uppercase tracking-wide">
-                      Laporan Kerusakan Terkirim
-                    </span>
-                    <h5 className="font-bold text-gray-900 text-xs sm:text-sm mt-1">Deskripsi Kerusakan Alat:</h5>
-                    <p className="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
-                      "{modalTicket.damageReport.description}"
-                    </p>
-                    <p className="text-[10px] text-gray-400 mt-2 font-mono">
-                      Dilaporkan pada: {modalTicket.damageReport.timestamp}
-                    </p>
-                  </div>
-                </div>
-              )}
               {/* Logs timeline */}
               <div>
                 <h4 className="font-bold text-gray-900 mb-3 text-xs sm:text-sm uppercase tracking-wide text-gray-600">Kronologi Aktivitas Tiket</h4>
@@ -347,6 +314,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                 </div>
               </div>
             </div>
+
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex shrink-0">
               <button
                 onClick={() => setModalTicket(null)}

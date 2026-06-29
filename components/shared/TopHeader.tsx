@@ -160,7 +160,13 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleN
         ) : !hideNotificationBell ? (
           <div className="relative">
             <button 
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => {
+                if (window.innerWidth < 1024) {
+                  router.push('/notifikasi?role=' + encodeURIComponent(roleName || 'Semua'))
+                } else {
+                  setShowNotifications(!showNotifications)
+                }
+              }}
               className={`relative p-2 rounded-xl transition-all ${showNotifications ? 'bg-blue-50 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
               title="Notifikasi Sistem"
             >
