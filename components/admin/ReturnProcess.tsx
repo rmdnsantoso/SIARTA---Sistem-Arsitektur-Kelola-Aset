@@ -5,12 +5,11 @@ import { Ticket } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
+import { verifyAssetReturnHandover } from '../../actions/workflows/verifikasi'
 
 interface Props {
   tickets?: Ticket[]
 }
-
-type Condition = 'BAIK' | 'RUSAK' | null
 
 export default function ReturnProcess({ tickets = initialTickets }: Props) {
   // Only interested in tickets that are currently borrowed
@@ -18,6 +17,8 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
   
   // Modal State
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
+  const [isMaintenance, setIsMaintenance] = useState(false)
+  const [maintenanceNotes, setMaintenanceNotes] = useState('')
   
   const [verifiedSNs, setVerifiedSNs] = useState<string[]>([])
   const [scanInput, setScanInput] = useState('')
@@ -78,6 +79,8 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
     setModalTicket(ticket)
     setVerifiedSNs(preScannedSN ? [preScannedSN] : [])
     setScanInput('')
+    setIsMaintenance(false)
+    setMaintenanceNotes('')
   }
 
   const filteredTickets = localTickets.filter(t => 
@@ -103,10 +106,19 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
   }
 
 
-  const handleConfirmReturn = () => {
+  const handleConfirmReturn = async () => {
     if (!modalTicket) return
+
+    if (modalTicket.dbId) {
+      const res = await verifyAssetReturnHandover(modalTicket.dbId, isMaintenance, maintenanceNotes)
+      if (!res.success) {
+        alert(`Gagal memverifikasi pengembalian: ${res.error}`)
+        return
+      }
+    }
+
     setLocalTickets(prev => prev.filter(t => t.id !== modalTicket.id))
-    showToast(`✓ Tiket pengembalian ${modalTicket.id} berhasil dikonfirmasi.`)
+    showToast(`✓ Tiket pengembalian ${modalTicket.id} berhasil dikonfirmasi${isMaintenance ? ' (Dialihkan ke Maintenance)' : ''}.`)
     setModalTicket(null)
   }
 
@@ -519,7 +531,30 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                 </div>
               )}
 
-
+              {/* Opsi Maintenance / Kalibrasi */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isMaintenance}
+                    onChange={(e) => setIsMaintenance(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-bold text-gray-800">Aset Perlu Maintenance / Kalibrasi / Inspeksi HSSE</span>
+                </label>
+                {isMaintenance && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Catatan Pemeliharaan / Kendala</label>
+                    <input
+                      type="text"
+                      value={maintenanceNotes}
+                      onChange={(e) => setMaintenanceNotes(e.target.value)}
+                      placeholder="Mis. Perlu kalibrasi sensor atau pembersihan rutin..."
+                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                )}
+              </div>
 
             </div>
 

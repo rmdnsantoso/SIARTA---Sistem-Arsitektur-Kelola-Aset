@@ -16,6 +16,8 @@ export interface TrackingLog {
 
 export interface Ticket {
   id: string
+  dbId?: string
+  assetId?: string
   peminjam: string
   nip?: string
   jabatan: string
@@ -25,7 +27,7 @@ export interface Ticket {
   tanggalPinjam: string
   tanggalKembali: string
   lokasi: string
-  currentStage: ApprovalStage
+  currentStage: ApprovalStage | string
   overallStatus: TicketStatus
   flow: ApprovalFlow[]
   conflictWith?: string

@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
+import { cancelBorrowTicket } from '../../actions/workflows/peminjaman'
 interface Props {
   tickets: Ticket[]
   onUpdateTickets: React.Dispatch<React.SetStateAction<Ticket[]>>
@@ -34,6 +35,20 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
   const itemsPerPage = 5
   // Modal State for details
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
+
+  const handleCancel = async (ticket: Ticket) => {
+    if (confirm(`Apakah Anda yakin ingin membatalkan permohonan ${ticket.id}?`)) {
+      if (ticket.dbId) {
+        const res = await cancelBorrowTicket(ticket.dbId)
+        if (!res.success) {
+          alert(`Gagal membatalkan tiket: ${res.error}`)
+          return
+        }
+      }
+      onUpdateTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, overallStatus: 'Ditolak', currentStage: 'Dibatalkan oleh Peminjam' } : t))
+    }
+  }
+
   // Filter tickets to only display those belonging to "Ahmad" and which are active (Menunggu, Disetujui, Dipinjam)
   const activeStatuses = ['Menunggu', 'Disetujui', 'Dipinjam']
   const myTickets = tickets.filter(t => t.peminjam === 'Ahmad' && activeStatuses.includes(t.overallStatus))
@@ -143,10 +158,18 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                 </div>
               )}
 
-              <div className="flex items-center justify-end pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                {ticket.overallStatus === 'Menunggu' && (
+                  <button
+                    onClick={() => handleCancel(ticket)}
+                    className="flex-1 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors border border-red-200"
+                  >
+                    Batal
+                  </button>
+                )}
                 <button 
                   onClick={() => setModalTicket(ticket)}
-                  className="w-full py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors border border-blue-200 flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors border border-blue-200 flex items-center justify-center gap-1.5"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -215,15 +238,25 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                   </td>
                   {/* Aksi */}
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <button 
-                      onClick={() => setModalTicket(ticket)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
-                      title="Lacak Progres Peminjaman"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {ticket.overallStatus === 'Menunggu' && (
+                        <button
+                          onClick={() => handleCancel(ticket)}
+                          className="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors border border-red-200"
+                        >
+                          Batal
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setModalTicket(ticket)}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                        title="Lacak Progres Peminjaman"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
