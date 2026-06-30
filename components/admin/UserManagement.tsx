@@ -1,11 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
+import { getAllUsers, createUser, updateUser, deleteUser } from '../../actions/core/user'
 
 type User = {
+  id: string
   nip: string
   name: string
+  email: string
   wa: string
   jabatan: string
   office: string
@@ -15,58 +18,173 @@ type User = {
 }
 
 const initialUsers: User[] = [
-  { nip: '100234', name: 'Ahmad Yani', wa: '081234567890', jabatan: 'Field Technician', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100235', name: 'Budi Santoso', wa: '081298765432', jabatan: 'Safety Officer', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'HSSE', status: 'Aktif' },
-  { nip: '100236', name: 'Ir. Suharto', wa: '081112223334', jabatan: 'Operation Manager', office: 'HO Jakarta', regional: 'Nasional', role: 'Area Head', status: 'Aktif' },
-  { nip: '100237', name: 'Siti Aminah', wa: '085544433322', jabatan: 'Admin Logistik', office: 'Gudang Pusat', regional: 'Jawa Bagian Barat', role: 'Admin', status: 'Aktif' },
-  { nip: '100238', name: 'Dodo H.', wa: '087788899900', jabatan: 'Driller', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Nonaktif' },
-  { nip: '100239', name: 'Joko Widodo', wa: '081211112222', jabatan: 'Heavy Equipment Operator', office: 'Site Gamma', regional: 'Sumatera', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100240', name: 'Bambang Pamungkas', wa: '081322223333', jabatan: 'Site Supervisor', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Area Head', status: 'Aktif' },
-  { nip: '100241', name: 'Taufik Hidayat', wa: '081433334444', jabatan: 'Maintenance Crew', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100242', name: 'Susi Susanti', wa: '081544445555', jabatan: 'Data Analyst', office: 'HO Jakarta', regional: 'Nasional', role: 'Admin', status: 'Aktif' },
-  { nip: '100243', name: 'Rudy Hartono', wa: '081655556666', jabatan: 'Security Chief', office: 'Site Gamma', regional: 'Sumatera', role: 'HSSE', status: 'Aktif' },
-  { nip: '100244', name: 'Kevin Sanjaya', wa: '081766667777', jabatan: 'IT Support', office: 'HO Jakarta', regional: 'Nasional', role: 'Admin', status: 'Aktif' },
-  { nip: '100245', name: 'Marcus Gideon', wa: '081877778888', jabatan: 'Network Engineer', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Nonaktif' },
-  { nip: '100246', name: 'Liliyana Natsir', wa: '081988889999', jabatan: 'Quality Control', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100247', name: 'Tontowi Ahmad', wa: '081299990000', jabatan: 'Logistics Coordinator', office: 'Gudang Pusat', regional: 'Jawa Bagian Barat', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100248', name: 'Anthony Ginting', wa: '081300001111', jabatan: 'Mechanic', office: 'Site Gamma', regional: 'Sumatera', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100249', name: 'Jonatan Christie', wa: '081411112222', jabatan: 'Welder', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Nonaktif' },
-  { nip: '100250', name: 'Greysia Polii', wa: '081522223333', jabatan: 'HR Specialist', office: 'HO Jakarta', regional: 'Nasional', role: 'Admin', status: 'Aktif' },
-  { nip: '100251', name: 'Apriyani Rahayu', wa: '081633334444', jabatan: 'Finance Staff', office: 'HO Jakarta', regional: 'Nasional', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100252', name: 'Hendra Setiawan', wa: '081744445555', jabatan: 'Surveyor', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Peminjam', status: 'Aktif' },
-  { nip: '100253', name: 'Mohammad Ahsan', wa: '081855556666', jabatan: 'Safety Inspector', office: 'Site Gamma', regional: 'Sumatera', role: 'HSSE', status: 'Aktif' },
+  { id: 'usr-1', nip: '100234', name: 'Ahmad Yani', email: 'ahmad@siarta.com', wa: '081234567890', jabatan: 'Field Technician', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-2', nip: '100235', name: 'Budi Santoso', email: 'budi@siarta.com', wa: '081298765432', jabatan: 'Safety Officer', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'HSSE', status: 'Aktif' },
+  { id: 'usr-3', nip: '100236', name: 'Ir. Suharto', email: 'suharto@siarta.com', wa: '081112223334', jabatan: 'Operation Manager', office: 'HO Jakarta', regional: 'Nasional', role: 'Area Head', status: 'Aktif' },
+  { id: 'usr-4', nip: '100237', name: 'Siti Aminah', email: 'siti@siarta.com', wa: '085544433322', jabatan: 'Admin Logistik', office: 'Gudang Pusat', regional: 'Jawa Bagian Barat', role: 'Admin', status: 'Aktif' },
+  { id: 'usr-5', nip: '100238', name: 'Dodo H.', email: 'dodo@siarta.com', wa: '087788899900', jabatan: 'Driller', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Nonaktif' },
+  { id: 'usr-6', nip: '100239', name: 'Joko Widodo', email: 'joko@siarta.com', wa: '081211112222', jabatan: 'Heavy Equipment Operator', office: 'Site Gamma', regional: 'Sumatera', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-7', nip: '100240', name: 'Bambang Pamungkas', email: 'bambang@siarta.com', wa: '081322223333', jabatan: 'Site Supervisor', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Area Head', status: 'Aktif' },
+  { id: 'usr-8', nip: '100241', name: 'Taufik Hidayat', email: 'taufik@siarta.com', wa: '081433334444', jabatan: 'Maintenance Crew', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-9', nip: '100242', name: 'Susi Susanti', email: 'susi@siarta.com', wa: '081544445555', jabatan: 'Data Analyst', office: 'HO Jakarta', regional: 'Nasional', role: 'Admin', status: 'Aktif' },
+  { id: 'usr-10', nip: '100243', name: 'Rudy Hartono', email: 'rudy@siarta.com', wa: '081655556666', jabatan: 'Security Chief', office: 'Site Gamma', regional: 'Sumatera', role: 'HSSE', status: 'Aktif' },
+  { id: 'usr-11', nip: '100244', name: 'Kevin Sanjaya', email: 'kevin@siarta.com', wa: '081766667777', jabatan: 'IT Support', office: 'HO Jakarta', regional: 'Nasional', role: 'Admin', status: 'Aktif' },
+  { id: 'usr-12', nip: '100245', name: 'Marcus Gideon', email: 'marcus@siarta.com', wa: '081877778888', jabatan: 'Network Engineer', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Nonaktif' },
+  { id: 'usr-13', nip: '100246', name: 'Liliyana Natsir', email: 'liliyana@siarta.com', wa: '081988889999', jabatan: 'Quality Control', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-14', nip: '100247', name: 'Tontowi Ahmad', email: 'tontowi@siarta.com', wa: '081299990000', jabatan: 'Logistics Coordinator', office: 'Gudang Pusat', regional: 'Jawa Bagian Barat', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-15', nip: '100248', name: 'Anthony Ginting', email: 'anthony@siarta.com', wa: '081300001111', jabatan: 'Mechanic', office: 'Site Gamma', regional: 'Sumatera', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-16', nip: '100249', name: 'Jonatan Christie', email: 'jonatan@siarta.com', wa: '081411112222', jabatan: 'Welder', office: 'Site Beta', regional: 'Kalimantan', role: 'Peminjam', status: 'Nonaktif' },
+  { id: 'usr-17', nip: '100250', name: 'Greysia Polii', email: 'greysia@siarta.com', wa: '081522223333', jabatan: 'HR Specialist', office: 'HO Jakarta', regional: 'Nasional', role: 'Admin', status: 'Aktif' },
+  { id: 'usr-18', nip: '100251', name: 'Apriyani Rahayu', email: 'apriyani@siarta.com', wa: '081633334444', jabatan: 'Finance Staff', office: 'HO Jakarta', regional: 'Nasional', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-19', nip: '100252', name: 'Hendra Setiawan', email: 'hendra@siarta.com', wa: '081744445555', jabatan: 'Surveyor', office: 'Site Alpha', regional: 'Jawa Bagian Timur', role: 'Peminjam', status: 'Aktif' },
+  { id: 'usr-20', nip: '100253', name: 'Mohammad Ahsan', email: 'ahsan@siarta.com', wa: '081855556666', jabatan: 'Safety Inspector', office: 'Site Gamma', regional: 'Sumatera', role: 'HSSE', status: 'Aktif' },
 ]
 
 export default function UserManagement({ isViewOnly = false }: { isViewOnly?: boolean }) {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(false)
   
   // Detail View State
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editForm, setEditForm] = useState<User | null>(null)
 
-  const toggleStatus = (nip: string) => {
+  // Add Form State
+  const [addForm, setAddForm] = useState({
+    nip: '',
+    name: '',
+    email: '',
+    wa: '',
+    jabatan: '',
+    office: '',
+    regional: 'Jawa Bagian Barat',
+    role: 'Peminjam'
+  })
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const res = await getAllUsers()
+        if (res.success && res.data && res.data.length > 0) {
+          const adapted: User[] = res.data.map((dbUser: any, idx: number) => {
+            const roleDisplay = dbUser.role === 'AreaHead' ? 'Area Head' : dbUser.role;
+            return {
+              id: dbUser.id,
+              nip: `100${String(idx + 234).padStart(3, '0')}`,
+              name: dbUser.name,
+              email: dbUser.email,
+              wa: '081234567890',
+              jabatan: dbUser.role === 'Admin' ? 'Admin Logistik' : dbUser.role === 'AreaHead' ? 'Operation Manager' : 'Staff',
+              office: 'HO Jakarta',
+              regional: 'Nasional',
+              role: roleDisplay,
+              status: 'Aktif'
+            }
+          })
+          setUsers(adapted)
+        }
+      } catch (err) {
+        console.error('Gagal memuat daftar user:', err)
+      }
+    }
+    fetchUsers()
+  }, [])
+
+  const handleAddUser = async () => {
+    if (!addForm.name || !addForm.email) {
+      alert('Nama dan Email wajib diisi!')
+      return
+    }
+    setLoading(true)
+    try {
+      const roleDb = addForm.role === 'Area Head' ? 'AreaHead' : addForm.role;
+      const res = await createUser({
+        name: addForm.name,
+        email: addForm.email,
+        role: roleDb as any
+      })
+      if (!res.success) {
+        alert(`Gagal membuat akun: ${res.error}`)
+        setLoading(false)
+        return
+      }
+      if (res.data) {
+        const newUser: User = {
+          id: res.data.id,
+          nip: addForm.nip || `100${Math.floor(100 + Math.random() * 900)}`,
+          name: res.data.name,
+          email: res.data.email,
+          wa: addForm.wa || '081234567890',
+          jabatan: addForm.jabatan || 'Staff',
+          office: addForm.office || 'HO Jakarta',
+          regional: addForm.regional,
+          role: addForm.role,
+          status: 'Aktif'
+        }
+        setUsers(prev => [newUser, ...prev])
+        setAddForm({ nip: '', name: '', email: '', wa: '', jabatan: '', office: '', regional: 'Jawa Bagian Barat', role: 'Peminjam' })
+        setIsModalOpen(false)
+      }
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleStatus = (id: string) => {
     setUsers(prev => prev.map(u => 
-      u.nip === nip ? { ...u, status: u.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : u
+      u.id === id ? { ...u, status: u.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : u
     ))
-    if (selectedUser && selectedUser.nip === nip) {
+    if (selectedUser && selectedUser.id === id) {
       setSelectedUser(prev => prev ? { ...prev, status: prev.status === 'Aktif' ? 'Nonaktif' : 'Aktif' } : null)
     }
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editForm) return
-    setUsers(prev => prev.map(u => u.nip === editForm.nip ? editForm : u))
-    setSelectedUser(editForm)
-    setIsEditMode(false)
+    setLoading(true)
+    try {
+      const roleDb = editForm.role === 'Area Head' ? 'AreaHead' : editForm.role;
+      const res = await updateUser(editForm.id, {
+        name: editForm.name,
+        email: editForm.email,
+        role: roleDb as any
+      })
+      if (!res.success) {
+        alert(`Gagal menyimpan perubahan: ${res.error}`)
+        setLoading(false)
+        return
+      }
+      setUsers(prev => prev.map(u => u.id === editForm.id ? editForm : u))
+      setSelectedUser(editForm)
+      setIsEditMode(false)
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = (nip: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus pengguna ini dari sistem?')) {
-      setUsers(prev => prev.filter(u => u.nip !== nip))
-      setSelectedUser(null)
+      setLoading(true)
+      try {
+        const res = await deleteUser(id)
+        if (!res.success) {
+          alert(`Gagal menghapus pengguna: ${res.error}`)
+          setLoading(false)
+          return
+        }
+        setUsers(prev => prev.filter(u => u.id !== id))
+        setSelectedUser(null)
+      } catch (err: any) {
+        alert(`Terjadi kesalahan: ${err.message}`)
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -162,7 +280,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
           ) : (
             paginatedUsers.map(u => (
             <div 
-              key={u.nip} 
+              key={u.id} 
               onClick={() => openDetail(u)}
               className="flex flex-col lg:flex-row lg:items-center bg-white p-3 sm:p-4 lg:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group gap-2.5 sm:gap-3 lg:gap-0"
             >
@@ -340,6 +458,15 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1.5">Email Akses</label>
+                  {isEditMode ? (
+                    <input type="email" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full border-b-2 border-blue-500 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none rounded-t-md transition-colors" />
+                  ) : (
+                    <div className="text-sm font-bold text-gray-900 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-100">{selectedUser.email}</div>
+                  )}
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1.5">Jabatan</label>
                   {isEditMode ? (
                     <input type="text" value={editForm.jabatan} onChange={e => setEditForm({...editForm, jabatan: e.target.value})} className="w-full border-b-2 border-blue-500 bg-blue-50/50 px-3 py-2.5 text-sm font-bold text-gray-900 outline-none rounded-t-md transition-colors" />
@@ -429,7 +556,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                   {/* Danger Zone */}
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-200/60">
                     <button 
-                      onClick={() => toggleStatus(selectedUser.nip)}
+                      onClick={() => toggleStatus(selectedUser.id)}
                       className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 border ${
                         selectedUser.status === 'Aktif' 
                           ? 'bg-white text-orange-600 hover:bg-orange-50 border-orange-200 hover:border-orange-300' 
@@ -440,11 +567,12 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                       {selectedUser.status === 'Aktif' ? 'Blokir Akses' : 'Pulihkan Akses'}
                     </button>
                     <button 
-                      onClick={() => handleDelete(selectedUser.nip)}
-                      className="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 bg-white text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-300"
+                      onClick={() => handleDelete(selectedUser.id)}
+                      disabled={loading}
+                      className="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 bg-white text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-300 disabled:opacity-50"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      Hapus Pengguna
+                      {loading ? 'Menghapus...' : 'Hapus Pengguna'}
                     </button>
                   </div>
                 </>
@@ -454,10 +582,11 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button 
                     onClick={handleSaveEdit}
-                    className="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700"
+                    disabled={loading}
+                    className="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    Simpan Perubahan
+                    {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
                   <button 
                     onClick={() => { setIsEditMode(false); setEditForm(selectedUser) }}
@@ -492,27 +621,31 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">NIP (Username) <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono placeholder:font-sans transition-all" placeholder="Mis. 100239" />
+                  <input type="text" value={addForm.nip} onChange={e => setAddForm({...addForm, nip: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono placeholder:font-sans transition-all" placeholder="Mis. 100239" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Budi Doremi" />
+                  <input type="text" value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Budi Doremi" />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1.5">Email Akses <span className="text-red-500">*</span></label>
+                  <input type="email" value={addForm.email} onChange={e => setAddForm({...addForm, email: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. budi@siarta.com" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">No. WhatsApp</label>
-                  <input type="text" className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono placeholder:font-sans transition-all" placeholder="Mis. 0812..." />
+                  <input type="text" value={addForm.wa} onChange={e => setAddForm({...addForm, wa: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono placeholder:font-sans transition-all" placeholder="Mis. 0812..." />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Jabatan</label>
-                  <input type="text" className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Technician" />
+                  <input type="text" value={addForm.jabatan} onChange={e => setAddForm({...addForm, jabatan: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Technician" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Office / Base</label>
-                  <input type="text" className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Site Delta" />
+                  <input type="text" value={addForm.office} onChange={e => setAddForm({...addForm, office: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Site Delta" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5">Regional</label>
-                  <select className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white">
+                  <select value={addForm.regional} onChange={e => setAddForm({...addForm, regional: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-white">
                     <option>Jawa Bagian Barat</option>
                     <option>Jawa Bagian Timur</option>
                     <option>Kalimantan</option>
@@ -527,7 +660,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5">Peran Akses (Role)</label>
-                    <select className="w-full border-2 border-blue-200 rounded-xl px-4 py-3 text-sm font-bold text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none bg-blue-50 transition-all">
+                    <select value={addForm.role} onChange={e => setAddForm({...addForm, role: e.target.value})} className="w-full border-2 border-blue-200 rounded-xl px-4 py-3 text-sm font-bold text-blue-900 focus:ring-2 focus:ring-blue-500 outline-none bg-blue-50 transition-all">
                       <option>Peminjam</option>
                       <option>Admin</option>
                       <option>HSSE</option>
@@ -548,7 +681,9 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
 
             <div className="px-8 py-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">Batal</button>
-              <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors shadow-md">Buat Akun Pegawai</button>
+              <button onClick={handleAddUser} disabled={loading} className="px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors shadow-md disabled:opacity-50">
+                {loading ? 'Mendaftarkan...' : 'Buat Akun Pegawai'}
+              </button>
             </div>
           </div>
         </div>

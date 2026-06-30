@@ -17,11 +17,13 @@ function deriveFlow(currentStage: string, overallStatus: string): ApprovalFlow[]
 
   const stageIndex: Record<string, number> = {
     'Menunggu Persetujuan Admin': 1,
+    'Menunggu Verifikasi HSSE': 2,
     'Menunggu Persetujuan Area Head': 3,
     'Menunggu Pengambilan di Gudang': 4,
     'Dipinjam di Lapangan': 4,
     'Selesai Dikembalikan': 4,
     'Ditolak oleh Admin': 1,
+    'Ditolak oleh HSSE': 2,
     'Ditolak oleh Area Head': 3,
     'Dibatalkan oleh Peminjam': 0,
   }

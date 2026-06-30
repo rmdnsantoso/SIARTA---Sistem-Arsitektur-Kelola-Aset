@@ -11,6 +11,7 @@ export async function approveTicketByAreaHead(ticketId: string, notes?: string) 
     const user = await requireRole([Role.AreaHead])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
+    if (ticket.currentStage !== 'Menunggu Persetujuan Area Head') throw new Error('Tiket tidak berada di tahap Area Head.')
     if (ticket.overallStatus !== TicketStatus.Menunggu) throw new Error('Tiket tidak dalam status menunggu.')
 
     const updated = await prisma.ticket.update({
@@ -49,6 +50,7 @@ export async function rejectTicketByAreaHead(ticketId: string, rejectReason: str
     const user = await requireRole([Role.AreaHead])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
+    if (ticket.currentStage !== 'Menunggu Persetujuan Area Head') throw new Error('Tiket tidak berada di tahap Area Head.')
     if (ticket.overallStatus !== TicketStatus.Menunggu) throw new Error('Tiket tidak dalam status menunggu.')
 
     const updated = await prisma.ticket.update({

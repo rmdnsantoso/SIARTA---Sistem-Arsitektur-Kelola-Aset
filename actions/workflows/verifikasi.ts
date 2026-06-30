@@ -5,13 +5,52 @@ import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
 import { createNotification } from '../core/notif'
 
-// 1. Admin menyetujui tahap pertama dan meneruskan ke Area Head
+// 1. Admin menyetujui tahap pertama dan meneruskan ke HSSE (bukan langsung Area Head)
 export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
   try {
     const user = await requireRole([Role.Admin])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
     if (ticket.overallStatus !== TicketStatus.Menunggu) throw new Error('Status tiket tidak valid untuk verifikasi.')
+    if (ticket.currentStage !== 'Menunggu Persetujuan Admin') throw new Error('Tiket tidak berada di tahap Admin.')
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        currentStage: 'Menunggu Verifikasi HSSE',
+        logs: {
+          create: {
+            stage: 'Admin',
+            status: 'Verifikasi stok fisik OK. Meneruskan ke HSSE untuk inspeksi keselamatan.',
+            actor: `${user.name} (Admin)`,
+            timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
+            notes
+          }
+        }
+      }
+    })
+
+    // Kirim notif ke HSSE
+    await createNotification(
+      'Inspeksi K3 Diperlukan',
+      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) memerlukan inspeksi keselamatan HSSE sebelum dipinjamkan.`,
+      'urgent',
+      'HSSE'
+    )
+
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// 2. HSSE menyetujui dan meneruskan ke Area Head
+export async function approveTicketByHSSE(ticketId: string, notes?: string) {
+  try {
+    const user = await requireRole([Role.HSSE])
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
+    if (!ticket) throw new Error('Tiket tidak ditemukan.')
+    if (ticket.currentStage !== 'Menunggu Verifikasi HSSE') throw new Error('Tiket tidak berada di tahap HSSE.')
 
     const updated = await prisma.ticket.update({
       where: { id: ticketId },
@@ -19,9 +58,9 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
         currentStage: 'Menunggu Persetujuan Area Head',
         logs: {
           create: {
-            stage: 'Admin',
-            status: 'Verifikasi stok fisik OK. Menunggu approval Area Head.',
-            actor: `${user.name} (Admin)`,
+            stage: 'HSSE',
+            status: 'Inspeksi K3 selesai. Aset sesuai standar keselamatan. Meneruskan ke Area Head.',
+            actor: `${user.name} (HSSE)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
             notes
           }
@@ -32,7 +71,7 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
     // Kirim notif ke Area Head
     await createNotification(
       'Menunggu Approval Akhir',
-      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) telah diverifikasi Admin dan menunggu persetujuan Anda.`,
+      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) telah diverifikasi HSSE dan menunggu persetujuan Anda.`,
       'urgent',
       'AreaHead'
     )
@@ -43,7 +82,45 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
   }
 }
 
-// 2. Admin Verifikasi Serah Terima Barang (Handover Pinjam)
+// 3. HSSE menolak pengajuan
+export async function rejectTicketByHSSE(ticketId: string, rejectReason: string) {
+  try {
+    const user = await requireRole([Role.HSSE])
+    const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
+    if (!ticket) throw new Error('Tiket tidak ditemukan.')
+    if (ticket.currentStage !== 'Menunggu Verifikasi HSSE') throw new Error('Tiket tidak berada di tahap HSSE.')
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        overallStatus: TicketStatus.Ditolak,
+        currentStage: 'Ditolak oleh HSSE',
+        logs: {
+          create: {
+            stage: 'HSSE',
+            status: `Ditolak HSSE: ${rejectReason}`,
+            actor: `${user.name} (HSSE)`,
+            timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
+            notes: rejectReason
+          }
+        }
+      }
+    })
+
+    await createNotification(
+      'Pengajuan Ditolak oleh HSSE',
+      `Tiket ${ticket.ticketCode} ditolak karena tidak memenuhi standar K3. Alasan: ${rejectReason}`,
+      'urgent',
+      'Peminjam'
+    )
+
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// 4. Admin Verifikasi Serah Terima Barang (Handover Pinjam)
 export async function verifyAssetBorrowHandover(ticketId: string) {
   try {
     const user = await requireRole([Role.Admin])
@@ -86,7 +163,7 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
   }
 }
 
-// 3. Admin Verifikasi Pengembalian Barang (Return Handover)
+// 5. Admin Verifikasi Pengembalian Barang (Return Handover)
 export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaintenance: boolean, maintenanceNotes?: string) {
   try {
     const user = await requireRole([Role.Admin])
@@ -133,7 +210,7 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
   }
 }
 
-// 4. HSSE & Admin berhak menyetel status Aset menjadi Maintenance / Kalibrasi (TANPA STATUS RUSAK)
+// 6. HSSE & Admin berhak menyetel status Aset menjadi Maintenance / Kalibrasi (TANPA STATUS RUSAK)
 export async function setAssetToMaintenance(assetId: string, maintenanceNotes: string) {
   try {
     // RBAC: Admin dan HSSE berhak
@@ -162,13 +239,14 @@ export async function setAssetToMaintenance(assetId: string, maintenanceNotes: s
   }
 }
 
-// 5. Admin menolak pengajuan tiket
+// 7. Admin menolak pengajuan tiket
 export async function rejectTicketByAdmin(ticketId: string, rejectReason: string) {
   try {
     const user = await requireRole([Role.Admin])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
     if (ticket.overallStatus !== TicketStatus.Menunggu) throw new Error('Status tiket tidak valid untuk penolakan.')
+    if (ticket.currentStage !== 'Menunggu Persetujuan Admin') throw new Error('Tiket tidak berada di tahap Admin.')
 
     const updated = await prisma.ticket.update({
       where: { id: ticketId },
