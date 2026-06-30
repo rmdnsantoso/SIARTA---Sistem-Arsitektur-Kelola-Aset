@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { getAllAssetsForAdmin, createAsset, updateAsset, deleteAsset } from '../../actions/core/asset'
 
 type UnitStatus = 'Tersedia' | 'Dipinjam' | 'Maintenance' | 'Rusak'
 type TrackingType = 'SERIALIZED' | 'NON_SERIALIZED'
@@ -21,6 +22,7 @@ type PhysicalUnit = {
 
 type Asset = {
   id: string
+  assetCode: string
   name: string
   rackLocation: string
   totalStock: number
@@ -31,14 +33,14 @@ type Asset = {
 }
 
 // Helper to generate dummy units
-const generateUnits = (assetId: string, count: number, availableCount: number, isNonSerialized: boolean = false): PhysicalUnit[] => {
+const generateUnits = (assetCode: string, count: number, availableCount: number, isNonSerialized: boolean = false): PhysicalUnit[] => {
   return Array.from({ length: count }).map((_, i) => {
     const isAvailable = i < availableCount;
     const history: UnitHistory[] = isAvailable ? [] : [
       { date: '12 Juni 2026 14:30', action: 'Dipinjam', user: 'Budi Santoso' }
     ];
     return {
-      unitId: `${assetId}-${String(i + 1).padStart(2, '0')}`,
+      unitId: `${assetCode}-${String(i + 1).padStart(2, '0')}`,
       serialNumber: isNonSerialized ? 'N/A' : `SN-${Math.floor(1000 + Math.random() * 9000)}`,
       status: isAvailable ? 'Tersedia' : 'Dipinjam',
       history
@@ -48,27 +50,27 @@ const generateUnits = (assetId: string, count: number, availableCount: number, i
 
 const initialAssets: Asset[] = [
   {
-    id: 'AST-001', name: 'Gas Detector (MSA Altair 4X)',
+    id: 'AST-001', assetCode: 'AST-001', name: 'Gas Detector (MSA Altair 4X)',
     rackLocation: 'Rak A-12', totalStock: 5, availableStock: 3, trackingType: 'SERIALIZED',
     units: generateUnits('AST-001', 5, 3)
   },
   {
-    id: 'AST-002', name: 'Safety Harness Full Body',
+    id: 'AST-002', assetCode: 'AST-002', name: 'Safety Harness Full Body',
     rackLocation: 'Rak B-05', totalStock: 15, availableStock: 10, trackingType: 'SERIALIZED',
     units: generateUnits('AST-002', 15, 10)
   },
   {
-    id: 'AST-003', name: 'Bor Listrik (Makita)',
+    id: 'AST-003', assetCode: 'AST-003', name: 'Bor Listrik (Makita)',
     rackLocation: 'Rak C-01', totalStock: 4, availableStock: 0, trackingType: 'SERIALIZED',
     units: generateUnits('AST-003', 4, 0)
   },
   {
-    id: 'AST-004', name: 'Sarung Tangan Las (Kevlar)',
+    id: 'AST-004', assetCode: 'AST-004', name: 'Sarung Tangan Las (Kevlar)',
     rackLocation: 'Rak A-02', totalStock: 150, availableStock: 120, trackingType: 'NON_SERIALIZED',
     units: []
   },
   {
-    id: 'AST-005', name: 'Helm Safety Proyek (Kuning)',
+    id: 'AST-005', assetCode: 'AST-005', name: 'Helm Safety Proyek (Kuning)',
     rackLocation: 'Rak B-01', totalStock: 50, availableStock: 48, trackingType: 'NON_SERIALIZED',
     units: []
   },
@@ -82,6 +84,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
   const [filterTracking, setFilterTracking] = useState('Semua')
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', rackLocation: '', imageUrl: '' })
@@ -94,39 +97,119 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
     name: string; rackLocation: string; totalStock: string; trackingType: TrackingType; imageUrl: string
   }>({ name: '', rackLocation: '', totalStock: '', trackingType: 'SERIALIZED', imageUrl: '' })
 
-  const handleAddAsset = () => {
+  useEffect(() => {
+    async function fetchAssets() {
+      try {
+        const res = await getAllAssetsForAdmin()
+        if (res.success && res.data && res.data.length > 0) {
+          const adapted: Asset[] = res.data.map((dbAsset: any) => ({
+            id: dbAsset.id,
+            assetCode: dbAsset.assetCode,
+            name: dbAsset.name,
+            rackLocation: dbAsset.location,
+            totalStock: dbAsset.quantity,
+            availableStock: dbAsset.status === 'Available' ? dbAsset.quantity : 0,
+            trackingType: dbAsset.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+            imageUrl: dbAsset.spec || '',
+            units: dbAsset.isSerialized ? generateUnits(dbAsset.assetCode, dbAsset.quantity, dbAsset.status === 'Available' ? dbAsset.quantity : 0) : []
+          }))
+          setAssets(adapted)
+        }
+      } catch (err) {
+        console.error('Gagal memuat master aset:', err)
+      }
+    }
+    fetchAssets()
+  }, [])
+
+  const handleAddAsset = async () => {
     if (!form.name || !form.rackLocation || !form.totalStock) return
+    setLoading(true)
     const stock = parseInt(form.totalStock)
-    const newId = `AST-${String(assets.length + 1).padStart(3, '0')}`
+    const code = `AST-${String(assets.length + 1).padStart(3, '0')}`
     
-    const newAsset: Asset = {
-      id: newId,
-      name: form.name,
-      rackLocation: form.rackLocation.toUpperCase(),
-      totalStock: stock,
-      availableStock: stock,
-      trackingType: form.trackingType,
-      imageUrl: form.imageUrl,
-      units: form.trackingType === 'SERIALIZED' ? generateUnits(newId, stock, stock) : []
+    try {
+      const res = await createAsset({
+        assetCode: code,
+        name: form.name,
+        category: 'Umum',
+        isSerialized: form.trackingType === 'SERIALIZED',
+        location: form.rackLocation.toUpperCase(),
+        quantity: stock,
+        spec: form.imageUrl
+      })
+
+      if (!res.success) {
+        alert(`Gagal menambahkan aset: ${res.error}`)
+        setLoading(false)
+        return
+      }
+
+      if (res.data) {
+        const newAsset: Asset = {
+          id: res.data.id,
+          assetCode: res.data.assetCode,
+          name: res.data.name,
+          rackLocation: res.data.location,
+          totalStock: res.data.quantity,
+          availableStock: res.data.quantity,
+          trackingType: res.data.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+          imageUrl: res.data.spec || '',
+          units: res.data.isSerialized ? generateUnits(res.data.assetCode, res.data.quantity, res.data.quantity) : []
+        }
+        setAssets(prev => [newAsset, ...prev])
+        setForm({ name: '', rackLocation: '', totalStock: '', trackingType: 'SERIALIZED', imageUrl: '' })
+        setIsAddModalOpen(false)
+      }
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`)
+    } finally {
+      setLoading(false)
     }
-    setAssets(prev => [newAsset, ...prev])
-    setForm({ name: '', rackLocation: '', totalStock: '', trackingType: 'SERIALIZED', imageUrl: '' })
-    setIsAddModalOpen(false)
   }
 
-  const handleSaveEdit = () => {
-    setAssets(prev => prev.map(a => a.id === editingAssetId ? { ...a, ...editForm } : a));
-    if (selectedAsset?.id === editingAssetId) {
-      setSelectedAsset(prev => prev ? { ...prev, ...editForm } : null);
+  const handleSaveEdit = async () => {
+    if (!editingAssetId) return
+    setLoading(true)
+    try {
+      const res = await updateAsset(editingAssetId, {
+        name: editForm.name,
+        location: editForm.rackLocation,
+        spec: editForm.imageUrl
+      })
+
+      if (!res.success) {
+        alert(`Gagal menyimpan perubahan: ${res.error}`)
+        setLoading(false)
+        return
+      }
+
+      setAssets(prev => prev.map(a => a.id === editingAssetId ? { ...a, ...editForm } : a));
+      if (selectedAsset?.id === editingAssetId) {
+        setSelectedAsset(prev => prev ? { ...prev, ...editForm } : null);
+      }
+      setEditingAssetId(null);
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`)
+    } finally {
+      setLoading(false)
     }
-    setEditingAssetId(null);
   }
 
-  const handleDeleteAsset = (assetId: string) => {
+  const handleDeleteAsset = async (assetId: string) => {
     if (confirm('Yakin ingin menghapus barang ini secara permanen dari master data? Semua data unit fisik terkait juga akan terhapus.')) {
-      setAssets(prev => prev.filter(a => a.id !== assetId));
-      if (selectedAsset?.id === assetId) setSelectedAsset(null);
-      if (editingAssetId === assetId) setEditingAssetId(null);
+      try {
+        const res = await deleteAsset(assetId)
+        if (!res.success) {
+          alert(`Gagal menghapus aset: ${res.error}`)
+          return
+        }
+        setAssets(prev => prev.filter(a => a.id !== assetId));
+        if (selectedAsset?.id === assetId) setSelectedAsset(null);
+        if (editingAssetId === assetId) setEditingAssetId(null);
+      } catch (err: any) {
+        alert(`Terjadi kesalahan: ${err.message}`)
+      }
     }
   }
 
@@ -155,7 +238,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       if (a.trackingType === 'NON_SERIALIZED') return a // Handled separately
       const currentCount = a.units.length
       const newUnits = Array.from({ length: count }).map((_, i) => ({
-        unitId: `${a.id}-${String(currentCount + i + 1).padStart(2, '0')}`,
+        unitId: `${a.assetCode}-${String(currentCount + i + 1).padStart(2, '0')}`,
         serialNumber: `SN-NEW-${Math.floor(1000 + Math.random() * 9000)}`,
         status: 'Tersedia' as UnitStatus,
         history: [{ date: new Date().toLocaleString('id-ID'), action: 'Unit Ditambahkan', user: 'Siti Aminah (Admin)' }]
@@ -240,7 +323,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
 
   const filtered = assets.filter(a => {
     const matchTracking = filterTracking === 'Semua' || a.trackingType === filterTracking
-    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.assetCode.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
     return matchTracking && matchSearch
   })
 
@@ -257,7 +340,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
               </svg>
               <input 
                 type="text" 
-                placeholder="Cari ID atau nama aset..." 
+                placeholder="Cari Kode Aset atau nama aset..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
@@ -314,7 +397,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 )}
                 {/* Tracking Badge */}
                 <div className={`absolute top-2 right-2 px-2 py-1 rounded shadow text-[10px] font-bold tracking-wider ${
-                  a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-500 text-white'
+                  a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-50-text-white'
                 }`}>
                   {a.trackingType === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
                 </div>
@@ -326,7 +409,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
               {/* Product Info */}
               <div className="p-3 sm:p-4 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-1">
-                  <span className="text-[10px] text-gray-400 font-mono">{a.id}</span>
+                  <span className="text-[10px] text-gray-400 font-mono">{a.assetCode}</span>
                 </div>
                 <h3 className="font-bold text-gray-900 leading-tight mb-3 line-clamp-2">{a.name}</h3>
                 
@@ -471,8 +554,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
               <button onClick={handleAddAsset} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40"
-                disabled={!form.name || !form.rackLocation || !form.totalStock}>
-                Simpan & Daftarkan Aset
+                disabled={!form.name || !form.rackLocation || !form.totalStock || loading}>
+                {loading ? 'Menyimpan...' : 'Simpan & Daftarkan Aset'}
               </button>
             </div>
           </div>
@@ -493,7 +576,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight truncate">{selectedAsset.name}</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">{selectedAsset.id} &middot; Rak {selectedAsset.rackLocation}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">{selectedAsset.assetCode} &middot; Rak {selectedAsset.rackLocation}</p>
                 </div>
               </div>
               <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-gray-50 p-2 rounded-full border border-gray-100 shrink-0 hover:bg-gray-100 transition-colors">
@@ -575,7 +658,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                 <div className="w-12 h-12 bg-orange-50 border border-orange-200/60 rounded-xl p-2 shadow-sm flex items-center justify-center text-orange-600">
                                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                                 </div>
-                                <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.id} (Master)</span>
+                                <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.assetCode} (Master)</span>
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -712,7 +795,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-mono font-bold text-base text-gray-900 leading-tight">{selectedAsset.id}</h3>
+                          <h3 className="font-mono font-bold text-base text-gray-900 leading-tight">{selectedAsset.assetCode}</h3>
                           <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Stok Non-Serial</span>
                         </div>
                       </div>
@@ -923,8 +1006,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setEditingAssetId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
               <button onClick={handleSaveEdit} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40"
-                disabled={!editForm.name || !editForm.rackLocation}>
-                Simpan Perubahan
+                disabled={!editForm.name || !editForm.rackLocation || loading}>
+                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
             </div>
           </div>

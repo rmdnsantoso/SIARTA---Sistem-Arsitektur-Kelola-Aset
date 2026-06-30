@@ -115,7 +115,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
           return
         }
       }
-      showToast(`✓ Tiket ${ticket.id} dialokasikan & diteruskan ke Area Head.`)
+      showToast(`✓ Tiket ${ticket.id} dialokasikan & diteruskan ke HSSE untuk inspeksi K3.`)
     } else if (type === 'tolak') {
       if (ticket.dbId) {
         const res = await rejectTicketByAdmin(ticket.dbId, catatan)
