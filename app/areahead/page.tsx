@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import Sidebar from '../../components/areahead/AreaHeadSidebar'
 import TopHeader from '../../components/shared/TopHeader'
@@ -22,35 +23,34 @@ export default function ApprovalDashboard() {
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [modal, setModal] = useState<{ ticket: Ticket; action: 'Setujui' | 'Tolak' } | null>(null)
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+
+  const refreshData = async () => {
+    try {
+      const dbTickets = await getTicketsForAreaHead()
+      setTickets(adaptTickets(dbTickets))
+    } catch (err) {
+      console.error('Gagal memuat ulang data area head:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const dbTickets = await getTicketsForAreaHead()
-        setTickets(adaptTickets(dbTickets))
-      } catch (err) {
-        console.error('Gagal memuat tiket area head:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    refreshData()
+    const interval = setInterval(() => {
+      refreshData()
+    }, 5000)
+    return () => clearInterval(interval)
   }, [])
-
-  const pendingCount = tickets.filter(
-    (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'Area Head'
-  ).length
-
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3500)
-  }
 
   const handleAction = (ticket: Ticket, action: 'Setujui' | 'Tolak') => {
     if (ticket.overallStatus !== 'Menunggu' || ticket.currentStage !== 'Area Head') return
     setModal({ ticket, action })
   }
+
+  const pendingCount = tickets.filter(
+    (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'Area Head'
+  ).length
 
   const handleConfirm = async (catatan?: string) => {
     if (!modal) return
@@ -60,7 +60,7 @@ export default function ApprovalDashboard() {
       if (ticket.dbId) {
         const res = await approveTicketByAreaHead(ticket.dbId, catatan)
         if (!res.success) {
-          alert(`Gagal menyetujui pengajuan: ${res.error}`)
+          toast.error(`Gagal menyetujui pengajuan: ${res.error}`)
           return
         }
       }
@@ -68,40 +68,17 @@ export default function ApprovalDashboard() {
       if (ticket.dbId) {
         const res = await rejectTicketByAreaHead(ticket.dbId, catatan || 'Ditolak Area Head')
         if (!res.success) {
-          alert(`Gagal menolak pengajuan: ${res.error}`)
+          toast.error(`Gagal menolak pengajuan: ${res.error}`)
           return
         }
       }
     }
 
-    const newStatus: TicketStatus = action === 'Setujui' ? 'Disetujui' : 'Ditolak'
-    const newStage = action === 'Setujui' ? 'Menunggu Pengambilan di Gudang' : 'Ditolak oleh Area Head'
-    
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id !== ticket.id ? t : {
-          ...t, 
-          overallStatus: newStatus,
-          currentStage: newStage as any,
-          flow: t.flow.map((f) => f.stage === 'Area Head' ? { ...f, status: newStatus } : f),
-          trackingLogs: [
-            ...(t.trackingLogs || []),
-            {
-              stage: 'Area Head',
-              status: action === 'Setujui' ? 'Disetujui untuk operasi lapangan.' : 'Pengajuan ditolak oleh Area Head.',
-              actor: 'Pak Joko (Area Head)',
-              timestamp: new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB',
-              notes: catatan
-            }
-          ]
-        }
-      )
-    )
-    showToast(
+    await refreshData()
+    toast.success(
       action === 'Setujui'
         ? `Pengajuan ${ticket.id} berhasil disetujui.`
-        : `Pengajuan ${ticket.id} ditolak.`,
-      action === 'Setujui' ? 'success' : 'error'
+        : `Pengajuan ${ticket.id} ditolak.`
     )
     setModal(null)
   }
@@ -160,7 +137,7 @@ export default function ApprovalDashboard() {
                   <StatCard key={card.label} {...card} />
                 ))}
               </div>
-              <TicketTable tickets={tickets} handleAction={handleAction} />
+              <TicketTable tickets={tickets.filter(t => t.overallStatus === 'Menunggu' && t.currentStage === 'Area Head')} handleAction={handleAction} />
             </>
           )}
 
@@ -178,12 +155,6 @@ export default function ApprovalDashboard() {
           onConfirm={handleConfirm}
           onCancel={() => setModal(null)}
         />
-      )}
-
-      {toast && (
-        <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded shadow-lg text-sm font-medium text-white ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
-          {toast.message}
-        </div>
       )}
     </div>
   )

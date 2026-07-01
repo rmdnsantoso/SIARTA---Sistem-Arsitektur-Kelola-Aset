@@ -22,11 +22,12 @@ export interface Ticket {
   nip?: string
   jabatan: string
   alat: string
+  assetCode?: string
   jumlah: number
   stokTersedia: number
   tanggalPinjam: string
   tanggalKembali: string
-  lokasi: string
+  alasan: string
   currentStage: ApprovalStage | string
   overallStatus: TicketStatus
   flow: ApprovalFlow[]

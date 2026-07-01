@@ -11,6 +11,7 @@ async function main() {
   await prisma.trackingLog.deleteMany()
   await prisma.notification.deleteMany()
   await prisma.ticket.deleteMany()
+  await prisma.maintenanceRecord.deleteMany()
   await prisma.asset.deleteMany()
   await prisma.user.deleteMany()
   console.log('🗑️  Data lama berhasil dihapus.')
@@ -24,6 +25,12 @@ async function main() {
       email: 'siti@siarta.com',
       name: 'Siti Aminah',
       role: Role.Admin,
+      nip: '100234',
+      wa: '085544433322',
+      jabatan: 'Admin Logistik',
+      office: 'Gudang Pusat',
+      regional: 'Jawa Bagian Barat',
+      isActive: true,
     }
   })
 
@@ -33,6 +40,12 @@ async function main() {
       email: 'joko@siarta.com',
       name: 'Pak Joko',
       role: Role.AreaHead,
+      nip: '100236',
+      wa: '081112223334',
+      jabatan: 'Operation Manager',
+      office: 'HO Jakarta',
+      regional: 'Nasional',
+      isActive: true,
     }
   })
 
@@ -42,6 +55,12 @@ async function main() {
       email: 'hendra@siarta.com',
       name: 'Hendra',
       role: Role.HSSE,
+      nip: '100235',
+      wa: '081298765432',
+      jabatan: 'Safety Officer',
+      office: 'Site Alpha',
+      regional: 'Jawa Bagian Timur',
+      isActive: true,
     }
   })
 
@@ -51,15 +70,21 @@ async function main() {
       email: 'ahmad@siarta.com',
       name: 'Ahmad',
       role: Role.Peminjam,
+      nip: '100240',
+      wa: '081234567890',
+      jabatan: 'Field Technician',
+      office: 'Site Alpha',
+      regional: 'Jawa Bagian Timur',
+      isActive: true,
     }
   })
 
   // Peminjam lainnya
-  const budi = await prisma.user.create({ data: { email: 'budi@siarta.com', name: 'Budi Santoso', role: Role.Peminjam } })
-  const rina = await prisma.user.create({ data: { email: 'rina@siarta.com', name: 'Rina Kusuma', role: Role.Peminjam } })
-  const agus = await prisma.user.create({ data: { email: 'agus@siarta.com', name: 'Agus Wirawan', role: Role.Peminjam } })
-  const dewi = await prisma.user.create({ data: { email: 'dewi@siarta.com', name: 'Dewi Rahayu', role: Role.Peminjam } })
-  const hendra = await prisma.user.create({ data: { email: 'hendra.p@siarta.com', name: 'Hendra Putra', role: Role.Peminjam } })
+  const budi = await prisma.user.create({ data: { email: 'budi@siarta.com', name: 'Budi Santoso', role: Role.Peminjam, nip: '100241', wa: '081298765432', jabatan: 'Driller', office: 'Site Beta', regional: 'Kalimantan', isActive: true } })
+  const rina = await prisma.user.create({ data: { email: 'rina@siarta.com', name: 'Rina Kusuma', role: Role.Peminjam, nip: '100242', wa: '081111111111', jabatan: 'Surveyor', office: 'Site Alpha', regional: 'Jawa Bagian Timur', isActive: true } })
+  const agus = await prisma.user.create({ data: { email: 'agus@siarta.com', name: 'Agus Wirawan', role: Role.Peminjam, nip: '100243', wa: '082222222222', jabatan: 'Maintenance Crew', office: 'Site Gamma', regional: 'Sumatera', isActive: true } })
+  const dewi = await prisma.user.create({ data: { email: 'dewi@siarta.com', name: 'Dewi Rahayu', role: Role.Peminjam, nip: '100244', wa: '083333333333', jabatan: 'Quality Control', office: 'HO Jakarta', regional: 'Nasional', isActive: true } })
+  const hendra = await prisma.user.create({ data: { email: 'hendra.p@siarta.com', name: 'Hendra Putra', role: Role.Peminjam, nip: '100245', wa: '084444444444', jabatan: 'Welder', office: 'Site Beta', regional: 'Kalimantan', isActive: false } })
 
   console.log('👥 Users berhasil dibuat.')
 
@@ -72,7 +97,7 @@ async function main() {
       name: 'Gas Detector MSA Altair 4X',
       category: 'Keselamatan Kerja',
       isSerialized: true,
-      location: 'Gudang Utama',
+
       quantity: 3,
       status: AssetStatus.Available,
       spec: 'Deteksi gas O2, CO, H2S, LEL. Tahan ledakan ATEX.',
@@ -85,7 +110,7 @@ async function main() {
       name: 'Safety Harness Full Body',
       category: 'Keselamatan Kerja',
       isSerialized: false,
-      location: 'Gudang Utama',
+
       quantity: 5,
       status: AssetStatus.Available,
       spec: 'Full body harness standar EN 361. Kapasitas 140 kg.',
@@ -98,7 +123,7 @@ async function main() {
       name: 'Portable O2 Analyzer',
       category: 'Alat Ukur',
       isSerialized: true,
-      location: 'Gudang Utama',
+
       quantity: 3,
       status: AssetStatus.Available,
       spec: 'Mengukur kadar oksigen 0-25%. Akurasi ±0.1%.',
@@ -111,7 +136,7 @@ async function main() {
       name: 'Multimeter Digital Fluke',
       category: 'Alat Ukur',
       isSerialized: true,
-      location: 'Gudang Utama',
+
       quantity: 4,
       status: AssetStatus.Maintenance,
       spec: 'Fluke 87V. True RMS, ukur AC/DC, resistansi, kapasitansi.',
@@ -124,7 +149,7 @@ async function main() {
       name: 'Chain Block 2T Heavy Duty',
       category: 'Alat Angkat',
       isSerialized: false,
-      location: 'Gudang Alat Berat',
+
       quantity: 4,
       status: AssetStatus.Available,
       spec: 'Kapasitas angkat 2 Ton. Rantai baja grade 80.',
@@ -137,7 +162,7 @@ async function main() {
       name: 'Welding Mask Pro',
       category: 'Alat Pelindung',
       isSerialized: false,
-      location: 'Gudang Utama',
+
       quantity: 2,
       status: AssetStatus.Borrowed,
       spec: 'Auto-darkening lens DIN 9-13. Tahan cipratan api.',
@@ -150,7 +175,7 @@ async function main() {
       name: 'Helm Safety Pro Class G',
       category: 'Alat Pelindung',
       isSerialized: false,
-      location: 'Gudang Utama',
+
       quantity: 10,
       status: AssetStatus.Borrowed,
       spec: 'ANSI/ISEA Z89.1 Class G. Pelindung kepala industri.',
@@ -163,7 +188,7 @@ async function main() {
       name: 'Personal H2S Monitor',
       category: 'Keselamatan Kerja',
       isSerialized: true,
-      location: 'Gudang Utama',
+
       quantity: 2,
       status: AssetStatus.Available,
       spec: 'Deteksi tunggal H2S. Alarm visual dan getar. Clip-on.',
@@ -176,7 +201,7 @@ async function main() {
       name: 'GPS Geodetik Trimble',
       category: 'Alat Survey',
       isSerialized: true,
-      location: 'Gudang Alat Survey',
+
       quantity: 1,
       status: AssetStatus.Available,
       spec: 'Trimble R12i. Akurasi horizontal 3mm. RTK support.',
@@ -189,7 +214,7 @@ async function main() {
       name: 'APAR CO2 6kg',
       category: 'Keselamatan Kebakaran',
       isSerialized: true,
-      location: 'Gudang Timur',
+
       quantity: 3,
       status: AssetStatus.Available,
       spec: 'Media CO2. Efektif untuk kebakaran kelas B dan C.',
@@ -202,7 +227,7 @@ async function main() {
   // 4. SEED TICKETS + TRACKING LOGS
   // ============================================================
 
-  // TKT-001: Budi - Gas Detector - Menunggu Area Head
+  // TKT-001: Budi - Gas Detector - Menunggu Verifikasi HSSE
   await prisma.ticket.create({
     data: {
       ticketCode: 'TKT-001',
@@ -211,17 +236,18 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '16 Jun 2026',
       tanggalKembali: '18 Jun 2026',
-      lokasi: 'Platform Delta-7',
+      alasan: 'Platform Delta-7',
       overallStatus: TicketStatus.Menunggu,
-      currentStage: 'Menunggu Persetujuan Area Head',
+      currentStage: 'Menunggu Verifikasi HSSE',
       logs: {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Budi Santoso (Peminjam)', timestamp: '15 Jun 2026, 08:00 WIB' },
-          { stage: 'Admin', status: 'Stok dicek, tersedia. Diteruskan ke Area Head.', actor: 'Siti Aminah (Admin)', timestamp: '15 Jun 2026, 09:00 WIB' },
+          { stage: 'Admin', status: 'Verifikasi stok fisik OK. Meneruskan ke HSSE untuk inspeksi K3.', actor: 'Siti Aminah (Admin)', timestamp: '15 Jun 2026, 09:00 WIB' },
         ]
       }
     }
   })
+
 
   // TKT-002: Rina - Gas Detector - Menunggu Admin
   await prisma.ticket.create({
@@ -232,7 +258,7 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '16 Jun 2026',
       tanggalKembali: '17 Jun 2026',
-      lokasi: 'Wellpad Charlie-3',
+      alasan: 'Wellpad Charlie-3',
       overallStatus: TicketStatus.Menunggu,
       currentStage: 'Menunggu Persetujuan Admin',
       logs: {
@@ -252,7 +278,7 @@ async function main() {
       jumlah: 2,
       tanggalPinjam: '17 Jun 2026',
       tanggalKembali: '20 Jun 2026',
-      lokasi: 'Compressor Station B',
+      alasan: 'Compressor Station B',
       overallStatus: TicketStatus.Menunggu,
       currentStage: 'Menunggu Persetujuan Admin',
       logs: {
@@ -272,7 +298,7 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '15 Jun 2026',
       tanggalKembali: '16 Jun 2026',
-      lokasi: 'Control Room Alpha',
+      alasan: 'Control Room Alpha',
       overallStatus: TicketStatus.Disetujui,
       currentStage: 'Menunggu Pengambilan di Gudang',
       logs: {
@@ -294,7 +320,7 @@ async function main() {
       jumlah: 3,
       tanggalPinjam: '18 Jun 2026',
       tanggalKembali: '22 Jun 2026',
-      lokasi: 'Rig Nusantara-12',
+      alasan: 'Rig Nusantara-12',
       overallStatus: TicketStatus.Ditolak,
       currentStage: 'Ditolak oleh Admin',
       logs: {
@@ -317,7 +343,7 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '14 Jun 2026',
       tanggalKembali: '28 Jun 2026',
-      lokasi: 'Area Fabrikasi Utama',
+      alasan: 'Area Fabrikasi Utama',
       overallStatus: TicketStatus.Dipinjam,
       currentStage: 'Dipinjam di Lapangan',
       logs: {
@@ -340,7 +366,7 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '20 Jun 2026',
       tanggalKembali: '25 Jun 2026',
-      lokasi: 'Wellpad Alpha',
+      alasan: 'Wellpad Alpha',
       overallStatus: TicketStatus.Disetujui,
       currentStage: 'Menunggu Pengambilan di Gudang',
       logs: {
@@ -362,7 +388,7 @@ async function main() {
       jumlah: 2,
       tanggalPinjam: '22 Jun 2026',
       tanggalKembali: '26 Jun 2026',
-      lokasi: 'Platform Delta-7',
+      alasan: 'Platform Delta-7',
       overallStatus: TicketStatus.Menunggu,
       currentStage: 'Menunggu Persetujuan Admin',
       logs: {
@@ -382,7 +408,7 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '15 Jun 2026',
       tanggalKembali: '18 Jun 2026',
-      lokasi: 'Substation C',
+      alasan: 'Substation C',
       overallStatus: TicketStatus.Ditolak,
       currentStage: 'Ditolak oleh Admin',
       logs: {
@@ -403,7 +429,7 @@ async function main() {
       jumlah: 1,
       tanggalPinjam: '01 Jun 2026',
       tanggalKembali: '05 Jun 2026',
-      lokasi: 'Dermaga Loading',
+      alasan: 'Dermaga Loading',
       overallStatus: TicketStatus.Dikembalikan,
       currentStage: 'Selesai Dikembalikan',
       logs: {
@@ -419,6 +445,38 @@ async function main() {
   console.log('🎟️  Tickets & Tracking Logs berhasil dibuat.')
 
   // ============================================================
+  // 5. SEED MAINTENANCE RECORDS
+  // ============================================================
+  await prisma.maintenanceRecord.createMany({
+    data: [
+      {
+        recordCode: 'ESC-A01', assetId: multimeter.id, assetName: multimeter.name, assetCode: multimeter.assetCode,
+        serialNumber: 'FLK-112', issue: 'Layar LCD bergaris, pembacaan tidak terbaca jelas.',
+        status: 'Menunggu Tindakan', resolution: 'Menunggu Tindakan',
+        reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
+        dateReported: '15 Jun 2026',
+      },
+      {
+        recordCode: 'ESC-H01', assetId: helmet.id, assetName: helmet.name, assetCode: helmet.assetCode,
+        issue: 'Retak struktural pada crown, tidak aman untuk digunakan.',
+        status: 'Selesai Diperbaiki', resolution: 'Selesai Diperbaiki',
+        reporterId: hsse.id, reporterName: 'Hendra (HSSE)',
+        dateReported: '10 Jun 2026', dateResolved: '12 Jun 2026',
+        notes: 'Helm diganti unit baru dari stok cadangan.',
+      },
+      {
+        recordCode: 'ESC-H02', assetId: weldingMask.id, assetName: weldingMask.name, assetCode: weldingMask.assetCode,
+        serialNumber: 'WM-002', issue: 'Auto-darkening tidak berfungsi, lensa macet di posisi gelap.',
+        status: 'Dimusnahkan', resolution: 'Dimusnahkan',
+        reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
+        dateReported: '08 Jun 2026', dateResolved: '09 Jun 2026',
+        notes: 'Komponen sensor tidak tersedia di pasaran. Write-off.',
+      },
+    ]
+  })
+  console.log('🔧 Maintenance Records berhasil dibuat.')
+
+  // ============================================================
   // 5. SEED NOTIFICATIONS
   // ============================================================
   await prisma.notification.createMany({
@@ -426,10 +484,10 @@ async function main() {
       { title: 'Pembaruan Sistem SIARTA v2.0', desc: 'Arsitektur backend baru dengan Prisma & Server Actions berhasil diluncurkan.', type: 'info', targetRole: 'Semua', unread: false, time: '1 jam lalu' },
       { title: 'Verifikasi Pengembalian Selesai', desc: 'Ahmad telah mengembalikan 1 unit Chain Block 2T dalam kondisi baik.', type: 'success', targetRole: 'Admin', unread: true, time: '30 mnt lalu' },
       { title: 'Stok Aset Kritis: APAR CO2', desc: 'Stok APAR CO2 di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan.', type: 'urgent', targetRole: 'Admin', unread: true, time: '2 jam lalu' },
-      { title: 'Menunggu Persetujuan Anda', desc: 'Tiket TKT-001 (Gas Detector) dari Budi Santoso menunggu approval akhir Anda.', type: 'urgent', targetRole: 'AreaHead', unread: true, time: '1 jam lalu' },
+      { title: 'Menunggu Persetujuan Anda', desc: 'Tiket TKT-001 (Gas Detector) dari Budi Santoso menunggu verifikasi HSSE.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '1 jam lalu' },
       { title: 'Pengajuan Disetujui!', desc: 'Tiket TKT-102 (Gas Detector) telah disetujui Area Head. Ambil di Gudang Utama.', type: 'success', targetRole: 'Peminjam', unread: true, time: '2 jam lalu' },
       { title: 'Peringatan Masa Aktif Pinjaman', desc: 'Tiket TKT-101 (Helm Safety) akan jatuh tempo besok. Harap kembalikan tepat waktu.', type: 'warning', targetRole: 'Peminjam', unread: true, time: '3 jam lalu' },
-      { title: 'Inspeksi Keselamatan Terjadwal', desc: 'Ada 2 unit Multimeter yang membutuhkan verifikasi kelayakan keselamatan minggu ini.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '20 mnt lalu' },
+      { title: 'Laporan Kerusakan Baru', desc: 'Multimeter Fluke (AST-004) dilaporkan rusak oleh Admin. Status: Menunggu Tindakan.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '20 mnt lalu' },
     ]
   })
   console.log('🔔 Notifications berhasil dibuat.')

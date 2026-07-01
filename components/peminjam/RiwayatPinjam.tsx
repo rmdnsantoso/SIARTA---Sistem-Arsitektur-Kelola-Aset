@@ -124,10 +124,12 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
               </div>
 
               <div className="grid grid-cols-2 gap-2 p-2.5 bg-gray-50 rounded-lg sm:rounded-xl text-xs">
-                <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Lokasi</p>
-                  <p className="font-bold text-gray-900">{ticket.lokasi}</p>
-                </div>
+                {ticket.alasan && (
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Alasan</p>
+                    <p className="font-bold text-gray-900">{ticket.alasan}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Kuantitas</p>
                   <p className="font-bold text-gray-900">{ticket.jumlah} unit</p>
@@ -164,7 +166,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                {['ID Tiket', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status Akhir', 'Detail'].map((h, i) => (
+                {['ID Tiket', 'Aset', 'Kuantitas', 'Periode Pinjam', 'Status Akhir', 'Detail'].map((h, i) => (
                   <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -178,10 +180,28 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-semibold text-blue-600">{ticket.id}</span>
                   </td>
-                  {/* Aset & Lokasi */}
+                  {/* Aset & Alasan */}
                   <td className="px-6 py-4">
                     <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
-                    <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+                    {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {ticket.allocatedUnits.map((sn, idx) => {
+                          if (sn.startsWith('NON_SERIAL_QTY_')) {
+                            const qty = sn.replace('NON_SERIAL_QTY_', '');
+                            return (
+                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200 shadow-sm">
+                                [Non-Serial] Fisik Keluar: {qty}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-mono rounded border border-gray-200 shadow-sm">
+                              {sn}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                   {/* Kuantitas */}
                   <td className="px-6 py-4 whitespace-nowrap">

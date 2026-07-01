@@ -61,13 +61,19 @@ export async function rejectTicketByAreaHead(ticketId: string, rejectReason: str
         logs: {
           create: {
             stage: 'Area Head',
-            status: `Ditolak: ${rejectReason}`,
+            status: 'Ditolak oleh Area Head',
             actor: `${user.name} (Area Head)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
             notes: rejectReason
           }
         }
       }
+    })
+
+    // Kembalikan stok yang di-booking
+    await prisma.asset.update({
+      where: { id: ticket.assetId },
+      data: { quantity: { increment: ticket.jumlah } }
     })
 
     await createNotification(

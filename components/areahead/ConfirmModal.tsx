@@ -12,6 +12,10 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
   const [catatan, setCatatan] = useState('')
   const isApprove = action === 'Setujui'
 
+  React.useEffect(() => {
+    setCatatan('')
+  }, [ticket.id])
+
   const handleConfirm = () => {
     if (!isApprove && !catatan.trim()) return
     onConfirm(catatan)

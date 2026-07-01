@@ -1,11 +1,11 @@
 'use client'
 import React, { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
-import { cancelBorrowTicket } from '../../actions/workflows/peminjaman'
 interface Props {
   tickets: Ticket[]
-  onUpdateTickets: React.Dispatch<React.SetStateAction<Ticket[]>>
+  onSuccess?: () => void
 }
 function StatusBadge({ status, stage }: { status: TicketStatus, stage: string }) {
   const map: Record<TicketStatus, string> = {
@@ -27,7 +27,7 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
     </div>
   )
 }
-export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
+export default function TiketSaya({ tickets, onSuccess }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
   // Pagination State
@@ -35,19 +35,6 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
   const itemsPerPage = 5
   // Modal State for details
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
-
-  const handleCancel = async (ticket: Ticket) => {
-    if (confirm(`Apakah Anda yakin ingin membatalkan permohonan ${ticket.id}?`)) {
-      if (ticket.dbId) {
-        const res = await cancelBorrowTicket(ticket.dbId)
-        if (!res.success) {
-          alert(`Gagal membatalkan tiket: ${res.error}`)
-          return
-        }
-      }
-      onUpdateTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, overallStatus: 'Ditolak', currentStage: 'Dibatalkan oleh Peminjam' } : t))
-    }
-  }
 
   // Filter tickets to only display those belonging to "Ahmad" and which are active (Menunggu, Disetujui, Dipinjam)
   const activeStatuses = ['Menunggu', 'Disetujui', 'Dipinjam']
@@ -131,10 +118,12 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
               </div>
 
               <div className="grid grid-cols-2 gap-2 p-2.5 bg-gray-50 rounded-lg sm:rounded-xl text-xs">
-                <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Lokasi</p>
-                  <p className="font-bold text-gray-900">{ticket.lokasi}</p>
-                </div>
+                {ticket.alasan && (
+                  <div>
+                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Alasan Peminjaman</p>
+                    <p className="font-bold text-gray-900">{ticket.alasan}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-0.5">Kuantitas</p>
                   <p className="font-bold text-gray-900">{ticket.jumlah} unit</p>
@@ -145,28 +134,7 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                 </div>
               </div>
 
-              {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
-                <div>
-                  <p className="text-gray-500 text-[10px] uppercase font-bold tracking-wider mb-1">Alokasi Unit</p>
-                  <div className="flex flex-wrap gap-1">
-                    {ticket.allocatedUnits.map((sn, idx) => (
-                      <span key={idx} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-mono rounded border border-indigo-200 shadow-sm">
-                        {sn}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-                {ticket.overallStatus === 'Menunggu' && (
-                  <button
-                    onClick={() => handleCancel(ticket)}
-                    className="flex-1 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors border border-red-200"
-                  >
-                    Batal
-                  </button>
-                )}
                 <button 
                   onClick={() => setModalTicket(ticket)}
                   className="flex-1 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors border border-blue-200 flex items-center justify-center gap-1.5"
@@ -190,7 +158,7 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                {['ID Tiket', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Alokasi Unit', 'Status', 'Aksi'].map((h, i) => (
+                {['ID Tiket', 'Aset', 'Kuantitas', 'Periode Pinjam', 'Status', 'Detail'].map((h, i) => (
                   <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
@@ -204,10 +172,28 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-semibold text-blue-600">{ticket.id}</span>
                   </td>
-                  {/* Aset & Lokasi */}
+                  {/* Aset & Alasan */}
                   <td className="px-6 py-4">
                     <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
-                    <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+                    {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {ticket.allocatedUnits.map((sn, idx) => {
+                          if (sn.startsWith('NON_SERIAL_QTY_')) {
+                            const qty = sn.replace('NON_SERIAL_QTY_', '');
+                            return (
+                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200 shadow-sm">
+                                [Non-Serial] Fisik Keluar: {qty}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-mono rounded border border-gray-200 shadow-sm">
+                              {sn}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                   {/* Kuantitas */}
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -218,20 +204,6 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                     <p>{ticket.tanggalPinjam}</p>
                     <p className="text-xs text-gray-400 mt-0.5">s/d {ticket.tanggalKembali}</p>
                   </td>
-                  {/* Alokasi Unit */}
-                  <td className="px-6 py-4">
-                    {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {ticket.allocatedUnits.map((sn, idx) => (
-                          <span key={idx} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-mono rounded border border-indigo-200 shadow-sm">
-                            {sn}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-gray-400 italic">Belum dialokasikan</span>
-                    )}
-                  </td>
                   {/* Status */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <StatusBadge status={ticket.overallStatus} stage={ticket.currentStage} />
@@ -239,14 +211,6 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                   {/* Aksi */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      {ticket.overallStatus === 'Menunggu' && (
-                        <button
-                          onClick={() => handleCancel(ticket)}
-                          className="px-2.5 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors border border-red-200"
-                        >
-                          Batal
-                        </button>
-                      )}
                       <button 
                         onClick={() => setModalTicket(ticket)}
                         className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"

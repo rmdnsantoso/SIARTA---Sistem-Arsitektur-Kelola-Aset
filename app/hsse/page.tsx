@@ -14,23 +14,28 @@ import { adaptTickets } from '../../types/db'
 import type { Ticket } from '../../types/ticket'
 
 export default function HSSEDashboard() {
-  const [activeNav, setActiveNav] = useState('Verifikasi Peminjaman')
+  const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const dbTickets = await getTicketsForHSSE()
-        setTickets(adaptTickets(dbTickets))
-      } catch (err) {
-        console.error('Gagal memuat tiket HSSE:', err)
-      } finally {
-        setLoading(false)
-      }
+  const refreshData = async () => {
+    try {
+      const dbTickets = await getTicketsForHSSE()
+      setTickets(adaptTickets(dbTickets))
+    } catch (err) {
+      console.error('Gagal memuat ulang tiket HSSE:', err)
+    } finally {
+      setLoading(false)
     }
-    fetchData()
+  }
+
+  useEffect(() => {
+    refreshData()
+    const interval = setInterval(() => {
+      refreshData()
+    }, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const hssePendingCount = tickets.filter(
@@ -69,11 +74,11 @@ export default function HSSEDashboard() {
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
           <div className="mb-4 sm:mb-6">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Pusat Kendali Verifikasi & Pengawasan Keselamatan (HSSE)</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Pusat Kendali Verifikasi & Pengawasan (HSSE)</p>
           </div>
           
-          {activeNav === 'Verifikasi Peminjaman' && <HSSEBorrowingProcess tickets={tickets} />}
-          {activeNav === 'Pengembalian Aset' && <HSSEReturnProcess tickets={tickets} />}
+          {activeNav === 'Verifikasi Pinjam' && <HSSEBorrowingProcess tickets={tickets} onSuccess={refreshData} />}
+          {activeNav === 'Pengembalian Aset' && <HSSEReturnProcess tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Master Aset' && <HSSEAssetMaster />}
           {activeNav === 'Pemeliharaan Aset' && <HSSEAssetMaintenance />}
           {activeNav === 'Riwayat Peminjaman' && <HSSETicketHistory tickets={tickets} />}

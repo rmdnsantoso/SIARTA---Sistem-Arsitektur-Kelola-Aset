@@ -6,12 +6,13 @@ import { Ticket } from '../../lib/dummyData'
 
 interface HSSEReturnProcessProps {
   tickets: Ticket[]
+  onSuccess?: () => void
 }
 
-export default function HSSEReturnProcess({ tickets }: HSSEReturnProcessProps) {
+export default function HSSEReturnProcess({ tickets, onSuccess }: HSSEReturnProcessProps) {
   return (
     <div className="hsse-return-process">
-      <ReturnProcess tickets={tickets} />
+      <ReturnProcess tickets={tickets} onSuccess={onSuccess} />
     </div>
   )
 }

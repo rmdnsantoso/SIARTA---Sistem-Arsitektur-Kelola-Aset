@@ -12,6 +12,11 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
   const [error, setError] = useState<string>('')
   const scannerRef = useRef<any>(null)
   const isScanning = useRef(false)
+  const isMounted = useRef(true)
+  const isTransitioning = useRef(false)
+  const lastScanned = useRef<string>('')
+  const idBase = React.useId().replace(/:/g, '')
+  const scannerId = `qr-reader-${idBase}`
 
   useEffect(() => {
     if (isOpen) {
@@ -20,8 +25,12 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
         try {
           const { Html5Qrcode } = await import('html5-qrcode');
 
+          if (!isMounted.current) return;
+          
+          if (!document.getElementById(scannerId)) return;
+
           if (!scannerRef.current) {
-            scannerRef.current = new Html5Qrcode("qr-reader")
+            scannerRef.current = new Html5Qrcode(scannerId)
           }
           
           // Configuration for standard 1:1 view
@@ -31,17 +40,21 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
             aspectRatio: 1.0,
           }
           
-          if (!isScanning.current) {
+          if (!isScanning.current && !isTransitioning.current) {
+            isTransitioning.current = true
             scannerRef.current.start(
               { facingMode: "environment" },
               config,
               (decodedText: string) => {
                 // Success
                 if (isScanning.current) {
-                  // Prevent multiple triggers
-                  isScanning.current = false
-                  scannerRef.current?.stop().catch(console.error)
-                  onScanSuccess(decodedText)
+                  // Prevent spamming the same barcode within a short timeframe
+                  if (lastScanned.current !== decodedText) {
+                    lastScanned.current = decodedText
+                    onScanSuccess(decodedText)
+                    // Reset last scanned after 2 seconds to allow scanning the same item again if needed
+                    setTimeout(() => { lastScanned.current = '' }, 2000)
+                  }
                 }
               },
               (errorMessage: string) => {
@@ -49,8 +62,10 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
               }
             ).then(() => {
               isScanning.current = true
+              isTransitioning.current = false
               setError('')
             }).catch((err: any) => {
+              isTransitioning.current = false
               console.error("Camera error:", err)
               setError("Gagal mengakses kamera. Pastikan Anda telah memberikan izin kamera pada browser Anda.")
             })
@@ -61,22 +76,29 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
         }
       }, 150)
       
-      return () => clearTimeout(timer)
+      return () => {
+        clearTimeout(timer)
+      }
     } else {
       // Cleanup when closed
-      if (scannerRef.current && isScanning.current) {
+      if (scannerRef.current && isScanning.current && !isTransitioning.current) {
         isScanning.current = false
+        isTransitioning.current = true
         scannerRef.current.stop().then(() => {
           scannerRef.current?.clear()
-        }).catch(console.error)
+        }).catch(console.error).finally(() => {
+          isTransitioning.current = false
+        })
       }
     }
   }, [isOpen, onScanSuccess])
 
   // Handle manual cleanup on unmount
   useEffect(() => {
+    isMounted.current = true
     return () => {
-      if (scannerRef.current && isScanning.current) {
+      isMounted.current = false
+      if (scannerRef.current && isScanning.current && !isTransitioning.current) {
         scannerRef.current.stop().catch(console.error)
       }
     }
@@ -97,9 +119,9 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
           animation: scan-line 2.5s infinite ease-in-out;
         }
         /* Hide the default UI of html5-qrcode */
-        #qr-reader img { display: none !important; }
-        #qr-reader__dashboard_section_csr span { display: none !important; }
-        #qr-reader__dashboard_section_swaplink { display: none !important; }
+        #${scannerId} img { display: none !important; }
+        #${scannerId}__dashboard_section_csr span { display: none !important; }
+        #${scannerId}__dashboard_section_swaplink { display: none !important; }
       `}</style>
       
       <div className="flex items-center justify-between p-3 w-full bg-blue-50/50 border-b border-blue-100">
@@ -132,7 +154,7 @@ export default function InlineQRScanner({ isOpen, onClose, onScanSuccess }: Inli
         ) : (
           <div className="relative w-full max-w-[280px] aspect-square mx-auto">
             {/* The actual scanner element */}
-            <div id="qr-reader" className="w-full h-full overflow-hidden rounded-2xl bg-gray-900 shadow-inner"></div>
+            <div id={scannerId} className="w-full h-full overflow-hidden rounded-2xl bg-gray-900 shadow-inner"></div>
             
             {/* Visual scanner guides (corners) */}
             <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-500 rounded-tl-2xl z-10 pointer-events-none"></div>

@@ -6,7 +6,7 @@ import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
 import { createNotification } from '../core/notif'
 
 // 1. Admin menyetujui tahap pertama dan meneruskan ke HSSE (bukan langsung Area Head)
-export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
+export async function verifyTicketByAdmin(ticketId: string, notes?: string, allocatedSerials?: string[]) {
   try {
     const user = await requireRole([Role.Admin])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
@@ -18,10 +18,11 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
       where: { id: ticketId },
       data: {
         currentStage: 'Menunggu Verifikasi HSSE',
+        allocatedUnits: allocatedSerials && allocatedSerials.length > 0 ? JSON.stringify(allocatedSerials) : null,
         logs: {
           create: {
             stage: 'Admin',
-            status: 'Verifikasi stok fisik OK. Meneruskan ke HSSE untuk inspeksi keselamatan.',
+            status: 'Verifikasi stok fisik OK. Meneruskan ke HSSE.',
             actor: `${user.name} (Admin)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
             notes
@@ -32,8 +33,8 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string) {
 
     // Kirim notif ke HSSE
     await createNotification(
-      'Inspeksi K3 Diperlukan',
-      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) memerlukan inspeksi keselamatan HSSE sebelum dipinjamkan.`,
+      'Verifikasi Diperlukan',
+      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) memerlukan verifikasi HSSE sebelum dipinjamkan.`,
       'urgent',
       'HSSE'
     )
@@ -59,7 +60,7 @@ export async function approveTicketByHSSE(ticketId: string, notes?: string) {
         logs: {
           create: {
             stage: 'HSSE',
-            status: 'Inspeksi K3 selesai. Aset sesuai standar keselamatan. Meneruskan ke Area Head.',
+            status: 'Verifikasi OK. Meneruskan ke Area Head.',
             actor: `${user.name} (HSSE)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
             notes
@@ -98,7 +99,7 @@ export async function rejectTicketByHSSE(ticketId: string, rejectReason: string)
         logs: {
           create: {
             stage: 'HSSE',
-            status: `Ditolak HSSE: ${rejectReason}`,
+            status: 'Ditolak oleh HSSE',
             actor: `${user.name} (HSSE)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
             notes: rejectReason
@@ -107,9 +108,15 @@ export async function rejectTicketByHSSE(ticketId: string, rejectReason: string)
       }
     })
 
+    // Kembalikan stok yang di-booking
+    await prisma.asset.update({
+      where: { id: ticket.assetId },
+      data: { quantity: { increment: ticket.jumlah } }
+    })
+
     await createNotification(
       'Pengajuan Ditolak oleh HSSE',
-      `Tiket ${ticket.ticketCode} ditolak karena tidak memenuhi standar K3. Alasan: ${rejectReason}`,
+      `Tiket ${ticket.ticketCode} ditolak oleh HSSE. Alasan: ${rejectReason}`,
       'urgent',
       'Peminjam'
     )
@@ -145,10 +152,35 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
       }
     })
 
-    await prisma.asset.update({
-      where: { id: ticket.assetId },
-      data: { status: AssetStatus.Borrowed }
-    })
+    // Cek sisa stok. Jika 0, ubah status jadi Borrowed
+    const currentAsset = await prisma.asset.findUnique({ where: { id: ticket.assetId } })
+    if (currentAsset && currentAsset.quantity === 0) {
+      await prisma.asset.update({
+        where: { id: ticket.assetId },
+        data: { status: AssetStatus.Borrowed }
+      })
+    }
+
+    if (ticket.allocatedUnits) {
+      const serials: string[] = JSON.parse(ticket.allocatedUnits)
+      for (const sn of serials) {
+        await prisma.physicalUnit.updateMany({
+          where: { assetId: ticket.assetId, serialNumber: sn },
+          data: { status: 'Dipinjam' }
+        })
+        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, serialNumber: sn } })
+        for (const u of units) {
+          await prisma.unitHistory.create({
+            data: {
+              unitId: u.id,
+              action: `Dipinjam oleh ${ticket.peminjam.name}. Alasan: ${ticket.alasan}`,
+              actor: `${user.name} (Admin)`,
+              timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
+            }
+          })
+        }
+      }
+    }
 
     await createNotification(
       'Aset Diserahkan',
@@ -171,7 +203,7 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
     if (ticket.overallStatus !== TicketStatus.Dipinjam) throw new Error('Tiket sedang tidak dalam status dipinjam.')
 
-    const finalAssetStatus = isNeedingMaintenance ? AssetStatus.Maintenance : AssetStatus.Available
+    const finalAssetStatus = isNeedingMaintenance ? (ticket.asset.isSerialized ? AssetStatus.Maintenance : undefined) : AssetStatus.Available
 
     const updatedTicket = await prisma.ticket.update({
       where: { id: ticketId },
@@ -190,12 +222,63 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
       }
     })
 
-    await prisma.asset.update({
-      where: { id: ticket.assetId },
-      data: { status: finalAssetStatus }
-    })
+    const assetUpdateData: any = {}
+    if (!isNeedingMaintenance) {
+      assetUpdateData.quantity = { increment: ticket.jumlah }
+      assetUpdateData.status = AssetStatus.Available
+    } else if (finalAssetStatus) {
+      assetUpdateData.status = finalAssetStatus
+    }
+
+    if (Object.keys(assetUpdateData).length > 0) {
+      await prisma.asset.update({
+        where: { id: ticket.assetId },
+        data: assetUpdateData
+      })
+    }
+
+    if (ticket.allocatedUnits) {
+      const serials: string[] = JSON.parse(ticket.allocatedUnits)
+      for (const sn of serials) {
+        const unitStatus = isNeedingMaintenance ? 'Maintenance' : 'Tersedia'
+        await prisma.physicalUnit.updateMany({
+          where: { assetId: ticket.assetId, serialNumber: sn },
+          data: { status: unitStatus }
+        })
+        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, serialNumber: sn } })
+        for (const u of units) {
+          await prisma.unitHistory.create({
+            data: {
+              unitId: u.id,
+              action: `Dikembalikan. Status: ${unitStatus}`,
+              actor: `${user.name} (Admin)`,
+              timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
+            }
+          })
+        }
+      }
+    }
 
     if (isNeedingMaintenance) {
+      // Buat record maintenance baru agar terdeteksi di board AssetMaintenance
+      const count = await prisma.maintenanceRecord.count()
+      const recordCode = `ESC-${String(count + 1).padStart(3, '0')}`
+      const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })
+      
+      await prisma.maintenanceRecord.create({
+        data: {
+          recordCode,
+          assetId: ticket.assetId,
+          assetName: ticket.asset.name,
+          assetCode: ticket.asset.assetCode,
+          issue: maintenanceNotes || 'Dilaporkan rusak saat pengembalian',
+          status: 'Menunggu Tindakan',
+          reporterId: user.id,
+          reporterName: `${user.name} (Admin)`,
+          dateReported: today,
+        }
+      })
+
       await createNotification(
         'Inspeksi HSSE / Maintenance Diperlukan',
         `Aset ${ticket.asset.name} (${ticket.asset.assetCode}) dikembalikan dan dimasukkan ke status Maintenance.`,
@@ -256,13 +339,19 @@ export async function rejectTicketByAdmin(ticketId: string, rejectReason: string
         logs: {
           create: {
             stage: 'Admin',
-            status: `Ditolak Admin: ${rejectReason}`,
+            status: 'Ditolak oleh Admin',
             actor: `${user.name} (Admin)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
             notes: rejectReason
           }
         }
       }
+    })
+
+    // Kembalikan stok yang di-booking
+    await prisma.asset.update({
+      where: { id: ticket.assetId },
+      data: { quantity: { increment: ticket.jumlah } }
     })
 
     await createNotification(

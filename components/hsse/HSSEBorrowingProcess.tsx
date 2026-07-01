@@ -1,12 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
 import { approveTicketByHSSE, rejectTicketByHSSE } from '../../actions/workflows/verifikasi'
 
 interface Props {
   tickets: Ticket[]
+  onSuccess?: () => void
 }
 
 type ModalState = {
@@ -30,23 +32,22 @@ function StatusBadge({ status }: { status: TicketStatus }) {
   )
 }
 
-export default function HSSEBorrowingProcess({ tickets }: Props) {
+export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets)
+  
+  React.useEffect(() => {
+    setLocalTickets(tickets)
+  }, [tickets])
+
   const [modal, setModal] = useState<ModalState | null>(null)
   const [catatan, setCatatan] = useState('')
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 3500)
-  }
-
   // Tiket yang menunggu aksi HSSE
-  const pendingTickets = localTickets.filter(t => t.currentStage === 'HSSE' || t.currentStage === 'Menunggu Verifikasi HSSE')
+  const pendingTickets = localTickets.filter(t => t.overallStatus !== 'Ditolak' && (t.currentStage === 'HSSE' || t.currentStage === 'Menunggu Verifikasi HSSE'))
 
   const filteredTickets = pendingTickets.filter(t =>
     t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -69,9 +70,9 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
     try {
       if (type === 'setujui') {
         if (ticket.dbId) {
-          const res = await approveTicketByHSSE(ticket.dbId, catatan || 'Aset sesuai standar K3.')
+          const res = await approveTicketByHSSE(ticket.dbId, catatan || undefined)
           if (!res.success) {
-            alert(`Gagal memverifikasi: ${res.error}`)
+            toast.error(`Gagal memverifikasi: ${res.error}`)
             setLoading(false)
             return
           }
@@ -85,7 +86,7 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
               ...(t.trackingLogs || []),
               {
                 stage: 'HSSE',
-                status: 'Inspeksi K3 selesai. Meneruskan ke Area Head.',
+                status: 'Verifikasi selesai. Meneruskan ke Area Head.',
                 actor: 'Hendra (HSSE)',
                 timestamp: new Date().toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB',
                 notes: catatan || undefined
@@ -93,17 +94,18 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
             ]
           }
         ))
-        showToast(`✓ Tiket ${ticket.id} disetujui HSSE, diteruskan ke Area Head.`, 'success')
+        onSuccess?.()
+        toast.success(`Tiket ${ticket.id} disetujui HSSE, diteruskan ke Area Head.`)
       } else if (type === 'tolak') {
         if (!catatan.trim()) {
-          alert('Alasan penolakan wajib diisi untuk keamanan K3.')
+          toast.error('Alasan penolakan wajib diisi.')
           setLoading(false)
           return
         }
         if (ticket.dbId) {
           const res = await rejectTicketByHSSE(ticket.dbId, catatan)
           if (!res.success) {
-            alert(`Gagal menolak: ${res.error}`)
+            toast.error(`Gagal menolak: ${res.error}`)
             setLoading(false)
             return
           }
@@ -126,10 +128,11 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
             ]
           }
         ))
-        showToast(`✗ Tiket ${ticket.id} ditolak oleh HSSE.`, 'error')
+        onSuccess?.()
+        toast.error(`Tiket ${ticket.id} ditolak oleh HSSE.`)
       }
     } catch (err: any) {
-      alert(`Terjadi kesalahan: ${err.message}`)
+      toast.error(`Terjadi kesalahan: ${err.message}`)
     } finally {
       setLoading(false)
       setModal(null)
@@ -139,7 +142,7 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
 
   const stats: Array<{ label: string; value: number; iconPath: string; colorTheme: 'amber' | 'blue' | 'green' | 'red' }> = [
     {
-      label: 'Menunggu Inspeksi K3',
+      label: 'Menunggu Verifikasi',
       value: pendingTickets.length,
       iconPath: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
       colorTheme: 'amber'
@@ -178,8 +181,8 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
         {/* Header */}
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-gray-900">Antrian Inspeksi K3</h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Tiket yang memerlukan verifikasi keselamatan sebelum diteruskan ke Area Head.</p>
+            <h2 className="text-base sm:text-lg font-extrabold text-gray-900">Antrean Verifikasi</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Tiket yang memerlukan verifikasi HSSE sebelum diteruskan ke Area Head.</p>
           </div>
           <div className="relative w-full sm:w-auto">
             <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -215,10 +218,7 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                   <p className="font-bold text-gray-900">{ticket.tanggalPinjam}</p>
                   <p className="text-gray-500">s.d. {ticket.tanggalKembali}</p>
                 </div>
-                <div>
-                  <p className="text-gray-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">Lokasi</p>
-                  <p className="text-gray-700">{ticket.lokasi}</p>
-                </div>
+
                 <div>
                   <p className="text-gray-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">Jumlah</p>
                   <p className="font-bold text-gray-900">{ticket.jumlah} unit</p>
@@ -234,13 +234,13 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                 </button>
                 <button
                   onClick={() => { setCatatan(''); setModal({ ticket, type: 'setujui' }) }}
-                  className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors"
+                  className="flex-1 py-2 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 transition-colors"
                 >
-                  Setujui K3
+                  Setuju
                 </button>
                 <button
                   onClick={() => { setCatatan(''); setModal({ ticket, type: 'tolak' }) }}
-                  className="flex-1 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                  className="flex-1 py-2 bg-red-50 text-red-700 border border-red-200 rounded text-xs font-bold hover:bg-red-100 transition-colors"
                 >
                   Tolak
                 </button>
@@ -261,7 +261,7 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Tindakan K3'].map((h) => (
+                {['ID Pengajuan', 'Pemohon', 'Aset', 'Kuantitas', 'Periode Pinjam', 'Tindakan'].map((h) => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -277,8 +277,26 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                     <p className="text-xs text-gray-500">{ticket.jabatan}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900">{ticket.alat}</p>
-                    <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+                    <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
+                    {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {ticket.allocatedUnits.map((sn, idx) => {
+                          if (sn.startsWith('NON_SERIAL_QTY_')) {
+                            const qty = sn.replace('NON_SERIAL_QTY_', '');
+                            return (
+                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-emerald-700 text-xs font-semibold rounded border border-emerald-200 shadow-sm">
+                                [Non-Serial] Fisik Keluar: {qty}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-mono rounded border border-gray-200 shadow-sm">
+                              {sn}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-bold text-gray-900">{ticket.jumlah} unit</span>
@@ -291,13 +309,13 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => { setCatatan(''); setModal({ ticket, type: 'setujui' }) }}
-                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                        className="px-3 py-1.5 bg-emerald-600 text-white rounded text-sm font-medium hover:bg-emerald-700 transition-colors"
                       >
-                        Setujui K3
+                        Setuju
                       </button>
                       <button
                         onClick={() => { setCatatan(''); setModal({ ticket, type: 'tolak' }) }}
-                        className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+                        className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded text-sm font-bold hover:bg-red-100 transition-colors"
                       >
                         Tolak
                       </button>
@@ -308,7 +326,7 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
               {paginatedTickets.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    Tidak ada tiket yang memerlukan inspeksi K3.
+                    Tidak ada tiket yang memerlukan verifikasi.
                   </td>
                 </tr>
               )}
@@ -357,9 +375,9 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                     { label: 'Pemohon', value: modal.ticket.peminjam },
                     { label: 'Aset', value: modal.ticket.alat },
                     { label: 'Jumlah', value: `${modal.ticket.jumlah} unit` },
-                    { label: 'Lokasi Penggunaan', value: modal.ticket.lokasi },
+
                     { label: 'Periode', value: `${modal.ticket.tanggalPinjam} – ${modal.ticket.tanggalKembali}` },
-                  ].map(row => (
+                  ].filter(row => row.value).map(row => (
                     <div key={row.label} className="flex justify-between text-sm">
                       <span className="text-gray-500 font-medium">{row.label}</span>
                       <span className="text-gray-900 font-bold text-right">{row.value}</span>
@@ -367,7 +385,7 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                   ))}
                 </div>
                 <div className="p-6 pt-0 flex gap-3">
-                  <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'setujui' }) }} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors">Setujui K3</button>
+                  <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'setujui' }) }} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors">Setuju</button>
                   <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'tolak' }) }} className="flex-1 py-3 bg-red-50 text-red-700 border border-red-200 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors">Tolak</button>
                 </div>
               </>
@@ -382,15 +400,15 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                       <svg className="w-5 h-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                     </div>
                     <div>
-                      <h3 className="text-base font-extrabold text-gray-900">Konfirmasi Persetujuan K3</h3>
+                      <h3 className="text-base font-extrabold text-gray-900">Konfirmasi Persetujuan</h3>
                       <p className="text-sm text-gray-600">{modal.ticket.id} — {modal.ticket.alat}</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
-                  <p className="text-sm text-gray-600">Anda menyatakan bahwa aset ini telah memenuhi standar keselamatan K3 untuk digunakan di <strong>{modal.ticket.lokasi}</strong>.</p>
+                  <p className="text-sm text-gray-600">Anda akan memverifikasi tiket ini dan meneruskannya ke Area Head.</p>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Catatan Inspeksi <span className="text-gray-400 font-normal">(opsional)</span></label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Catatan Verifikasi <span className="text-gray-400 font-normal">(opsional)</span></label>
                     <textarea
                       rows={3}
                       value={catatan}
@@ -418,15 +436,15 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
                       <svg className="w-5 h-5 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
                     <div>
-                      <h3 className="text-base font-extrabold text-gray-900">Tolak Pengajuan (K3)</h3>
+                      <h3 className="text-base font-extrabold text-gray-900">Tolak Pengajuan</h3>
                       <p className="text-sm text-gray-600">{modal.ticket.id} — {modal.ticket.alat}</p>
                     </div>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
-                  <p className="text-sm text-gray-600">Tiket akan ditolak karena tidak memenuhi standar keselamatan. Peminjam akan mendapat notifikasi.</p>
+                  <p className="text-sm text-gray-600">Tiket akan ditolak. Peminjam akan mendapat notifikasi.</p>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Alasan Penolakan K3 <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5">Alasan Penolakan <span className="text-red-500">*</span></label>
                     <textarea
                       rows={3}
                       value={catatan}
@@ -445,13 +463,6 @@ export default function HSSEBorrowingProcess({ tickets }: Props) {
               </>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white transition-all ${toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`}>
-          {toast.message}
         </div>
       )}
     </div>
