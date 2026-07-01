@@ -12,6 +12,16 @@ import type { Ticket, ApprovalFlow, TicketStatus } from './ticket'
  * Derive flow approval berdasarkan currentStage dan overallStatus.
  * Karena flow tidak disimpan di DB (hanya logs), kita rekonstruksi secara logis.
  */
+function mapCurrentStage(dbStage: string): string {
+  if (dbStage.includes('Admin')) return 'Admin'
+  if (dbStage.includes('HSSE')) return 'HSSE'
+  if (dbStage.includes('Area Head')) return 'Area Head'
+  if (dbStage.includes('Gudang') || dbStage.includes('Serah Terima')) return 'Serah Terima'
+  if (dbStage.includes('Lapangan') || dbStage.includes('Dikembalikan')) return 'Selesai'
+  if (dbStage.includes('Peminjam')) return 'Peminjam'
+  return dbStage
+}
+
 function deriveFlow(currentStage: string, overallStatus: string): ApprovalFlow[] {
   const stages = ['Peminjam', 'Admin', 'HSSE', 'Area Head', 'Serah Terima'] as const
 
@@ -58,14 +68,16 @@ export function adaptTicket(t: TicketWithRelations): Ticket {
     peminjam: t.peminjam.name,
     jabatan: t.peminjam.role,           // Gunakan role sebagai jabatan
     alat: t.asset.name,
+    assetCode: t.asset.assetCode,
     jumlah: t.jumlah,
     stokTersedia: t.asset.quantity,
     tanggalPinjam: t.tanggalPinjam,
     tanggalKembali: t.tanggalKembali,
-    lokasi: t.lokasi,
-    currentStage: t.currentStage as any,
+    alasan: t.alasan,
+    currentStage: mapCurrentStage(t.currentStage) as any,
     overallStatus: t.overallStatus as unknown as TicketStatus,
     assetType: t.asset.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+    allocatedUnits: t.allocatedUnits ? JSON.parse(t.allocatedUnits) : undefined,
     flow: deriveFlow(t.currentStage, t.overallStatus),
     trackingLogs: t.logs.map(l => ({
       stage: l.stage,

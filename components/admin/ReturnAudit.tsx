@@ -8,7 +8,7 @@ type ReturnTicket = {
   asetId: string
   peminjam: string
   tanggalKembali: string
-  lokasi: string
+  alasan: string
   status: 'Belum Kembali' | 'Proses Cek' | 'Selesai'
 }
 
@@ -21,9 +21,9 @@ type AuditLog = {
 }
 
 const activeLoans: ReturnTicket[] = [
-  { id: 'TKT-004', aset: 'Portable O2 Analyzer', asetId: 'AST-006', peminjam: 'Dewi Rahayu', tanggalKembali: '16 Jun 2026', lokasi: 'Control Room Alpha', status: 'Belum Kembali' },
-  { id: 'TKT-006', aset: 'Safety Harness Full Body', asetId: 'AST-002', peminjam: 'Agus Wirawan', tanggalKembali: '20 Jun 2026', lokasi: 'Compressor Station B', status: 'Belum Kembali' },
-  { id: 'TKT-007', aset: 'Personal H2S Monitor', asetId: 'AST-007', peminjam: 'Roni Haryanto', tanggalKembali: '14 Jun 2026', lokasi: 'Rig Nusantara-12', status: 'Belum Kembali' },
+  { id: 'TKT-004', aset: 'Portable O2 Analyzer', asetId: 'AST-006', peminjam: 'Dewi Rahayu', tanggalKembali: '16 Jun 2026', alasan: 'Pemeliharaan tangki', status: 'Belum Kembali' },
+  { id: 'TKT-006', aset: 'Safety Harness Full Body', asetId: 'AST-002', peminjam: 'Agus Wirawan', tanggalKembali: '20 Jun 2026', alasan: 'Bekerja di ketinggian', status: 'Belum Kembali' },
+  { id: 'TKT-007', aset: 'Personal H2S Monitor', asetId: 'AST-007', peminjam: 'Roni Haryanto', tanggalKembali: '14 Jun 2026', alasan: 'Pengecekan sumur', status: 'Belum Kembali' },
 ]
 
 const auditHistory: AuditLog[] = [
@@ -208,7 +208,7 @@ export default function ReturnAudit() {
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-sm text-gray-900">{loan.peminjam}</p>
-                        <p className="text-xs text-gray-500">{loan.lokasi}</p>
+                        <p className="text-xs text-gray-500">{loan.alasan}</p>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`text-sm font-medium ${

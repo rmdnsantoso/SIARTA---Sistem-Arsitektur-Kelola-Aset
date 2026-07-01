@@ -1,11 +1,11 @@
 'use client'
 import React, { useState } from 'react'
 import { Ticket } from '../../types/ticket'
+import toast from 'react-hot-toast'
 type TrackingType = 'SERIALIZED' | 'NON_SERIALIZED'
 type Asset = {
   id: string
   name: string
-  rackLocation: string
   totalStock: number
   availableStock: number
   trackingType: TrackingType
@@ -14,23 +14,23 @@ type Asset = {
 const initialAssets: Asset[] = [
   {
     id: 'AST-001', name: 'Gas Detector (MSA Altair 4X)',
-    rackLocation: 'Rak A-12', totalStock: 5, availableStock: 3, trackingType: 'SERIALIZED'
+    totalStock: 5, availableStock: 3, trackingType: 'SERIALIZED'
   },
   {
     id: 'AST-002', name: 'Safety Harness Full Body',
-    rackLocation: 'Rak B-05', totalStock: 15, availableStock: 10, trackingType: 'SERIALIZED'
+    totalStock: 15, availableStock: 10, trackingType: 'SERIALIZED'
   },
   {
     id: 'AST-003', name: 'Bor Listrik (Makita)',
-    rackLocation: 'Rak C-01', totalStock: 4, availableStock: 0, trackingType: 'SERIALIZED'
+    totalStock: 4, availableStock: 0, trackingType: 'SERIALIZED'
   },
   {
     id: 'AST-004', name: 'Sarung Tangan Las (Kevlar)',
-    rackLocation: 'Rak A-02', totalStock: 150, availableStock: 120, trackingType: 'NON_SERIALIZED'
+    totalStock: 150, availableStock: 120, trackingType: 'NON_SERIALIZED'
   },
   {
     id: 'AST-005', name: 'Helm Safety Proyek (Kuning)',
-    rackLocation: 'Rak B-01', totalStock: 50, availableStock: 48, trackingType: 'NON_SERIALIZED'
+    totalStock: 50, availableStock: 48, trackingType: 'NON_SERIALIZED'
   },
 ]
 const TRACKING_FILTERS = ['Semua', 'SERIALIZED', 'NON_SERIALIZED']
@@ -44,24 +44,34 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
   const [search, setSearch] = useState('')
   // Borrow Modal State
   const [borrowAsset, setBorrowAsset] = useState<Asset | null>(null)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [borrowDuration, setBorrowDuration] = useState(1)
   const [borrowQty, setBorrowQty] = useState(1)
-  const [location, setLocation] = useState('')
-  const handleBorrowSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!borrowAsset) return
-    if (new Date(startDate) > new Date(endDate)) {
-      alert('Tanggal selesai pinjam tidak boleh sebelum tanggal mulai pinjam.')
-      return
-    }
-    const formatDate = (dateStr: string) => {
-      const date = new Date(dateStr)
-      const months = ['Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei']
-      // Indonesian month names for SIARTA format consistency
+  const [alasan, setAlasan] = useState('')
+  const calculateReturnDate = () => {
+    const start = new Date()
+    const end = new Date()
+    end.setDate(start.getDate() + borrowDuration)
+    end.setHours(17, 0, 0, 0) // 17:00 cut-off
+
+    const formatDateObj = (date: Date) => {
       const monthsIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
       return `${date.getDate()} ${monthsIndo[date.getMonth()]} ${date.getFullYear()}`
     }
+    const formatTimeObj = (date: Date) => {
+      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    }
+    
+    return {
+      startDateStr: formatDateObj(start),
+      endDateStr: `${formatDateObj(end)}, ${formatTimeObj(end)} WIB`
+    }
+  }
+
+  const handleBorrowSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!borrowAsset) return
+
+    const { startDateStr, endDateStr } = calculateReturnDate()
     const timestampStr = () => {
       const now = new Date()
       const monthsIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
@@ -77,9 +87,9 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
       assetId: borrowAsset.id,
       jumlah: borrowQty,
       stokTersedia: borrowAsset.availableStock,
-      tanggalPinjam: formatDate(startDate),
-      tanggalKembali: formatDate(endDate),
-      lokasi: location,
+      tanggalPinjam: startDateStr,
+      tanggalKembali: endDateStr,
+      alasan: alasan,
       currentStage: 'Admin',
       overallStatus: 'Menunggu',
       assetType: borrowAsset.trackingType,
@@ -98,14 +108,13 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
         }
       ]
     })
-    alert(`Pengajuan peminjaman untuk ${borrowQty} unit ${borrowAsset.name} berhasil dibuat!`)
+    toast.success(`Pengajuan peminjaman untuk ${borrowQty} unit ${borrowAsset.name} berhasil dibuat!`)
     
     // Reset Form
     setBorrowAsset(null)
-    setStartDate('')
-    setEndDate('')
+    setBorrowDuration(1)
     setBorrowQty(1)
-    setLocation('')
+    setAlasan('')
   }
   const filtered = assets.filter(a => {
     const matchTracking = filterTracking === 'Semua' || a.trackingType === filterTracking
@@ -175,16 +184,12 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                 }`}>
                   {a.trackingType === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
                 </div>
-                <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-gray-600 border border-gray-200 shadow-sm">
-                  {a.rackLocation}
-                </div>
+
               </div>
               
               {/* Product Info */}
               <div className="p-3.5 sm:p-4 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="text-[10px] text-gray-400 font-mono">{a.id}</span>
-                </div>
+
                 <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-snug mb-3 line-clamp-2">{a.name}</h3>
                 
                 <div className="mt-auto">
@@ -236,7 +241,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
             <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-gray-900">Form Pengajuan Pinjam</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{borrowAsset.name} ({borrowAsset.id})</p>
+                <p className="text-xs text-gray-500 mt-0.5">{borrowAsset.name}</p>
               </div>
             </div>
             
@@ -247,27 +252,43 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                   <span className="font-medium text-xs sm:text-sm">Stok Tersedia Saat Ini:</span>
                   <span className="font-extrabold text-xs sm:text-base bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">{borrowAsset.availableStock} unit</span>
                 </div>
-                {/* Date Inputs */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {/* Duration Inputs */}
+                <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Mulai Pinjam <span className="text-red-500">*</span></label>
-                    <input
-                      type="date"
-                      required
-                      value={startDate}
-                      onChange={e => setStartDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
-                    />
+                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Durasi Peminjaman (Hari) <span className="text-red-500">*</span></label>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setBorrowDuration(d => Math.max(1, d - 1))}
+                        className="w-8 h-8 sm:w-9 sm:h-9 border border-gray-300 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 active:bg-gray-200 font-bold text-sm bg-gray-50 transition-colors shadow-2xs"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={borrowDuration}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 1
+                          setBorrowDuration(Math.min(30, Math.max(1, val)))
+                        }}
+                        className="w-16 sm:w-20 border border-gray-300 rounded-xl text-center h-8 sm:h-9 font-bold text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setBorrowDuration(d => Math.min(30, d + 1))}
+                        className="w-8 h-8 sm:w-9 sm:h-9 border border-gray-300 rounded-xl flex items-center justify-center text-gray-600 hover:bg-gray-100 active:bg-gray-200 font-bold text-sm bg-gray-50 transition-colors shadow-2xs"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Selesai Pinjam <span className="text-red-500">*</span></label>
-                    <input
-                      type="date"
-                      required
-                      value={endDate}
-                      onChange={e => setEndDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
-                    />
+                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 shadow-2xs">
+                    <p className="text-xs sm:text-sm text-orange-800 font-medium">
+                      Batas Waktu Pengembalian: <strong className="font-bold">{calculateReturnDate().endDateStr}</strong>
+                    </p>
+                    <p className="text-[10px] text-orange-600 mt-0.5">*Batas waktu ditetapkan otomatis mengikuti jam tutup operasional (17:00 WIB).</p>
                   </div>
                 </div>
                 {/* Quantity selector */}
@@ -301,16 +322,16 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                     </button>
                   </div>
                 </div>
-                {/* Lokasi Penggunaan */}
+                {/* Alasan Peminjaman */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Lokasi Penggunaan / Kerja <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
+                  <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Alasan Peminjaman <span className="text-red-500">*</span></label>
+                  <textarea
                     required
-                    value={location}
-                    onChange={e => setLocation(e.target.value)}
-                    placeholder="Mis. Platform Delta-7 atau Rig Nusantara-12"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
+                    rows={2}
+                    value={alasan}
+                    onChange={(e) => setAlasan(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-xs sm:text-sm bg-gray-50/50 focus:bg-white transition-all resize-none"
+                    placeholder="Contoh: Pekerjaan pemeliharaan rutin di Area A..."
                   />
                 </div>
               </div>

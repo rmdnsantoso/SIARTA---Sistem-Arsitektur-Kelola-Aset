@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
 import { verifyTicketByAdmin, rejectTicketByAdmin, verifyAssetBorrowHandover } from '../../actions/workflows/verifikasi'
+import { getAvailableSerials } from '../../actions/core/asset'
 
 interface Props {
   tickets?: Ticket[]
+  onSuccess?: () => void
 }
 
 type ModalState = {
@@ -30,18 +33,32 @@ function ConflictWarning({ conflictWith }: { conflictWith: string }) {
   )
 }
 
-export default function BorrowingProcess({ tickets = initialTickets }: Props) {
+export default function BorrowingProcess({ tickets = initialTickets, onSuccess }: Props) {
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets)
+  
+  React.useEffect(() => {
+    setLocalTickets(tickets)
+  }, [tickets])
   
   // State khusus Alokasi Fisik
   const [catatan, setCatatan] = useState('')
   const [modal, setModal] = useState<ModalState | null>(null)
 
   const [allocatedSerials, setAllocatedSerials] = useState<string[]>([])
+  const allocatedSerialsRef = React.useRef<string[]>([])
   const [currentScan, setCurrentScan] = useState('')
   const [isScannerOpen, setIsScannerOpen] = useState(false)
-  
-  const [toast, setToast] = useState<string | null>(null)
+  const [validSerials, setValidSerials] = useState<string[]>([])
+
+  // Auto-close scanner when limit is reached
+  React.useEffect(() => {
+    if (isScannerOpen && modal && modal.ticket.jumlah > 0) {
+      const targetLength = modal.ticket.assetType === 'NON_SERIALIZED' ? 1 : modal.ticket.jumlah;
+      if (allocatedSerials.length >= targetLength) {
+        setIsScannerOpen(false)
+      }
+    }
+  }, [allocatedSerials, isScannerOpen, modal])
   
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,22 +101,57 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
     setCurrentPage(1)
   }, [searchQuery, activeFilter])
 
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
+  const handleOpenTolak = (ticket: Ticket) => {
+    setModal({ ticket, type: 'tolak' })
+    setCatatan('')
   }
 
-  const handleOpenAllocation = (ticket: Ticket) => {
+  const handleOpenSerahTerima = (ticket: Ticket) => {
+    setModal({ ticket, type: 'serah_terima' })
+    setCatatan('')
+  }
+
+  const handleOpenAllocation = async (ticket: Ticket) => {
     setModal({ ticket, type: 'setujui' })
     setCatatan('')
     setAllocatedSerials([])
+    allocatedSerialsRef.current = []
     setCurrentScan('')
+    setValidSerials([])
+    
+    if (ticket.assetType === 'SERIALIZED' && ticket.assetId) {
+      const res = await getAvailableSerials(ticket.assetId)
+      if (res.success && res.data) {
+        setValidSerials(res.data)
+      }
+    }
   }
 
-  const handleAddSerial = () => {
-    if (currentScan.trim() && !allocatedSerials.includes(currentScan.trim())) {
-      setAllocatedSerials([...allocatedSerials, currentScan.trim()])
+  const handleAddSerial = (scannedCode?: string | React.MouseEvent) => {
+    const codeStr = typeof scannedCode === 'string' ? scannedCode : currentScan;
+    const code = codeStr.trim();
+    if (!code || !modal) return;
+
+    if (modal.ticket.assetType === 'SERIALIZED') {
+      if (!validSerials.includes(code)) {
+        toast.error(`Kode QR Tidak Dikenali (Bukan S/N yang valid untuk ${modal.ticket.alat}).`, { id: 'err-qr' })
+        return
+      }
+    } else {
+      if (modal.ticket.assetCode && code.toUpperCase() !== modal.ticket.assetCode.toUpperCase()) {
+        toast.error(`Kode salah. Harap ketik/scan QR Master yang benar.`, { id: 'err-qr2' })
+        return
+      }
+    }
+
+    if (!allocatedSerialsRef.current.includes(code)) {
+      const newSerials = [...allocatedSerialsRef.current, code]
+      allocatedSerialsRef.current = newSerials
+      setAllocatedSerials(newSerials)
       setCurrentScan('')
+      toast.success(`Berhasil scan: ${code}`, { duration: 1500, id: `succ-${code}` })
+    } else {
+      toast.error(`'${code}' sudah ditambahkan.`, { duration: 1500, id: `dup-${code}` })
     }
   }
 
@@ -109,69 +161,34 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
     if (type === 'setujui') {
       if (ticket.dbId) {
-        const res = await verifyTicketByAdmin(ticket.dbId, 'Dialokasikan oleh Admin')
+        const res = await verifyTicketByAdmin(ticket.dbId, 'Dialokasikan oleh Admin', allocatedSerials)
         if (!res.success) {
-          alert(`Gagal memverifikasi tiket: ${res.error}`)
+          toast.error(`Gagal memverifikasi tiket: ${res.error}`)
           return
         }
       }
-      showToast(`✓ Tiket ${ticket.id} dialokasikan & diteruskan ke HSSE untuk inspeksi K3.`)
+      toast.success(`Tiket ${ticket.id} dialokasikan & diteruskan ke HSSE untuk diverifikasi.`)
     } else if (type === 'tolak') {
       if (ticket.dbId) {
         const res = await rejectTicketByAdmin(ticket.dbId, catatan)
         if (!res.success) {
-          alert(`Gagal menolak tiket: ${res.error}`)
+          toast.error(`Gagal menolak tiket: ${res.error}`)
           return
         }
       }
-      showToast(`✗ Tiket ${ticket.id} ditolak.`)
+      toast.success(`Tiket ${ticket.id} ditolak.`)
     } else if (type === 'serah_terima') {
       if (ticket.dbId) {
         const res = await verifyAssetBorrowHandover(ticket.dbId)
         if (!res.success) {
-          alert(`Gagal memverifikasi serah terima: ${res.error}`)
+          toast.error(`Gagal memverifikasi serah terima: ${res.error}`)
           return
         }
       }
-      showToast(`✓ Serah terima tiket ${ticket.id} selesai. Barang resmi keluar gudang.`)
+      toast.success(`Serah terima tiket ${ticket.id} selesai. Barang resmi keluar gudang.`)
     }
 
-    setLocalTickets(prev => prev.map(t => {
-      if (t.id !== ticket.id) return t
-      
-      if (type === 'setujui') {
-        const units = ticket.assetType === 'NON_SERIALIZED' 
-          ? []
-          : allocatedSerials
-        return {
-          ...t,
-          currentStage: 'Menunggu Persetujuan Area Head',
-          allocatedUnits: units,
-          flow: t.flow.map(f =>
-            f.stage === 'Admin' ? { ...f, status: 'Disetujui' } : f
-          ),
-        }
-      } else if (type === 'tolak') {
-        return {
-          ...t,
-          overallStatus: 'Ditolak',
-          flow: t.flow.map(f =>
-            f.stage === 'Admin' ? { ...f, status: 'Ditolak' } : f
-          ),
-        }
-      } else if (type === 'serah_terima') {
-        return {
-          ...t,
-          overallStatus: 'Dipinjam',
-          currentStage: 'Dipinjam di Lapangan',
-          flow: t.flow.map(f =>
-            f.stage === 'Serah Terima' ? { ...f, status: 'Disetujui' } : f
-          ),
-        }
-      }
-      return t
-    }))
-    
+    onSuccess?.()
     setModal(null)
   }
 
@@ -199,13 +216,6 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
 
   return (
     <div className="font-sans">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[99] px-5 py-3 bg-gray-900 text-white rounded-lg shadow-xl text-sm font-medium animate-fade-in flex items-center gap-2">
-          {toast}
-        </div>
-      )}
-
       {/* Main Content Area */}
       <div className="flex flex-col gap-3 sm:gap-6 lg:gap-8">
         
@@ -337,7 +347,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                             Alokasikan
                           </button>
                           <button
-                            onClick={() => setModal({ ticket, type: 'tolak' })}
+                            onClick={() => handleOpenTolak(ticket)}
                             className="flex-1 py-1.5 sm:py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-red-100 transition-colors"
                           >
                             Tolak
@@ -346,7 +356,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                       )}
                       {isHandoverActionable && (
                         <button
-                          onClick={() => setModal({ ticket, type: 'serah_terima' })}
+                          onClick={() => handleOpenSerahTerima(ticket)}
                           className="w-full py-1.5 sm:py-2.5 bg-amber-500 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-amber-600 transition-colors flex justify-center items-center gap-1 sm:gap-1.5"
                         >
                           <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -373,7 +383,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">ID Pengajuan</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Pemohon</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Aset & Lokasi</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Aset</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Kuantitas</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Periode Pinjam</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">Tindakan</th>
@@ -404,10 +414,10 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         <div className="text-xs text-blue-600 font-medium mt-0.5">{ticket.jabatan}</div>
                       </td>
 
-                      {/* Aset & Lokasi */}
+                      {/* Aset & Alasan */}
                       <td className="px-6 py-4">
                         <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
-                        <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+
                         {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
                           <div className="mt-2 flex flex-wrap gap-1">
                             {ticket.allocatedUnits.map(sn => (
@@ -452,7 +462,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                                 Alokasikan
                               </button>
                               <button
-                                onClick={() => setModal({ ticket, type: 'tolak' })}
+                                onClick={() => handleOpenTolak(ticket)}
                                 className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded text-sm font-bold hover:bg-red-100 transition-colors shadow-sm"
                               >
                                 Tolak
@@ -460,7 +470,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                             </>
                           ) : isHandoverActionable ? (
                             <button
-                              onClick={() => setModal({ ticket, type: 'serah_terima' })}
+                              onClick={() => handleOpenSerahTerima(ticket)}
                               className="px-3 py-1.5 bg-amber-500 text-white rounded text-sm font-medium hover:bg-amber-600 transition-colors flex items-center gap-1.5"
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -598,10 +608,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         isOpen={isScannerOpen}
                         onClose={() => setIsScannerOpen(false)}
                         onScanSuccess={(text) => {
-                          const limit = modal.ticket.jumlah;
-                          if (allocatedSerials.length < limit && !allocatedSerials.includes(text.trim())) {
-                            setAllocatedSerials(prev => [...prev, text.trim()]);
-                            setIsScannerOpen(false); // Auto close after scan
+                          if (allocatedSerials.length < modal.ticket.jumlah) {
+                            handleAddSerial(text)
                           }
                         }}
                       />
@@ -640,7 +648,7 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                           type="text" 
                           value={currentScan}
                           onChange={e => setCurrentScan(e.target.value)}
-                          placeholder="Ketik Stiker QR..."
+                          placeholder="Ketik Kode Master Aset..."
                           className="w-full pl-4 pr-12 py-2 sm:py-3 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                           disabled={allocatedSerials.length >= 1}
                         />
@@ -670,9 +678,8 @@ export default function BorrowingProcess({ tickets = initialTickets }: Props) {
                         isOpen={isScannerOpen}
                         onClose={() => setIsScannerOpen(false)}
                         onScanSuccess={(text) => {
-                          if (allocatedSerials.length < 1 && !allocatedSerials.includes(text.trim())) {
-                            setAllocatedSerials(prev => [...prev, text.trim()]);
-                            setIsScannerOpen(false); // Auto close after scan
+                          if (allocatedSerials.length < 1) {
+                            handleAddSerial(text)
                           }
                         }}
                       />

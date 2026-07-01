@@ -10,7 +10,7 @@ interface CreateTicketInput {
   jumlah: number
   tanggalPinjam: string
   tanggalKembali: string
-  lokasi: string
+  alasan: string
   notes?: string
 }
 
@@ -42,7 +42,7 @@ export async function createBorrowTicket(input: CreateTicketInput) {
         jumlah: input.jumlah,
         tanggalPinjam: input.tanggalPinjam,
         tanggalKembali: input.tanggalKembali,
-        lokasi: input.lokasi,
+        alasan: input.alasan,
         overallStatus: TicketStatus.Menunggu,
         currentStage: 'Menunggu Persetujuan Admin',
         notes: input.notes,
@@ -58,7 +58,13 @@ export async function createBorrowTicket(input: CreateTicketInput) {
       }
     })
 
-    // 4. Kirim Notifikasi ke Admin
+    // 4. Kurangi stok aset secara langsung (Reservasi)
+    await prisma.asset.update({
+      where: { id: asset.id },
+      data: { quantity: { decrement: input.jumlah } }
+    })
+
+    // 5. Kirim Notifikasi ke Admin
     await createNotification(
       'Pengajuan Pinjam Baru',
       `${user.name} mengajukan pinjaman ${input.jumlah} unit ${asset.name} (${ticketCode}).`,
@@ -98,6 +104,12 @@ export async function cancelBorrowTicket(ticketId: string) {
           }
         }
       }
+    })
+
+    // 3. Kembalikan stok yang di-booking
+    await prisma.asset.update({
+      where: { id: ticket.assetId },
+      data: { quantity: { increment: ticket.jumlah } }
     })
 
     return { success: true, data: updatedTicket }

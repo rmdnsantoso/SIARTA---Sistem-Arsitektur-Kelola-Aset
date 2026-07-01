@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { getAllAssetsForAdmin, createAsset, updateAsset, deleteAsset } from '../../actions/core/asset'
+import toast from 'react-hot-toast'
+import { getAllAssetsForAdmin, createAsset, updateAsset, deleteAsset, updatePhysicalUnitSN, addPhysicalUnits, removePhysicalUnit, addAssetStock } from '../../actions/core/asset'
+import { QRCodeSVG } from 'qrcode.react'
 
 type UnitStatus = 'Tersedia' | 'Dipinjam' | 'Maintenance' | 'Rusak'
 type TrackingType = 'SERIALIZED' | 'NON_SERIALIZED'
@@ -24,7 +26,6 @@ type Asset = {
   id: string
   assetCode: string
   name: string
-  rackLocation: string
   totalStock: number
   availableStock: number
   trackingType: TrackingType
@@ -32,49 +33,9 @@ type Asset = {
   units: PhysicalUnit[] // Hanya diisi jika trackingType === 'SERIALIZED'
 }
 
-// Helper to generate dummy units
-const generateUnits = (assetCode: string, count: number, availableCount: number, isNonSerialized: boolean = false): PhysicalUnit[] => {
-  return Array.from({ length: count }).map((_, i) => {
-    const isAvailable = i < availableCount;
-    const history: UnitHistory[] = isAvailable ? [] : [
-      { date: '12 Juni 2026 14:30', action: 'Dipinjam', user: 'Budi Santoso' }
-    ];
-    return {
-      unitId: `${assetCode}-${String(i + 1).padStart(2, '0')}`,
-      serialNumber: isNonSerialized ? 'N/A' : `SN-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: isAvailable ? 'Tersedia' : 'Dipinjam',
-      history
-    }
-  })
-}
+// generateUnits deleted
 
-const initialAssets: Asset[] = [
-  {
-    id: 'AST-001', assetCode: 'AST-001', name: 'Gas Detector (MSA Altair 4X)',
-    rackLocation: 'Rak A-12', totalStock: 5, availableStock: 3, trackingType: 'SERIALIZED',
-    units: generateUnits('AST-001', 5, 3)
-  },
-  {
-    id: 'AST-002', assetCode: 'AST-002', name: 'Safety Harness Full Body',
-    rackLocation: 'Rak B-05', totalStock: 15, availableStock: 10, trackingType: 'SERIALIZED',
-    units: generateUnits('AST-002', 15, 10)
-  },
-  {
-    id: 'AST-003', assetCode: 'AST-003', name: 'Bor Listrik (Makita)',
-    rackLocation: 'Rak C-01', totalStock: 4, availableStock: 0, trackingType: 'SERIALIZED',
-    units: generateUnits('AST-003', 4, 0)
-  },
-  {
-    id: 'AST-004', assetCode: 'AST-004', name: 'Sarung Tangan Las (Kevlar)',
-    rackLocation: 'Rak A-02', totalStock: 150, availableStock: 120, trackingType: 'NON_SERIALIZED',
-    units: []
-  },
-  {
-    id: 'AST-005', assetCode: 'AST-005', name: 'Helm Safety Proyek (Kuning)',
-    rackLocation: 'Rak B-01', totalStock: 50, availableStock: 48, trackingType: 'NON_SERIALIZED',
-    units: []
-  },
-]
+const initialAssets: Asset[] = []
 
 const TRACKING_FILTERS = ['Semua', 'SERIALIZED', 'NON_SERIALIZED']
 
@@ -87,60 +48,140 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
   const [loading, setLoading] = useState(false)
 
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', rackLocation: '', imageUrl: '' })
+  const [editForm, setEditForm] = useState({ name: '', imageUrl: '' })
 
   const [historyModalUnit, setHistoryModalUnit] = useState<PhysicalUnit | null>(null)
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
+  const [printQRAsset, setPrintQRAsset] = useState<{ code: string; name: string }[] | null>(null)
 
   // New asset form state
-  const [form, setForm] = useState<{
-    name: string; rackLocation: string; totalStock: string; trackingType: TrackingType; imageUrl: string
-  }>({ name: '', rackLocation: '', totalStock: '', trackingType: 'SERIALIZED', imageUrl: '' })
+  type AssetFormState = {
+    assetCode: string
+    name: string
+    category: string
+    trackingType: 'SERIALIZED' | 'NON_SERIALIZED'
+    totalStock: number | string
+    serialNumbers: string[]
+    spec: string
+    imageFile: File | null
+    imageUrl: string
+  }
+
+  const initialFormState: AssetFormState = {
+    assetCode: '',
+    name: '',
+    category: 'Elektronik',
+    trackingType: 'NON_SERIALIZED',
+    totalStock: 1,
+    serialNumbers: [''],
+    spec: '',
+    imageFile: null,
+    imageUrl: ''
+  }
+
+  const [form, setForm] = useState<AssetFormState>(initialFormState)
+
+  React.useEffect(() => {
+    if (!isAddModalOpen) {
+      setForm(initialFormState)
+    }
+  }, [isAddModalOpen])
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        if (isEdit) {
+          setEditForm(f => ({ ...f, imageUrl: data.url }))
+        } else {
+          setForm(f => ({ ...f, imageUrl: data.url }))
+        }
+      } else {
+        toast.error(data.error || 'Gagal mengunggah foto')
+      }
+    } catch (err) {
+      toast.error('Gagal mengunggah foto')
+    }
+  }
 
   useEffect(() => {
     async function fetchAssets() {
       try {
         const res = await getAllAssetsForAdmin()
-        if (res.success && res.data && res.data.length > 0) {
-          const adapted: Asset[] = res.data.map((dbAsset: any) => ({
-            id: dbAsset.id,
-            assetCode: dbAsset.assetCode,
-            name: dbAsset.name,
-            rackLocation: dbAsset.location,
-            totalStock: dbAsset.quantity,
-            availableStock: dbAsset.status === 'Available' ? dbAsset.quantity : 0,
-            trackingType: dbAsset.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
-            imageUrl: dbAsset.spec || '',
-            units: dbAsset.isSerialized ? generateUnits(dbAsset.assetCode, dbAsset.quantity, dbAsset.status === 'Available' ? dbAsset.quantity : 0) : []
-          }))
-          setAssets(adapted)
+        if (res.success && res.data) {
+          const adapted: Asset[] = res.data.map((dbAsset: any) => {
+            return {
+              id: dbAsset.id,
+              assetCode: dbAsset.assetCode,
+              name: dbAsset.name,
+              totalStock: dbAsset.computedTotalStock,
+              availableStock: dbAsset.computedAvailableStock,
+              trackingType: dbAsset.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+              imageUrl: dbAsset.spec || '',
+              units: (dbAsset.units || []).map((u: any) => ({
+                ...u,
+                history: (u.history || []).map((h: any) => ({
+                  date: h.timestamp,
+                  action: h.action,
+                  user: h.actor
+                }))
+              }))
+            }
+          })
+          setAssets(prev => JSON.stringify(prev) !== JSON.stringify(adapted) ? adapted : prev)
         }
       } catch (err) {
         console.error('Gagal memuat master aset:', err)
       }
     }
+    
     fetchAssets()
+    const interval = setInterval(fetchAssets, 3000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleAddAsset = async () => {
-    if (!form.name || !form.rackLocation || !form.totalStock) return
+    if (!form.name || !form.totalStock) return
     setLoading(true)
-    const stock = parseInt(form.totalStock)
-    const code = `AST-${String(assets.length + 1).padStart(3, '0')}`
+    const isSerialized = form.trackingType === 'SERIALIZED'
+    const validSerialNumbers = form.serialNumbers.filter(sn => sn.trim() !== '')
+    
+    if (isSerialized) {
+      const hasDuplicateSN = new Set(validSerialNumbers).size !== validSerialNumbers.length;
+      if (hasDuplicateSN) {
+        toast.error('Terdapat Serial Number yang duplikat dalam form ini.');
+        setLoading(false);
+        return;
+      }
+    }
+    
+    const stock = isSerialized ? Math.max(1, validSerialNumbers.length) : parseInt(form.totalStock as string)
+    
+    const maxId = assets.reduce((max, a) => {
+      const num = parseInt(a.assetCode.split('-')[1] || '0');
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    const code = `AST-${String(maxId + 1).padStart(3, '0')}`
     
     try {
       const res = await createAsset({
         assetCode: code,
         name: form.name,
         category: 'Umum',
-        isSerialized: form.trackingType === 'SERIALIZED',
-        location: form.rackLocation.toUpperCase(),
+        isSerialized,
         quantity: stock,
-        spec: form.imageUrl
+        spec: form.imageUrl,
+        serialNumbers: validSerialNumbers
       })
 
       if (!res.success) {
-        alert(`Gagal menambahkan aset: ${res.error}`)
+        toast.error(`Gagal menambahkan aset: ${res.error}`)
         setLoading(false)
         return
       }
@@ -150,19 +191,29 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
           id: res.data.id,
           assetCode: res.data.assetCode,
           name: res.data.name,
-          rackLocation: res.data.location,
-          totalStock: res.data.quantity,
-          availableStock: res.data.quantity,
+          totalStock: (res.data as any).computedTotalStock ?? res.data.quantity,
+          availableStock: (res.data as any).computedAvailableStock ?? res.data.quantity,
           trackingType: res.data.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
           imageUrl: res.data.spec || '',
-          units: res.data.isSerialized ? generateUnits(res.data.assetCode, res.data.quantity, res.data.quantity) : []
+          units: (res.data.units || []).map((u: any) => ({
+            ...u,
+            status: u.status as UnitStatus,
+            history: (u.history || []).map((h: any) => ({
+              date: h.timestamp,
+              action: h.action,
+              user: h.actor
+            }))
+          }))
         }
         setAssets(prev => [newAsset, ...prev])
-        setForm({ name: '', rackLocation: '', totalStock: '', trackingType: 'SERIALIZED', imageUrl: '' })
+        setForm({
+          assetCode: '', name: '', category: 'Elektronik', trackingType: 'NON_SERIALIZED',
+          totalStock: 1, serialNumbers: [''], spec: '', imageFile: null, imageUrl: ''
+        })
         setIsAddModalOpen(false)
       }
     } catch (err: any) {
-      alert(`Terjadi kesalahan: ${err.message}`)
+      toast.error(`Terjadi kesalahan: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -174,12 +225,11 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
     try {
       const res = await updateAsset(editingAssetId, {
         name: editForm.name,
-        location: editForm.rackLocation,
         spec: editForm.imageUrl
       })
 
       if (!res.success) {
-        alert(`Gagal menyimpan perubahan: ${res.error}`)
+        toast.error(`Gagal menyimpan perubahan: ${res.error}`)
         setLoading(false)
         return
       }
@@ -190,7 +240,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       }
       setEditingAssetId(null);
     } catch (err: any) {
-      alert(`Terjadi kesalahan: ${err.message}`)
+      toast.error(`Terjadi kesalahan: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -201,101 +251,150 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       try {
         const res = await deleteAsset(assetId)
         if (!res.success) {
-          alert(`Gagal menghapus aset: ${res.error}`)
+          toast.error(`Gagal menghapus aset: ${res.error}`)
           return
         }
         setAssets(prev => prev.filter(a => a.id !== assetId));
         if (selectedAsset?.id === assetId) setSelectedAsset(null);
         if (editingAssetId === assetId) setEditingAssetId(null);
       } catch (err: any) {
-        alert(`Terjadi kesalahan: ${err.message}`)
+        toast.error(`Terjadi kesalahan: ${err.message}`)
       }
     }
   }
 
-  const handleUpdateSerialNumber = (assetId: string, unitId: string, newSn: string) => {
-    setAssets(prev => prev.map(a => {
-      if (a.id === assetId) {
-        return {
-          ...a,
-          units: a.units.map(u => u.unitId === unitId ? { ...u, serialNumber: newSn } : u)
+  const handleUpdateSerialNumber = async (assetId: string, unitId: string, newSn: string) => {
+    if (newSn.trim() !== '') {
+      const asset = assets.find(a => a.id === assetId);
+      if (asset) {
+        const isDuplicate = asset.units.some(u => u.unitId !== unitId && u.serialNumber.trim().toUpperCase() === newSn.trim().toUpperCase());
+        if (isDuplicate) {
+          toast.error(`Gagal: Serial Number "${newSn}" sudah ada di unit lain dalam aset ini.`);
+          return;
         }
       }
-      return a
-    }))
-    
-    if (selectedAsset?.id === assetId) {
-      setSelectedAsset(prev => prev ? {
-        ...prev,
-        units: prev.units.map(u => u.unitId === unitId ? { ...u, serialNumber: newSn } : u)
-      } : null)
     }
-  }
 
-  const handleAddUnitSerialized = (assetId: string, count: number) => {
-    setAssets(prev => prev.map(a => {
-      if (a.id !== assetId) return a
-      if (a.trackingType === 'NON_SERIALIZED') return a // Handled separately
-      const currentCount = a.units.length
-      const newUnits = Array.from({ length: count }).map((_, i) => ({
-        unitId: `${a.assetCode}-${String(currentCount + i + 1).padStart(2, '0')}`,
-        serialNumber: `SN-NEW-${Math.floor(1000 + Math.random() * 9000)}`,
-        status: 'Tersedia' as UnitStatus,
-        history: [{ date: new Date().toLocaleString('id-ID'), action: 'Unit Ditambahkan', user: 'Siti Aminah (Admin)' }]
+    try {
+      const res = await updatePhysicalUnitSN(unitId, newSn);
+      if (!res.success) {
+        toast.error(`Gagal mengubah SN: ${res.error}`);
+        return;
+      }
+      toast.success('Serial Number berhasil diubah');
+      setAssets(prev => prev.map(a => {
+        if (a.id === assetId) {
+          return {
+            ...a,
+            units: a.units.map(u => u.unitId === unitId ? { ...u, serialNumber: newSn } : u)
+          }
+        }
+        return a
       }))
-      return {
-        ...a,
-        totalStock: a.totalStock + count,
-        availableStock: a.availableStock + count,
-        units: [...a.units, ...newUnits]
+      
+      if (selectedAsset?.id === assetId) {
+        setSelectedAsset(prev => prev ? {
+          ...prev,
+          units: prev.units.map(u => u.unitId === unitId ? { ...u, serialNumber: newSn } : u)
+        } : null)
       }
-    }))
-  }
-
-  const handleRemoveUnitSerialized = (assetId: string, unitId: string) => {
-    if(!confirm('Anda yakin ingin memusnahkan / menghapus unit ini dari sistem?')) return;
-    setAssets(prev => prev.map(a => {
-      if (a.id !== assetId) return a;
-      const unitToRemove = a.units.find(u => u.unitId === unitId);
-      if (!unitToRemove) return a;
-      const isAvail = unitToRemove.status === 'Tersedia';
-      return {
-        ...a,
-        totalStock: Math.max(0, a.totalStock - 1),
-        availableStock: Math.max(0, a.availableStock - (isAvail ? 1 : 0)),
-        units: a.units.filter(u => u.unitId !== unitId)
-      }
-    }))
-    
-    if (selectedAsset?.id === assetId) {
-      const unitToRemove = selectedAsset.units.find(u => u.unitId === unitId);
-      setSelectedAsset(prev => prev ? {
-        ...prev,
-        totalStock: Math.max(0, prev.totalStock - 1),
-        availableStock: Math.max(0, prev.availableStock - (unitToRemove?.status === 'Tersedia' ? 1 : 0)),
-        units: prev.units.filter(u => u.unitId !== unitId)
-      } : null)
+    } catch (e: any) {
+      toast.error(`Kesalahan: ${e.message}`);
     }
   }
 
-  const handleAdjustBulkStock = (assetId: string, delta: number) => {
-    setAssets(prev => prev.map(a => {
-      if (a.id !== assetId) return a;
-      const newTotal = Math.max(0, a.totalStock + delta);
-      const newAvail = Math.max(0, a.availableStock + delta);
-      return {
-        ...a,
-        totalStock: newTotal,
-        availableStock: newAvail
+  const handleAddUnitSerialized = async (assetId: string, count: number) => {
+    const asset = assets.find(a => a.id === assetId)
+    if (!asset) return
+    const maxUnitIdNum = asset.units.reduce((max, u) => {
+      const num = parseInt(u.unitId.split('-').pop() || '0');
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    
+    try {
+      const res = await addPhysicalUnits(assetId, count, maxUnitIdNum + 1);
+      if (!res.success) {
+        toast.error(`Gagal menambah unit: ${res.error}`);
+        return;
       }
-    }))
-  
-    if (selectedAsset?.id === assetId) {
-      setSelectedAsset(prev => prev ? {
-        ...prev,
-        totalStock: Math.max(0, prev.totalStock + delta),
-        availableStock: Math.max(0, prev.availableStock + delta)
-      } : null)
+      toast.success('Unit berhasil ditambahkan');
+      // State will update on next poll interval, but we can optimistically update
+      setAssets(prev => prev.map(a => {
+        if (a.id !== assetId) return a
+        const newUnits = Array.from({ length: count }).map((_, i) => ({
+          unitId: `${a.assetCode}-${String(maxUnitIdNum + 1 + i).padStart(2, '0')}`,
+          serialNumber: '',
+          status: 'Tersedia' as UnitStatus,
+          history: [{ date: new Date().toLocaleString('id-ID'), action: 'Unit Ditambahkan', user: 'Admin' }]
+        }))
+        return { ...a, totalStock: a.totalStock + count, availableStock: a.availableStock + count, units: [...a.units, ...newUnits] }
+      }))
+      
+      if (selectedAsset?.id === assetId) {
+        setSelectedAsset(prev => prev ? { ...prev, totalStock: prev.totalStock + count, availableStock: prev.availableStock + count, units: [...prev.units, ...Array.from({ length: count }).map((_, i) => ({
+          unitId: `${prev.assetCode}-${String(maxUnitIdNum + 1 + i).padStart(2, '0')}`,
+          serialNumber: '',
+          status: 'Tersedia' as UnitStatus,
+          history: [{ date: new Date().toLocaleString('id-ID'), action: 'Unit Ditambahkan', user: 'Admin' }]
+        }))] } : null)
+      }
+    } catch (e: any) {
+      toast.error(`Kesalahan: ${e.message}`);
+    }
+  }
+
+  const handleRemoveUnitSerialized = async (assetId: string, unitId: string) => {
+    if(!confirm('Anda yakin ingin memusnahkan / menghapus unit ini dari sistem?')) return;
+    try {
+      const res = await removePhysicalUnit(unitId);
+      if (!res.success) {
+        toast.error(`Gagal menghapus unit: ${res.error}`);
+        return;
+      }
+      toast.success('Unit berhasil dihapus');
+      setAssets(prev => prev.map(a => {
+        if (a.id !== assetId) return a
+        return {
+          ...a,
+          totalStock: a.totalStock - 1,
+          availableStock: a.availableStock - 1,
+          units: a.units.filter(u => u.unitId !== unitId)
+        }
+      }))
+      
+      if (selectedAsset?.id === assetId) {
+        setSelectedAsset(prev => prev ? {
+          ...prev,
+          totalStock: prev.totalStock - 1,
+          availableStock: prev.availableStock - 1,
+          units: prev.units.filter(u => u.unitId !== unitId)
+        } : null)
+      }
+    } catch (e: any) {
+      toast.error(`Kesalahan: ${e.message}`);
+    }
+  };
+
+  const handleAddStock = async (assetId: string, amount: number) => {
+    try {
+      const res = await addAssetStock(assetId, amount);
+      if (!res.success) {
+        toast.error(`Gagal menambah stok: ${res.error}`);
+        return;
+      }
+      toast.success('Stok berhasil ditambahkan');
+      setAssets(prev => prev.map(a => {
+        if (a.id === assetId) {
+          return { ...a, totalStock: a.totalStock + amount, availableStock: a.availableStock + amount }
+        }
+        return a
+      }))
+      
+      if (selectedAsset?.id === assetId) {
+        setSelectedAsset(prev => prev ? { ...prev, totalStock: prev.totalStock + amount, availableStock: prev.availableStock + amount } : null)
+      }
+    } catch (e: any) {
+      toast.error(`Kesalahan: ${e.message}`);
     }
   }
 
@@ -397,12 +496,12 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 )}
                 {/* Tracking Badge */}
                 <div className={`absolute top-2 right-2 px-2 py-1 rounded shadow text-[10px] font-bold tracking-wider ${
-                  a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-50-text-white'
+                  a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-500 text-white'
                 }`}>
                   {a.trackingType === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
                 </div>
                 <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200">
-                  Rak {a.rackLocation}
+                  {a.assetCode}
                 </div>
               </div>
               
@@ -433,7 +532,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                         <button
                           onClick={() => {
                             setEditingAssetId(a.id);
-                            setEditForm({ name: a.name, rackLocation: a.rackLocation, imageUrl: a.imageUrl || '' });
+                            setEditForm({ name: a.name, imageUrl: a.imageUrl || '' });
                           }}
                           className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
                           title="Edit Profil Barang"
@@ -493,7 +592,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                       </div>
                       <span className="font-bold text-gray-900 text-sm">Per Unit (Serialized)</span>
                     </div>
-                    <p className="text-[10px] text-gray-500 ml-6 leading-relaxed">Pencatatan QR & Serial Number untuk tiap fisik barang. Cocok untuk alat mahal (Laptop, Bor).</p>
+                    <p className="text-[10px] text-gray-500 ml-6 leading-relaxed">Pencatatan QR & Serial Number untuk tiap fisik barang. Cocok untuk alat seperti laptop, bor.</p>
                   </button>
 
                   <button
@@ -522,17 +621,21 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">URL Foto Barang (Opsional)</label>
-                <div className="flex gap-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Foto Barang (Opsional)</label>
+                <div className="flex gap-2 items-center">
+                  {form.imageUrl && (
+                    <img src={form.imageUrl} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                  )}
                   <input
-                    type="url" value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))}
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="https://example.com/foto.jpg"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => handleFileUpload(e, false)}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
-                  <button className="px-3 py-2 bg-gray-100 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 shrink-0">Upload</button>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              {form.trackingType === 'NON_SERIALIZED' ? (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Kuantitas Masuk <span className="text-red-500">*</span></label>
                   <input
@@ -541,20 +644,66 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                     placeholder="0"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi Rak <span className="text-red-500">*</span></label>
-                  <input
-                    type="text" value={form.rackLocation} onChange={e => setForm(f => ({ ...f, rackLocation: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase"
-                    placeholder="Mis. A-15"
-                  />
+              ) : (
+                <div className="border border-indigo-100 bg-indigo-50/30 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-bold text-indigo-900">Serial Number Unit <span className="text-red-500">*</span></label>
+                    <span className="text-xs font-medium bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{form.serialNumbers.length} Unit</span>
+                  </div>
+                  <div className="space-y-3 max-h-[35vh] overflow-y-auto pr-1 custom-scrollbar">
+                    {form.serialNumbers.map((sn, idx) => {
+                      const isDuplicate = sn.trim() !== '' && form.serialNumbers.filter(s => s.trim() === sn.trim()).length > 1;
+                      return (
+                      <div key={idx} className="flex gap-3 group items-center bg-gray-50/50 p-1.5 rounded-xl border border-transparent hover:border-gray-200 transition-colors">
+                        <div className="bg-indigo-100 text-indigo-700 font-mono text-xs px-2.5 py-2.5 rounded-lg flex items-center justify-center font-bold shrink-0 w-10">
+                          #{idx + 1}
+                        </div>
+                        <input
+                          type="text" value={sn}
+                          onChange={e => {
+                            const newSn = [...form.serialNumbers];
+                            newSn[idx] = e.target.value;
+                            setForm(f => ({ ...f, serialNumbers: newSn, totalStock: newSn.length }));
+                          }}
+                          className={`flex-1 rounded-lg px-3.5 py-2.5 text-sm font-mono outline-none uppercase transition-all ${
+                            isDuplicate 
+                              ? 'border-2 border-red-400 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-500 placeholder:text-red-300' 
+                              : 'border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 placeholder:text-gray-400'
+                          }`}
+                          placeholder={`Misal: SN-00${idx + 1}`}
+                        />
+                        <button
+                          onClick={() => {
+                            if (form.serialNumbers.length <= 1) return;
+                            const newSn = form.serialNumbers.filter((_, i) => i !== idx);
+                            setForm(f => ({ ...f, serialNumbers: newSn, totalStock: newSn.length }));
+                          }}
+                          disabled={form.serialNumbers.length <= 1}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent shrink-0"
+                          title="Hapus baris ini"
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      </div>
+                    )})}
+                  </div>
+                  <button
+                    onClick={() => setForm(f => ({ ...f, serialNumbers: [...f.serialNumbers, ''], totalStock: f.serialNumbers.length + 1 }))}
+                    className="mt-3 w-full py-2 border-2 border-dashed border-indigo-200 text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-50 hover:border-indigo-300 transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    Tambah Kolom Serial Number
+                  </button>
                 </div>
-              </div>
+              )}
             </div>
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
-              <button onClick={handleAddAsset} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40"
-                disabled={!form.name || !form.rackLocation || !form.totalStock || loading}>
+              <button
+                onClick={handleAddAsset}
+                disabled={!form.name || !form.totalStock || loading}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm transition-colors disabled:opacity-50"
+              >
                 {loading ? 'Menyimpan...' : 'Simpan & Daftarkan Aset'}
               </button>
             </div>
@@ -576,11 +725,11 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight truncate">{selectedAsset.name}</h3>
-                  <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">{selectedAsset.assetCode} &middot; Rak {selectedAsset.rackLocation}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">{selectedAsset.assetCode}</p>
                 </div>
               </div>
               <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-gray-50 p-2 rounded-full border border-gray-100 shrink-0 hover:bg-gray-100 transition-colors">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
             
@@ -655,8 +804,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           <tr className="hover:bg-gray-50/80 transition-colors group">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-orange-50 border border-orange-200/60 rounded-xl p-2 shadow-sm flex items-center justify-center text-orange-600">
-                                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl p-1 shadow-sm flex items-center justify-center shrink-0">
+                                  <QRCodeSVG value={selectedAsset.assetCode} size={36} />
                                 </div>
                                 <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.assetCode} (Master)</span>
                               </div>
@@ -691,7 +840,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                       const input = document.getElementById('adjust-qty-bulk-table') as HTMLInputElement;
                                       const count = parseInt(input.value) || 0;
                                       if (count <= 0) return;
-                                      handleAdjustBulkStock(selectedAsset.id, count);
+                                      handleAddStock(selectedAsset.id, count);
                                       input.value = '1';
                                     }}
                                     className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-2 rounded-xl hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
@@ -713,12 +862,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           <tr key={unit.unitId} className="hover:bg-gray-50/80 transition-colors group">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-                                  <div className="w-full h-full grid grid-cols-5 gap-[1px]">
-                                    {Array.from({ length: 25 }).map((_, j) => (
-                                      <div key={j} className={Math.random() > 0.5 ? 'bg-gray-800' : 'bg-transparent'} />
-                                    ))}
-                                  </div>
+                                <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm flex items-center justify-center overflow-hidden">
+                                  <QRCodeSVG value={unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : selectedAsset.assetCode} size={36} level="L" includeMargin={false} />
                                 </div>
                                 <span className="font-mono font-bold text-sm text-indigo-700">{unit.unitId}</span>
                               </div>
@@ -730,8 +875,12 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                 ) : (
                                   <input 
                                     type="text"
-                                    value={unit.serialNumber}
-                                    onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                                    defaultValue={unit.serialNumber}
+                                    onBlur={e => {
+                                      if (e.target.value !== unit.serialNumber) {
+                                        handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)
+                                      }
+                                    }}
                                     placeholder="Masukkan S/N Pabrik..."
                                     className="w-full max-w-[200px] border border-gray-200 rounded-xl text-sm px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans bg-gray-50 focus:bg-white transition-all"
                                   />
@@ -758,7 +907,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                 </button>
                                 {!isViewOnly && (
                                   <button
-                                    onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
+                                    onClick={() => setPrintQRAsset([{ code: unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${unit.unitId})` }])}
                                     className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors shadow-sm"
                                     title="Cetak Stiker QR Individual"
                                   >
@@ -826,7 +975,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                               const input = document.getElementById('adjust-qty-bulk-mobile') as HTMLInputElement;
                               const count = parseInt(input.value) || 0;
                               if (count <= 0) return;
-                              handleAdjustBulkStock(selectedAsset.id, count);
+                              handleAddStock(selectedAsset.id, count);
                               input.value = '1';
                             }}
                             className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-1.5 rounded-xl hover:bg-indigo-100 hover:text-indigo-800 transition-colors shadow-sm"
@@ -847,12 +996,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                     <div key={unit.unitId} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:border-gray-200 transition-all">
                       <div className="flex justify-between items-center gap-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 bg-gray-50 border border-gray-200/60 rounded-xl p-1.5 shadow-2xs shrink-0 flex items-center justify-center">
-                            <div className="w-full h-full grid grid-cols-5 gap-[1px]">
-                              {Array.from({ length: 25 }).map((_, j) => (
-                                <div key={j} className={Math.random() > 0.5 ? 'bg-indigo-600' : 'bg-transparent'} />
-                              ))}
-                            </div>
+                          <div className="w-8 h-8 bg-white border border-gray-200/60 rounded-xl p-1 shadow-2xs shrink-0 flex items-center justify-center overflow-hidden">
+                            <QRCodeSVG value={unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : selectedAsset.assetCode} size={22} level="L" includeMargin={false} />
                           </div>
                           <div>
                             <span className="font-mono font-bold text-sm text-gray-900 leading-tight block">{unit.unitId}</span>
@@ -872,8 +1017,12 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           ) : (
                             <input 
                               type="text"
-                              value={unit.serialNumber}
-                              onChange={e => handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)}
+                              defaultValue={unit.serialNumber}
+                              onBlur={e => {
+                                if (e.target.value !== unit.serialNumber) {
+                                  handleUpdateSerialNumber(selectedAsset.id, unit.unitId, e.target.value)
+                                }
+                              }}
                               placeholder="S/N Pabrik..."
                               className="w-full border border-gray-200 rounded-xl text-xs px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none font-mono placeholder:font-sans bg-gray-50/50 focus:bg-white transition-all"
                             />
@@ -889,7 +1038,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           {!isViewOnly && (
                             <>
                               <button
-                                onClick={() => alert(`Mencetak stiker QR individual untuk unit: ${unit.unitId}`)}
+                                onClick={() => setPrintQRAsset([{ code: unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${unit.unitId})` }])}
                                 className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 rounded-xl hover:bg-gray-100 transition-colors"
                               >
                                 Cetak
@@ -927,30 +1076,35 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                         id="print-qty"
                         defaultValue={selectedAsset.totalStock} 
                         min="1"
+                        max={selectedAsset.totalStock}
                         className="w-full text-xs px-2 py-2 outline-none text-center font-bold text-gray-900 bg-white focus:bg-indigo-50/50" 
                       />
                     </div>
                     <button
                       onClick={() => { 
                         const input = document.getElementById('print-qty') as HTMLInputElement;
-                        const count = parseInt(input?.value) || 0;
+                        let count = parseInt(input?.value) || 0;
+                        if (count > selectedAsset.totalStock) {
+                          count = selectedAsset.totalStock;
+                          input.value = String(count);
+                          toast.error(`Hanya bisa mencetak maksimal sesuai stok (${selectedAsset.totalStock})`);
+                        }
                         if (count > 0) {
-                          alert(`Mencetak ${count} lembar stiker QR Master...`);
-                          setSelectedAsset(null);
+                          setPrintQRAsset(Array(count).fill({ code: selectedAsset.assetCode, name: selectedAsset.name }));
                         }
                       }}
                       className="flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                     >
                       <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                      <span>Cetak Label Master</span>
+                      <span>Cetak Semua</span>
                     </button>
                   </div>
                 ) : (
                   !isViewOnly && (
                     <button
                       onClick={() => { 
-                        alert(`Mencetak BATCH ${selectedAsset.totalStock} stiker QR untuk ${selectedAsset.name}...`); 
-                        setSelectedAsset(null);
+                        const arr = selectedAsset.units.map(u => ({ code: u.serialNumber && u.serialNumber !== 'N/A' ? u.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${u.unitId})` }));
+                        setPrintQRAsset(arr.length ? arr : [{ code: selectedAsset.assetCode, name: selectedAsset.name }]);
                       }}
                       className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                     >
@@ -985,28 +1139,27 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">URL Foto Barang (Opsional)</label>
-                <div className="flex gap-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Foto Barang (Opsional)</label>
+                <div className="flex gap-2 items-center">
+                  {editForm.imageUrl && (
+                    <img src={editForm.imageUrl} alt="Preview" className="h-10 w-10 object-cover rounded" />
+                  )}
                   <input
-                    type="url" value={editForm.imageUrl} onChange={e => setEditForm(f => ({ ...f, imageUrl: e.target.value }))}
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="https://example.com/foto.jpg"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => handleFileUpload(e, true)}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
-                  <button className="px-3 py-2 bg-gray-100 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 shrink-0">Upload</button>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lokasi Rak <span className="text-red-500">*</span></label>
-                <input
-                  type="text" value={editForm.rackLocation} onChange={e => setEditForm(f => ({ ...f, rackLocation: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase"
-                />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setEditingAssetId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50">Batal</button>
-              <button onClick={handleSaveEdit} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40"
-                disabled={!editForm.name || !editForm.rackLocation || loading}>
+              <button 
+                  onClick={handleSaveEdit}
+                  disabled={!editForm.name || loading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-40">
                 {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
             </div>
@@ -1032,16 +1185,16 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             </div>
             
             <div className="p-4 sm:p-8 overflow-y-auto overscroll-y-contain space-y-6 sm:space-y-8 flex-1 bg-gray-50">
-              {historyModalUnit.history.length === 0 ? (
+              {historyModalUnit.history.filter(h => h.action.startsWith('Dipinjam') || h.action.startsWith('Dikembalikan')).length === 0 ? (
                 <div className="text-center py-10">
                   <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   <p className="text-sm text-gray-500">Belum ada riwayat pemakaian untuk unit ini.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {historyModalUnit.history.map((h, idx) => (
+                  {historyModalUnit.history.filter(h => h.action.startsWith('Dipinjam') || h.action.startsWith('Dikembalikan')).map((h, idx, filteredHistory) => (
                     <div key={idx} className="flex gap-4 relative">
-                      {idx !== historyModalUnit.history.length - 1 && (
+                      {idx !== filteredHistory.length - 1 && (
                         <div className="absolute left-[11px] top-6 bottom-[-24px] w-0.5 bg-gray-200" />
                       )}
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 z-10 ${
@@ -1062,6 +1215,50 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Cetak QR */}
+      {printQRAsset && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-lg font-bold text-gray-900 truncate pr-4">Cetak QR Code ({printQRAsset.length} Item)</h2>
+              <button onClick={() => setPrintQRAsset(null)} className="text-gray-400 hover:text-gray-600 bg-gray-100 p-1.5 rounded-full hover:bg-gray-200 transition-colors shrink-0">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-6 bg-gray-50 overflow-y-auto w-full flex-1">
+              <div id="qr-print-area" className="flex flex-wrap gap-4 justify-start">
+                {printQRAsset.map((item, idx) => (
+                  <div key={idx} className="qr-container bg-white p-3 rounded-xl border border-gray-200 flex flex-col items-center w-[160px] shadow-sm">
+                    <QRCodeSVG value={item.code} size={110} level="H" includeMargin={false} />
+                    <h3 className="font-bold text-[11px] text-gray-900 text-center mt-3 w-full break-words leading-snug">{item.name}</h3>
+                    <p className="text-gray-500 font-mono mt-1.5 text-[10px] text-center w-full break-all">{item.code}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-white flex justify-end gap-2 shrink-0">
+              <button onClick={() => setPrintQRAsset(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100">Batal</button>
+              <button onClick={() => {
+                const printContent = document.getElementById('qr-print-area');
+                if (printContent) {
+                  const win = window.open('', '_blank');
+                  win?.document.write('<html><head><title>Print QR</title><style>@page { margin: 10mm; } body { font-family: sans-serif; margin: 0; padding: 0; } #qr-print-area { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; gap: 15px; } .qr-container { padding: 10px; border: 1px dashed #ccc; display: flex; flex-direction: column; align-items: center; width: 140px; box-sizing: border-box; page-break-inside: avoid; } .qr-container svg { width: 100px; height: 100px; } h3 { margin: 8px 0 0; font-size: 11px; text-align: center; max-width: 100%; word-break: break-word; line-height: 1.3; } p { margin: 4px 0 0; font-family: monospace; font-size: 10px; color: #555; text-align: center; max-width: 100%; word-break: break-all; }</style></head><body>');
+                  win?.document.write(printContent.outerHTML);
+                  win?.document.write('</body></html>');
+                  win?.document.close();
+                  setTimeout(() => {
+                    win?.print();
+                  }, 250);
+                }
+              }} className="px-5 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                Print Sekarang
+              </button>
             </div>
           </div>
         </div>
