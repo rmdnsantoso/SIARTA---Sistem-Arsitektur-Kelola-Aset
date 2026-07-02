@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCircle2, XCircle, Clock, AlertTriangle, Info } from 'lucide-react'
+import {  Bell, CheckCircle2, XCircle, Clock, AlertTriangle, Info, RotateCcw, } from 'lucide-react'
 import { Ticket } from '../../types/ticket'
 
 // ===== Tipe Notifikasi (digabung di sini, tidak perlu file types terpisah) =====
-type NotificationType = 'approval' | 'rejected' | 'reminder' | 'overdue' | 'info'
+type NotificationType = 'approval' | 'rejected' | 'reminder' | 'overdue' | 'info' | 'warning'| 'return'| 'damage'
 
 interface Notification {
   id: string
@@ -34,6 +34,22 @@ function parseIndoDate(value: string): Date | null {
   return new Date(year, month, day)
 }
 
+function getTimestampValue(value: string): number {
+  const parsed = parseIndoDate(value)
+
+  if (parsed) {
+    return parsed.getTime()
+  }
+
+  const date = new Date(value)
+
+  if (!isNaN(date.getTime())) {
+    return date.getTime()
+  }
+
+  return 0
+}
+
 function daysBetween(a: Date, b: Date): number {
   const msPerDay = 1000 * 60 * 60 * 24
   const start = new Date(a.getFullYear(), a.getMonth(), a.getDate())
@@ -55,7 +71,9 @@ function generateNotifications(tickets: Ticket[], peminjamName: string, today: D
         title: 'Pengajuan disetujui',
         message: `Peminjaman ${ticket.alat} (${ticket.id}) telah disetujui dan siap untuk proses serah terima.`,
         ticketId: ticket.id,
-        timestamp: ticket.tanggalPinjam,
+        timestamp:
+  ticket.trackingLogs?.[ticket.trackingLogs.length - 1]
+    ?.timestamp || ticket.tanggalPinjam,
         isRead: false,
       })
     } else if (ticket.overallStatus === 'Ditolak') {
@@ -68,7 +86,9 @@ function generateNotifications(tickets: Ticket[], peminjamName: string, today: D
           ? `Peminjaman ${ticket.alat} (${ticket.id}) ditolak. ${reason}`
           : `Peminjaman ${ticket.alat} (${ticket.id}) ditolak pada tahap ${ticket.currentStage}.`,
         ticketId: ticket.id,
-        timestamp: ticket.tanggalPinjam,
+        timestamp:
+  ticket.trackingLogs?.[ticket.trackingLogs.length - 1]
+    ?.timestamp || ticket.tanggalPinjam,
         isRead: false,
       })
     } else if (ticket.overallStatus === 'Menunggu') {
@@ -89,7 +109,17 @@ function generateNotifications(tickets: Ticket[], peminjamName: string, today: D
       if (dueDate) {
         const diff = daysBetween(today, dueDate) // positif = belum jatuh tempo, negatif = sudah lewat
 
-        if (diff === 3) {
+        if (diff === 7) {
+  notifications.push({
+    id: `${ticket.id}-h7`,
+    type: 'reminder',
+    title: 'Pengingat pengembalian (H-7)',
+    message: `${ticket.alat} (${ticket.id}) harus dikembalikan dalam 7 hari, paling lambat ${ticket.tanggalKembali}.`,
+    ticketId: ticket.id,
+    timestamp: ticket.tanggalKembali,
+    isRead: false,
+  })
+  } else if (diff === 3) {
           notifications.push({
             id: `${ticket.id}-h3`,
             type: 'reminder',
@@ -140,6 +170,36 @@ function generateNotifications(tickets: Ticket[], peminjamName: string, today: D
   return notifications
 }
 
+function formatRelativeTime(timestamp: string) {
+  const date = new Date(timestamp)
+
+  if (isNaN(date.getTime())) {
+    return timestamp
+  }
+
+  const now = new Date()
+  const diff = Math.floor(
+    (now.getTime() - date.getTime()) / 1000
+  )
+
+  if (diff < 60) {
+    return 'Baru saja'
+  }
+
+  if (diff < 3600) {
+    return `${Math.floor(diff / 60)} menit lalu`
+  }
+
+  if (diff < 86400) {
+    return `${Math.floor(diff / 3600)} jam lalu`
+  }
+
+  if (diff < 172800) {
+    return 'Kemarin'
+  }
+
+  return `${Math.floor(diff / 86400)} hari lalu`
+}
 // ===== UI =====
 interface Props {
   tickets: Ticket[]
@@ -152,6 +212,9 @@ const ICONS: Record<NotificationType, React.ReactNode> = {
   reminder: <Clock className="w-4 h-4 text-amber-600" />,
   overdue: <AlertTriangle className="w-4 h-4 text-red-600" />,
   info: <Info className="w-4 h-4 text-blue-600" />,
+  warning: <AlertTriangle className="w-4 h-4 text-amber-600" />,
+  return: <CheckCircle2 className="w-4 h-4 text-green-600" />,
+  damage: <XCircle className="w-4 h-4 text-red-600" />,
 }
 
 const BG: Record<NotificationType, string> = {
@@ -160,6 +223,9 @@ const BG: Record<NotificationType, string> = {
   reminder: 'bg-amber-50',
   overdue: 'bg-red-50',
   info: 'bg-blue-50',
+  warning: 'bg-amber-50',
+  return: 'bg-green-50',
+  damage: 'bg-red-50',
 }
 
 export default function NotificationDropdown({ tickets, peminjamName }: Props) {
@@ -169,10 +235,37 @@ export default function NotificationDropdown({ tickets, peminjamName }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   const notifications = generateNotifications(tickets, peminjamName)
-    .map(n => (readIds.has(n.id) ? { ...n, isRead: true } : n))
-    .sort((a, b) => Number(a.isRead) - Number(b.isRead))
+  .map(n =>
+    readIds.has(n.id)
+      ? { ...n, isRead: true }
+      : n
+  )
+  .sort((a, b) => {
+    if (a.isRead !== b.isRead) {
+      return Number(a.isRead) - Number(b.isRead)
+    }
+
+    return (
+      getTimestampValue(b.timestamp) -
+      getTimestampValue(a.timestamp)
+    )
+  })
 
   const unreadCount = notifications.filter(n => !n.isRead).length
+  useEffect(() => {
+  const saved = localStorage.getItem('notif-read')
+
+  if (saved) {
+    setReadIds(new Set(JSON.parse(saved)))
+  }
+}, [])
+
+useEffect(() => {
+  localStorage.setItem(
+    'notif-read',
+    JSON.stringify([...readIds])
+  )
+}, [readIds])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -232,36 +325,74 @@ export default function NotificationDropdown({ tickets, peminjamName }: Props) {
           </div>
 
           <div className="max-h-[280px] sm:max-h-[360px] overflow-y-auto divide-y divide-gray-100">
-            {notifications.length === 0 && (
-              <div className="p-6 text-center">
-                <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-xs text-gray-400">Belum ada notifikasi</p>
-              </div>
-            )}
+  {notifications.length === 0 && (
+    <div className="p-6 text-center">
+      <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+      <p className="text-xs text-gray-400">
+        Belum ada notifikasi
+      </p>
+    </div>
+  )}
 
-            {notifications.map(n => (
-              <button
-                key={n.id}
-                onClick={() => handleMarkRead(n.id)}
-                className={`w-full text-left p-3 sm:p-4 flex gap-2.5 sm:gap-3 hover:bg-slate-50/80 transition-all ${!n.isRead ? 'bg-blue-50/30' : ''}`}
-              >
-                <div className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mt-0.5 ${BG[n.type]}`}>
-                  {ICONS[n.type]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1.5 mb-1">
-                    <p className={`text-[11px] sm:text-xs font-bold truncate ${!n.isRead ? 'text-gray-900' : 'text-gray-600'}`}>
-                      {n.title}
-                    </p>
-                    {!n.isRead && <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />}
-                  </div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 leading-relaxed line-clamp-2">{n.message}</p>
-                  <p className="text-[9px] sm:text-[10px] font-semibold text-gray-400 mt-1">{n.timestamp}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+  {notifications.map(n => (
+    <button
+      key={n.id}
+      onClick={() => {
+        handleMarkRead(n.id)
+        router.push('/peminjam')
+      }}
+      className={`w-full text-left p-3 sm:p-4 flex gap-2.5 sm:gap-3 hover:bg-slate-50/80 transition-all ${
+        !n.isRead ? 'bg-blue-50/30' : ''
+      }`}
+    >
+      <div
+        className={`shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mt-0.5 ${BG[n.type]}`}
+      >
+        {ICONS[n.type]}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-1.5 mb-1">
+          <p
+            className={`text-[11px] sm:text-xs font-bold truncate ${
+              !n.isRead
+                ? 'text-gray-900'
+                : 'text-gray-600'
+            }`}
+          >
+            {n.title}
+          </p>
+
+          {!n.isRead && (
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+          )}
         </div>
+
+        <p className="text-[10px] sm:text-xs text-gray-500 leading-relaxed line-clamp-2">
+          {n.message}
+        </p>
+
+        <p className="text-[9px] sm:text-[10px] font-semibold text-gray-400 mt-1">
+          {formatRelativeTime(n.timestamp)}
+        </p>
+      </div>
+    </button>
+  ))}
+</div>
+
+<div className="border-t border-gray-100 p-2 bg-slate-50">
+  <button
+    onClick={() => {
+      setOpen(false)
+      router.push('/notifikasi?role=Peminjam')
+    }}
+    className="w-full py-2 text-xs sm:text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+  >
+    Lihat Semua →
+  </button>
+</div>
+           
+          </div>
       )}
     </div>
   )
