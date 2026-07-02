@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
+import { getMaintenanceHistory } from '../../actions/core/maintenance'
 
 interface HistoryTicket {
   id: string
@@ -29,11 +30,42 @@ const historyData: HistoryTicket[] = [
 ]
 
 export default function MaintenanceHistory() {
+  const [records, setRecords] = useState<HistoryTicket[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [selectedTicket, setSelectedTicket] = useState<HistoryTicket | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+
+  const refreshData = () => {
+    getMaintenanceHistory().then(res => {
+      if (res.success && res.data) {
+        const adapted: HistoryTicket[] = res.data.map(r => ({
+          id: r.recordCode,
+          assetName: r.assetName,
+          serialNumber: r.serialNumber ?? undefined,
+          dateCompleted: r.dateResolved || r.dateReported,
+          status: r.status as 'Selesai Diperbaiki' | 'Dimusnahkan',
+          notes: r.issue,
+          reporter: r.reporterName,
+          photoUrl: r.photoUrl ?? undefined,
+          timestamp: r.createdAt?.toString(),
+        }))
+        setRecords(adapted)
+      }
+    }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    refreshData()
+    const interval = setInterval(() => {
+      refreshData()
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const historyData = records
 
   const filteredData = historyData.filter(item => {
     const matchesSearch = item.assetName.toLowerCase().includes(searchQuery.toLowerCase()) ||

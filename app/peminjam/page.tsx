@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import PeminjamSidebar from '../../components/peminjam/PeminjamSidebar'
 import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
@@ -23,31 +24,39 @@ export default function PeminjamDashboard() {
   // Ahmad pakai ID tetap dari seed (simulasi sesi login)
   const AHMAD_USER_ID = 'usr-peminjam-01'
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [dbTickets, dbAssets] = await Promise.all([
-          getTicketsByUser(AHMAD_USER_ID),
-          getAvailableAssets()
-        ])
-        setTickets(adaptTickets(dbTickets))
-        if (dbAssets.success && dbAssets.data) {
-          setAssets(dbAssets.data.map(a => ({
+  const refreshData = async () => {
+    try {
+      const [dbTickets, dbAssets] = await Promise.all([
+        getTicketsByUser(AHMAD_USER_ID),
+        getAvailableAssets()
+      ])
+      setTickets(adaptTickets(dbTickets))
+      if (dbAssets.success && dbAssets.data) {
+        const adaptedAssets = dbAssets.data.map((a: any) => {
+          return {
             id: a.id,
             name: a.name,
-            rackLocation: a.location,
-            totalStock: a.quantity,
-            availableStock: a.quantity,
-            trackingType: a.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED'
-          })))
-        }
-      } catch (err) {
-        console.error('Gagal memuat data:', err)
-      } finally {
-        setLoading(false)
+            totalStock: a.computedTotalStock,
+            availableStock: a.computedAvailableStock,
+            trackingType: a.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+            imageUrl: a.spec || ''
+          }
+        })
+        setAssets(prev => JSON.stringify(prev) !== JSON.stringify(adaptedAssets) ? adaptedAssets : prev)
       }
+    } catch (err) {
+      console.error('Gagal memuat data:', err)
+    } finally {
+      setLoading(false)
     }
-    fetchData()
+  }
+
+  useEffect(() => {
+    refreshData()
+    const interval = setInterval(() => {
+      refreshData()
+    }, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleAddTicket = async (newTicketData: any) => {
@@ -58,17 +67,16 @@ export default function PeminjamDashboard() {
           jumlah: newTicketData.jumlah,
           tanggalPinjam: newTicketData.tanggalPinjam,
           tanggalKembali: newTicketData.tanggalKembali,
-          lokasi: newTicketData.lokasi,
-          notes: 'Pengajuan melalui Katalog Alat'
+          alasan: newTicketData.alasan,
+          notes: newTicketData.alasan
         })
         if (!res.success) {
           console.error('Gagal membuat tiket di database:', res.error)
-          alert(`Gagal mengajukan pinjaman: ${res.error}`)
+          toast.error(`Gagal mengajukan pinjaman: ${res.error}`)
           return
         } else {
           // Refresh tiket dari database
-          const updatedTickets = await getTicketsByUser(AHMAD_USER_ID)
-          setTickets(adaptTickets(updatedTickets))
+          await refreshData()
           return
         }
       }
@@ -123,7 +131,7 @@ export default function PeminjamDashboard() {
           </div>
           
           {activeNav === 'Katalog Alat' && <KatalogAlat onAddTicket={handleAddTicket} assets={assets.length > 0 ? assets : undefined} />}
-          {activeNav === 'Tiket Saya' && <TiketSaya tickets={tickets} onUpdateTickets={setTickets} />}
+          {activeNav === 'Tiket Saya' && <TiketSaya tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Riwayat Pinjam' && <RiwayatPinjam tickets={tickets} />}
         </div>
       </div>

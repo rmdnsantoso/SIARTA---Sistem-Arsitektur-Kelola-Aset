@@ -1,12 +1,15 @@
 'use client'
 
-import React, { useState } from 'react'
-import { setAssetToMaintenance } from '../../actions/workflows/verifikasi'
+import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
+import { createMaintenanceRecord, resolveMaintenanceRecord, getActiveMaintenanceRecords } from '../../actions/core/maintenance'
+import { getAllAssetsForAdmin } from '../../actions/core/asset'
 
 type EscalationStatus = 'Menunggu Tindakan' | 'Selesai' | 'Dimusnahkan'
 
 interface EscalationTicket {
   id: string
+  dbId?: string
   assetName: string
   serialNumber?: string
   issue: string
@@ -37,25 +40,56 @@ const STATUS_META: Record<string, { label: string; headerCls: string; dotCls: st
 export default function AssetMaintenance() {
   const [tickets, setTickets] = useState<EscalationTicket[]>(initialTickets)
   const [selectedTicket, setSelectedTicket] = useState<EscalationTicket | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'Aktif' | 'Dimusnahkan' | 'Semua'>('Aktif')
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
-  const [reportForm, setReportForm] = useState({ assetId: '', qtyOrSn: '', notes: '', photos: [] as string[] })
+  const [reportForm, setReportForm] = useState({ assetId: '', assetName: '', qtyOrSn: '', notes: '', photos: [] as string[] })
   const [isCameraOpen, setIsCameraOpen] = useState(false)
+  const [dbAssets, setDbAssets] = useState<Array<{ id: string; name: string; assetCode: string }>>([]) 
 
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
+  useEffect(() => {
+    // Load aset dari DB untuk dropdown
+    getAllAssetsForAdmin().then(res => {
+      if (res.success && res.data) {
+        setDbAssets(res.data.map(a => ({ id: a.id, name: a.name, assetCode: a.assetCode })))
+      }
+    })
+    // Load tiket aktif dari DB
+    getActiveMaintenanceRecords().then(res => {
+      if (res.success && res.data && res.data.length > 0) {
+        const adapted: EscalationTicket[] = res.data.map(r => ({
+          id: r.recordCode,
+          dbId: r.id,
+          assetName: r.assetName,
+          serialNumber: r.serialNumber ?? undefined,
+          issue: r.issue,
+          reporter: r.reporterName,
+          dateReported: r.dateReported,
+          status: r.status as EscalationStatus,
+          photoUrl: r.photoUrl ?? undefined,
+        }))
+        setTickets(adapted)
+      } else if (res.success && res.data?.length === 0) {
+        setTickets([])
+      }
+    })
+  }, [])
 
-  const handleAction = (newStatus: EscalationStatus | 'Selesai') => {
+  const handleAction = async (newStatus: EscalationStatus | 'Selesai') => {
     if (!selectedTicket) return
 
     if (newStatus === 'Selesai' || newStatus === 'Dimusnahkan') {
-      // It completely leaves this board (goes back to stock or goes to write-off history)
+      const resolution = newStatus === 'Selesai' ? 'Selesai Diperbaiki' : 'Dimusnahkan'
+      // Simpan ke DB jika ada dbId
+      if ((selectedTicket as any).dbId) {
+        const res = await resolveMaintenanceRecord((selectedTicket as any).dbId, resolution)
+        if (!res.success) {
+          toast.error(`Gagal: ${res.error}`)
+          return
+        }
+      }
       setTickets(prev => prev.filter(t => t.id !== selectedTicket.id))
-      if (newStatus === 'Selesai') showToast(`Aset ${selectedTicket.assetName} berhasil diperbaiki dan dikembalikan ke stok.`)
-      if (newStatus === 'Dimusnahkan') showToast(`Aset telah dimusnahkan dan dipindah ke Riwayat Pemeliharaan.`)
+      if (newStatus === 'Selesai') toast.success(`Aset ${selectedTicket.assetName} berhasil diperbaiki dan dikembalikan ke stok.`)
+      if (newStatus === 'Dimusnahkan') toast.success(`Aset dimusnahkan dan dipindah ke Riwayat Pemeliharaan.`)
     } else {
       setTickets(prev => prev.map(t => t.id === selectedTicket.id ? { ...t, status: newStatus } : t))
     }
@@ -66,27 +100,38 @@ export default function AssetMaintenance() {
   const handleSaveReport = async () => {
     if (!reportForm.assetId || !reportForm.notes) return;
 
+    const selectedAsset = dbAssets.find(a => a.id === reportForm.assetId)
+    const displayName = selectedAsset?.name || reportForm.assetId
+
     try {
-      await setAssetToMaintenance(reportForm.assetId, reportForm.notes)
+      const res = await createMaintenanceRecord({
+        assetId: reportForm.assetId,
+        issue: reportForm.notes,
+        serialNumber: reportForm.qtyOrSn || undefined,
+        photoUrl: reportForm.photos[0] || undefined,
+      })
+      if (!res.success) {
+        toast.error(`Gagal mencatat temuan: ${res.error}`)
+        return
+      }
+      const newTicket: EscalationTicket = {
+        id: res.data?.recordCode || `ESC-${Date.now()}`,
+        dbId: res.data?.id,
+        assetName: displayName,
+        serialNumber: reportForm.qtyOrSn || undefined,
+        issue: reportForm.notes,
+        reporter: 'Admin / HSSE',
+        dateReported: 'Hari Ini',
+        status: 'Menunggu Tindakan',
+        photoUrl: reportForm.photos[0] || undefined
+      }
+      setTickets([newTicket, ...tickets])
+      setIsReportModalOpen(false)
+      setReportForm({ assetId: '', assetName: '', qtyOrSn: '', notes: '', photos: [] })
+      toast.success(`Laporan kerusakan ${displayName} berhasil dicatat. Status aset diubah ke Maintenance.`)
     } catch (err) {
       console.error(err)
     }
-
-    const newId = `ESC-0${Math.floor(Math.random() * 90) + 10}`
-    const newTicket: EscalationTicket = {
-      id: newId,
-      assetName: reportForm.assetId,
-      serialNumber: reportForm.qtyOrSn,
-      issue: reportForm.notes,
-      reporter: 'Admin / HSSE',
-      dateReported: 'Hari Ini',
-      status: 'Menunggu Tindakan',
-      photoUrl: reportForm.photos[0] || undefined
-    }
-    setTickets([newTicket, ...tickets])
-    setIsReportModalOpen(false)
-    setReportForm({ assetId: '', qtyOrSn: '', notes: '', photos: [] })
-    showToast('Laporan temuan kerusakan berhasil dicatat dan masuk ke antrean review.')
   }
 
   const countTindakan = tickets.filter(t => t.status === 'Menunggu Tindakan').length
@@ -99,13 +144,6 @@ export default function AssetMaintenance() {
 
   return (
     <div className="space-y-6 font-sans relative">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[99] px-5 py-3 bg-gray-900 text-white rounded-lg shadow-xl text-sm font-medium animate-fade-in flex items-center gap-2">
-          {toast}
-        </div>
-      )}
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
@@ -371,26 +409,22 @@ export default function AssetMaintenance() {
             </div>
             <div className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-y-contain">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between items-end">
-                  <span>Nama/ID Aset <span className="text-red-500">*</span></span>
-                  <button 
-                    onClick={() => {
-                      setReportForm(f => ({ ...f, assetId: 'Gas Detector (MSA Altair 4X)', qtyOrSn: 'SN-MSA-004' }));
-                      showToast('Barcode berhasil dipindai!');
-                    }}
-                    className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-bold bg-indigo-50 px-2 py-1 rounded transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                    Scan Barcode
-                  </button>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pilih Aset <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text" 
-                  value={reportForm.assetId} 
-                  onChange={e => setReportForm(f => ({ ...f, assetId: e.target.value }))}
-                  placeholder="Ketik nama atau ID aset..."
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none"
-                />
+                <select
+                  value={reportForm.assetId}
+                  onChange={e => {
+                    const selected = dbAssets.find(a => a.id === e.target.value)
+                    setReportForm(f => ({ ...f, assetId: e.target.value, assetName: selected?.name || '' }))
+                  }}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none bg-white"
+                >
+                  <option value="">-- Pilih aset dari database --</option>
+                  {dbAssets.map(a => (
+                    <option key={a.id} value={a.id}>{a.assetCode} — {a.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -488,7 +522,7 @@ export default function AssetMaintenance() {
                   const randomPhoto = simulatedPhotos[Math.floor(Math.random() * simulatedPhotos.length)];
                   setReportForm(f => ({ ...f, photos: [...f.photos, randomPhoto] }));
                   setIsCameraOpen(false);
-                  showToast('Foto berhasil ditangkap!');
+                  toast.success('Foto berhasil ditangkap!');
                 }}
                 className="w-16 h-16 rounded-full border-4 border-white bg-red-500 hover:bg-red-600 transition-colors shadow-[0_0_15px_rgba(239,68,68,0.5)]"
               ></button>

@@ -18,6 +18,11 @@ export async function createUser(input: {
   name: string
   email: string
   role: Role
+  nip?: string
+  wa?: string
+  jabatan?: string
+  office?: string
+  regional?: string
 }) {
   try {
     await requireRole([Role.Admin])
@@ -34,6 +39,12 @@ export async function updateUser(id: string, input: {
   name?: string
   email?: string
   role?: Role
+  nip?: string
+  wa?: string
+  jabatan?: string
+  office?: string
+  regional?: string
+  isActive?: boolean
 }) {
   try {
     await requireRole([Role.Admin])

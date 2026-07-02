@@ -12,9 +12,24 @@ export async function getAvailableAssets() {
   try {
     const assets = await prisma.asset.findMany({
       where: { status: AssetStatus.Available },
-      orderBy: { name: 'asc' }
+      orderBy: { createdAt: 'asc' },
+      include: { units: { include: { history: { orderBy: { timestamp: 'desc' } } } } }
     })
-    return { success: true, data: assets }
+    
+    const activeTickets = await prisma.ticket.findMany({
+      where: { overallStatus: { in: ['Menunggu', 'Disetujui', 'Dipinjam'] } }
+    })
+    
+    const data = assets.map(a => {
+      const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+      return {
+        ...a,
+        computedTotalStock: a.isSerialized ? (a.units?.length || 0) : (a.quantity + borrowed),
+        computedAvailableStock: a.quantity
+      }
+    })
+    
+    return { success: true, data }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -32,8 +47,25 @@ export async function getAssetById(id: string) {
 
 export async function getAllAssetsForAdmin() {
   try {
-    const assets = await prisma.asset.findMany({ orderBy: { createdAt: 'desc' } })
-    return { success: true, data: assets }
+    const assets = await prisma.asset.findMany({ 
+      orderBy: { createdAt: 'asc' },
+      include: { units: { include: { history: { orderBy: { timestamp: 'desc' } } } } }
+    })
+
+    const activeTickets = await prisma.ticket.findMany({
+      where: { overallStatus: { in: ['Menunggu', 'Disetujui', 'Dipinjam'] } }
+    })
+    
+    const data = assets.map(a => {
+      const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+      return {
+        ...a,
+        computedTotalStock: a.isSerialized ? (a.units?.length || 0) : (a.quantity + borrowed),
+        computedAvailableStock: a.quantity
+      }
+    })
+
+    return { success: true, data }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -48,17 +80,32 @@ export async function createAsset(input: {
   name: string
   category: string
   isSerialized: boolean
-  location: string
   quantity: number
   spec?: string
   status?: AssetStatus
+  imageUrl?: string
+  serialNumbers?: string[]
 }) {
   try {
     await requireRole([Role.Admin])
     const existing = await prisma.asset.findUnique({ where: { assetCode: input.assetCode } })
     if (existing) throw new Error(`Kode aset ${input.assetCode} sudah digunakan.`)
+    
+    const { serialNumbers, ...restInput } = input;
+    
     const asset = await prisma.asset.create({
-      data: { ...input, status: input.status ?? AssetStatus.Available }
+      data: { 
+        ...restInput, 
+        status: restInput.status ?? AssetStatus.Available,
+        units: restInput.isSerialized ? {
+          create: Array.from({ length: restInput.quantity }).map((_, i) => ({
+            unitId: `${restInput.assetCode}-${String(i + 1).padStart(2, '0')}`,
+            serialNumber: serialNumbers?.[i] || `SN-NEW-${Math.floor(1000 + Math.random() * 9000)}`,
+            status: 'Tersedia'
+          }))
+        } : undefined
+      },
+      include: { units: { include: { history: true } } }
     })
     return { success: true, data: asset }
   } catch (error: any) {
@@ -73,10 +120,11 @@ export async function createAsset(input: {
 export async function updateAsset(id: string, input: {
   name?: string
   category?: string
-  location?: string
   quantity?: number
   spec?: string
   isSerialized?: boolean
+  status?: AssetStatus
+  imageUrl?: string
 }) {
   try {
     await requireRole([Role.Admin])
@@ -128,6 +176,112 @@ export async function deleteAsset(id: string) {
     await prisma.ticket.deleteMany({ where: { assetId: id } })
     await prisma.asset.delete({ where: { id } })
     return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// ============================================================
+// UNIT CRUD OPERATIONS
+// ============================================================
+
+export async function updatePhysicalUnitSN(unitId: string, serialNumber: string) {
+  try {
+    const user = await requireRole([Role.Admin])
+    await requireRole([Role.Admin])
+    const unit = await prisma.physicalUnit.findUnique({ where: { unitId } })
+    if (!unit) throw new Error('Unit tidak ditemukan.')
+    
+    const updated = await prisma.physicalUnit.update({
+      where: { unitId },
+      data: { serialNumber }
+    });
+
+    return { success: true, data: updated };
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function addPhysicalUnits(assetId: string, count: number, startIdx: number) {
+  try {
+    const user = await requireRole([Role.Admin])
+    const asset = await prisma.asset.findUnique({ where: { id: assetId }, include: { units: true } })
+    if (!asset) throw new Error('Aset tidak ditemukan.')
+    
+    const unitsData = Array.from({ length: count }).map((_, i) => ({
+      assetId,
+      unitId: `${asset.assetCode}-${String(startIdx + i).padStart(2, '0')}`,
+      serialNumber: '',
+      status: 'Tersedia'
+    }))
+    
+    await prisma.physicalUnit.createMany({ data: unitsData })
+    await prisma.asset.update({
+      where: { id: assetId },
+      data: { quantity: { increment: count } }
+    })
+    
+    const newUnits = await prisma.physicalUnit.findMany({
+      where: { assetId, unitId: { in: unitsData.map(u => u.unitId) } }
+    })
+    
+    for (const u of newUnits) {
+      await prisma.unitHistory.create({
+        data: {
+          unitId: u.id,
+          action: 'Unit Ditambahkan',
+          actor: `${user.name} (Admin)`,
+          timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
+        }
+      })
+    }
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function removePhysicalUnit(unitId: string) {
+  try {
+    const user = await requireRole([Role.Admin])
+    const unit = await prisma.physicalUnit.findUnique({ where: { unitId } })
+    if (!unit) throw new Error('Unit tidak ditemukan.')
+    if (unit.status === 'Dipinjam') throw new Error('Unit sedang dipinjam, tidak bisa dihapus.')
+    
+    await prisma.physicalUnit.delete({ where: { unitId } })
+    await prisma.asset.update({
+      where: { id: unit.assetId },
+      data: { quantity: { decrement: 1 } }
+    })
+    
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function addAssetStock(assetId: string, addedStock: number) {
+  try {
+    await requireRole([Role.Admin])
+    const updated = await prisma.asset.update({
+      where: { id: assetId },
+      data: { quantity: { increment: addedStock } }
+    })
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// Ambil list serial number yang berstatus Tersedia untuk suatu aset
+export async function getAvailableSerials(assetId: string) {
+  try {
+    const units = await prisma.physicalUnit.findMany({
+      where: { assetId, status: 'Tersedia' },
+      select: { serialNumber: true }
+    })
+    return { success: true, data: units.map(u => u.serialNumber) }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

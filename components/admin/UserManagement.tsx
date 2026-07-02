@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import StatCard from '../shared/StatCard'
 import { getAllUsers, createUser, updateUser, deleteUser } from '../../actions/core/user'
 
@@ -68,19 +69,19 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       try {
         const res = await getAllUsers()
         if (res.success && res.data && res.data.length > 0) {
-          const adapted: User[] = res.data.map((dbUser: any, idx: number) => {
+          const adapted: User[] = res.data.map((dbUser: any) => {
             const roleDisplay = dbUser.role === 'AreaHead' ? 'Area Head' : dbUser.role;
             return {
               id: dbUser.id,
-              nip: `100${String(idx + 234).padStart(3, '0')}`,
+              nip: dbUser.nip || '—',
               name: dbUser.name,
               email: dbUser.email,
-              wa: '081234567890',
-              jabatan: dbUser.role === 'Admin' ? 'Admin Logistik' : dbUser.role === 'AreaHead' ? 'Operation Manager' : 'Staff',
-              office: 'HO Jakarta',
-              regional: 'Nasional',
+              wa: dbUser.wa || '—',
+              jabatan: dbUser.jabatan || roleDisplay,
+              office: dbUser.office || '—',
+              regional: dbUser.regional || '—',
               role: roleDisplay,
-              status: 'Aktif'
+              status: dbUser.isActive ? 'Aktif' : 'Nonaktif'
             }
           })
           setUsers(adapted)
@@ -94,7 +95,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
 
   const handleAddUser = async () => {
     if (!addForm.name || !addForm.email) {
-      alert('Nama dan Email wajib diisi!')
+      toast.error('Nama dan Email wajib diisi!')
       return
     }
     setLoading(true)
@@ -103,23 +104,28 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       const res = await createUser({
         name: addForm.name,
         email: addForm.email,
-        role: roleDb as any
+        role: roleDb as any,
+        nip: addForm.nip || undefined,
+        wa: addForm.wa || undefined,
+        jabatan: addForm.jabatan || undefined,
+        office: addForm.office || undefined,
+        regional: addForm.regional || undefined,
       })
       if (!res.success) {
-        alert(`Gagal membuat akun: ${res.error}`)
+        toast.error(`Gagal membuat akun: ${res.error}`)
         setLoading(false)
         return
       }
       if (res.data) {
         const newUser: User = {
           id: res.data.id,
-          nip: addForm.nip || `100${Math.floor(100 + Math.random() * 900)}`,
+          nip: res.data.nip || '—',
           name: res.data.name,
           email: res.data.email,
-          wa: addForm.wa || '081234567890',
-          jabatan: addForm.jabatan || 'Staff',
-          office: addForm.office || 'HO Jakarta',
-          regional: addForm.regional,
+          wa: res.data.wa || '—',
+          jabatan: res.data.jabatan || addForm.role,
+          office: res.data.office || '—',
+          regional: res.data.regional || '—',
           role: addForm.role,
           status: 'Aktif'
         }
@@ -128,7 +134,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
         setIsModalOpen(false)
       }
     } catch (err: any) {
-      alert(`Terjadi kesalahan: ${err.message}`)
+      toast.error(`Terjadi kesalahan: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -151,10 +157,16 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       const res = await updateUser(editForm.id, {
         name: editForm.name,
         email: editForm.email,
-        role: roleDb as any
+        role: roleDb as any,
+        nip: editForm.nip !== '—' ? editForm.nip : undefined,
+        wa: editForm.wa !== '—' ? editForm.wa : undefined,
+        jabatan: editForm.jabatan !== '—' ? editForm.jabatan : undefined,
+        office: editForm.office !== '—' ? editForm.office : undefined,
+        regional: editForm.regional !== '—' ? editForm.regional : undefined,
+        isActive: editForm.status === 'Aktif',
       })
       if (!res.success) {
-        alert(`Gagal menyimpan perubahan: ${res.error}`)
+        toast.error(`Gagal menyimpan perubahan: ${res.error}`)
         setLoading(false)
         return
       }
@@ -162,7 +174,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       setSelectedUser(editForm)
       setIsEditMode(false)
     } catch (err: any) {
-      alert(`Terjadi kesalahan: ${err.message}`)
+      toast.error(`Terjadi kesalahan: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -174,14 +186,14 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       try {
         const res = await deleteUser(id)
         if (!res.success) {
-          alert(`Gagal menghapus pengguna: ${res.error}`)
+          toast.error(`Gagal menghapus pengguna: ${res.error}`)
           setLoading(false)
           return
         }
         setUsers(prev => prev.filter(u => u.id !== id))
         setSelectedUser(null)
       } catch (err: any) {
-        alert(`Terjadi kesalahan: ${err.message}`)
+        toast.error(`Terjadi kesalahan: ${err.message}`)
       } finally {
         setLoading(false)
       }
@@ -189,7 +201,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
   }
 
   const handleResetPassword = () => {
-    alert(`Password untuk ${selectedUser?.name} telah direset ke default (Siarta2026!).`)
+    toast.success(`Password untuk ${selectedUser?.name} telah direset ke default (Siarta2026!).`)
   }
 
   const openDetail = (u: User) => {

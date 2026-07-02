@@ -43,7 +43,9 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
 
-  const filteredTickets = tickets.filter(t => 
+  const pendingTickets = tickets.filter(t => t.overallStatus !== 'Ditolak' && (t.currentStage === 'Area Head' || t.currentStage === 'Menunggu Persetujuan Area Head'))
+
+  const filteredTickets = pendingTickets.filter(t => 
     t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
     t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
     t.alat.toLowerCase().includes(searchQuery.toLowerCase())
@@ -146,7 +148,7 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
-              {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Tindakan'].map((h) => (
+              {['ID Pengajuan', 'Pemohon', 'Aset', 'Kuantitas', 'Periode Pinjam', 'Tindakan'].map((h) => (
                 <th key={h} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                   {h}
                 </th>
@@ -176,10 +178,28 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
                     <p className="text-xs text-gray-500">{ticket.jabatan}</p>
                   </td>
 
-                  {/* Aset & Lokasi */}
+                  {/* Aset & Alasan */}
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900">{ticket.alat}</p>
-                    <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+                    <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
+                    {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {ticket.allocatedUnits.map((sn, idx) => {
+                          if (sn.startsWith('NON_SERIAL_QTY_')) {
+                            const qty = sn.replace('NON_SERIAL_QTY_', '');
+                            return (
+                              <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded border border-blue-200 shadow-sm">
+                                [Non-Serial] Fisik Keluar: {qty}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-mono rounded border border-gray-200 shadow-sm">
+                              {sn}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                     {hasConflict && <ConflictWarning conflictWith={ticket.conflictWith!} />}
                   </td>
 

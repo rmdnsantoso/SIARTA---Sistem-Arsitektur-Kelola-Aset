@@ -27,9 +27,9 @@ export async function getTicketsForHSSE() {
       OR: [
         // Tiket yang sedang menunggu verifikasi HSSE
         { currentStage: 'Menunggu Verifikasi HSSE' },
-        // Tiket yang sudah lewat HSSE (untuk riwayat)
+        // Tiket yang sudah pernah ditangani oleh HSSE
         {
-          overallStatus: { in: [TicketStatus.Disetujui, TicketStatus.Dipinjam, TicketStatus.Dikembalikan, TicketStatus.Ditolak] }
+          logs: { some: { stage: 'HSSE' } }
         }
       ]
     },
@@ -49,9 +49,9 @@ export async function getTicketsForAreaHead() {
       OR: [
         // Tiket yang sedang menunggu persetujuan Area Head
         { currentStage: 'Menunggu Persetujuan Area Head' },
-        // Tiket yang sudah disetujui/ditolak Area Head (untuk riwayat)
+        // Tiket yang sudah pernah ditangani oleh Area Head
         {
-          overallStatus: { in: [TicketStatus.Disetujui, TicketStatus.Dipinjam, TicketStatus.Dikembalikan, TicketStatus.Ditolak] }
+          logs: { some: { stage: 'Area Head' } }
         }
       ]
     },

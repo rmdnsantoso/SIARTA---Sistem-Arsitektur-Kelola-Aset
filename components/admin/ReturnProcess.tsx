@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Ticket } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
@@ -9,47 +10,81 @@ import { verifyAssetReturnHandover } from '../../actions/workflows/verifikasi'
 
 interface Props {
   tickets?: Ticket[]
+  onSuccess?: () => void
 }
 
-export default function ReturnProcess({ tickets = initialTickets }: Props) {
+export default function ReturnProcess({ tickets = initialTickets, onSuccess }: Props) {
   // Only interested in tickets that are currently borrowed
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets.filter(t => t.overallStatus === 'Dipinjam'))
   
+  React.useEffect(() => {
+    setLocalTickets(tickets.filter(t => t.overallStatus === 'Dipinjam'))
+  }, [tickets])
+
   // Modal State
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
-  const [isMaintenance, setIsMaintenance] = useState(false)
-  const [maintenanceNotes, setMaintenanceNotes] = useState('')
   
   const [verifiedSNs, setVerifiedSNs] = useState<string[]>([])
   const [scanInput, setScanInput] = useState('')
   
-  const [toast, setToast] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [scannerContext, setScannerContext] = useState<'main' | 'detail'>('main')
+
+  // Auto-close scanner when limit is reached
+  React.useEffect(() => {
+    if (isScannerOpen && scannerContext === 'detail' && modalTicket && modalTicket.jumlah > 0) {
+      const targetLength = modalTicket.assetType === 'NON_SERIALIZED' ? 1 : modalTicket.jumlah;
+      if (verifiedSNs.length >= targetLength) {
+        setIsScannerOpen(false)
+      }
+    }
+  }, [verifiedSNs, isScannerOpen, modalTicket, scannerContext])
 
   // Simulate scanning a specific SN
   const verifySN = (sn: string) => {
     if (modalTicket?.assetType === 'NON_SERIALIZED') {
       setVerifiedSNs(['NON_SERIALIZED_VERIFIED'])
     } else {
-      if (!verifiedSNs.includes(sn)) {
-        setVerifiedSNs([...verifiedSNs, sn])
-      }
+      setVerifiedSNs(prev => {
+        if (!prev.includes(sn)) return [...prev, sn]
+        return prev
+      })
     }
+  }
+
+  const toggleSN = (sn: string) => {
+    setVerifiedSNs(prev => {
+      if (prev.includes(sn)) return prev.filter(s => s !== sn)
+      return [...prev, sn]
+    })
   }
 
   const handleScanInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const sn = scanInput.trim()
       if (modalTicket?.assetType === 'NON_SERIALIZED') {
+        if (modalTicket.assetCode && sn.toUpperCase() !== modalTicket.assetCode.toUpperCase()) {
+          toast.error(`Kode salah. Harap ketik/scan QR Master yang benar.`)
+          return
+        }
         verifySN(sn)
         setScanInput('')
-      } else if (modalTicket?.allocatedUnits?.includes(sn)) {
-        verifySN(sn)
-        setScanInput('')
+      } else if (modalTicket?.allocatedUnits && modalTicket.allocatedUnits.length > 0) {
+        if (modalTicket.allocatedUnits.includes(sn)) {
+          verifySN(sn)
+          setScanInput('')
+        } else {
+          toast.error(`Serial Number ${sn} tidak valid untuk tiket ini.`)
+        }
       } else {
-        alert(`Serial Number ${sn} tidak valid untuk tiket ini.`)
+        // Fallback for legacy tickets without allocatedUnits
+        if (modalTicket && verifiedSNs.length < modalTicket.jumlah) {
+          verifySN(sn)
+          setScanInput('')
+        } else {
+          toast.error(`Kapasitas penuh.`)
+        }
       }
     }
   }
@@ -60,17 +95,30 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
       const scannedTicket = localTickets.find(t => t.allocatedUnits?.includes(sn) || t.id === sn);
       if (scannedTicket) {
         handleOpenProcess(scannedTicket, sn);
-        showToast(`Aset ${sn} ditemukan, memproses pengembalian...`);
+        toast.success(`Aset ${sn} ditemukan, memproses pengembalian...`);
       } else {
-        alert(`Aset dengan kode ${sn} tidak ditemukan dalam daftar peminjaman aktif.`);
+        toast.error(`Aset dengan kode ${sn} tidak ditemukan dalam daftar peminjaman aktif.`);
       }
     } else {
       if (modalTicket?.assetType === 'NON_SERIALIZED') {
+        if (modalTicket.assetCode && sn.toUpperCase() !== modalTicket.assetCode.toUpperCase()) {
+          toast.error(`Kode salah. Harap ketik/scan QR Master yang benar.`)
+          return
+        }
         verifySN(sn)
-      } else if (modalTicket?.allocatedUnits?.includes(sn)) {
-        verifySN(sn)
+      } else if (modalTicket?.allocatedUnits && modalTicket.allocatedUnits.length > 0) {
+        if (modalTicket.allocatedUnits.includes(sn)) {
+          verifySN(sn)
+        } else {
+          toast.error(`Kode QR Tidak Dikenali (Bukan S/N yang dipinjam pada tiket ini).`)
+        }
       } else {
-        alert(`Serial Number ${sn} tidak valid untuk tiket ini.`)
+        // Fallback
+        if (modalTicket && verifiedSNs.length < modalTicket.jumlah) {
+          verifySN(sn)
+        } else {
+          toast.error(`Kapasitas penuh.`)
+        }
       }
     }
   }
@@ -79,8 +127,6 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
     setModalTicket(ticket)
     setVerifiedSNs(preScannedSN ? [preScannedSN] : [])
     setScanInput('')
-    setIsMaintenance(false)
-    setMaintenanceNotes('')
   }
 
   const filteredTickets = localTickets.filter(t => 
@@ -100,25 +146,19 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
   const totalPages = Math.ceil(filteredTickets.length / itemsPerPage)
   const paginatedTickets = filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
-
-
   const handleConfirmReturn = async () => {
     if (!modalTicket) return
 
     if (modalTicket.dbId) {
-      const res = await verifyAssetReturnHandover(modalTicket.dbId, isMaintenance, maintenanceNotes)
+      const res = await verifyAssetReturnHandover(modalTicket.dbId, false, '')
       if (!res.success) {
-        alert(`Gagal memverifikasi pengembalian: ${res.error}`)
+        toast.error(`Gagal memverifikasi pengembalian: ${res.error}`)
         return
       }
     }
 
-    setLocalTickets(prev => prev.filter(t => t.id !== modalTicket.id))
-    showToast(`✓ Tiket pengembalian ${modalTicket.id} berhasil dikonfirmasi${isMaintenance ? ' (Dialihkan ke Maintenance)' : ''}.`)
+    onSuccess?.()
+    toast.success(`Tiket pengembalian ${modalTicket.id} berhasil dikonfirmasi.`)
     setModalTicket(null)
   }
 
@@ -150,13 +190,6 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
 
   return (
     <div className="font-sans">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-[99] px-5 py-3 bg-gray-900 text-white rounded-lg shadow-xl text-sm font-medium animate-fade-in flex items-center gap-2">
-          {toast}
-        </div>
-      )}
-
       {/* Main Content Area */}
       <div className="flex flex-col gap-4 sm:gap-6 lg:gap-8">
         
@@ -418,7 +451,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
               </div>
 
               {/* Langkah 1: Barang Serialized */}
-              {modalTicket.assetType !== 'NON_SERIALIZED' && modalTicket.allocatedUnits && modalTicket.allocatedUnits.length > 0 && (
+              {modalTicket.assetType !== 'NON_SERIALIZED' && (
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                     <span className="text-sm font-bold text-gray-900">Evaluasi Fisik Aset (Scan Satu Per Satu)</span>
@@ -450,24 +483,52 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                     />
                   )}
                   <div className="p-4 space-y-3 max-h-60 overflow-y-auto">
-                    {modalTicket.allocatedUnits?.map(sn => {
-                      const isVerified = verifiedSNs.includes(sn)
-                      return (
-                        <div key={sn} className={`flex flex-col gap-3 p-3 rounded-xl border ${isVerified ? 'bg-blue-50/30 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-6 h-6 rounded-md flex items-center justify-center ${isVerified ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-200 text-gray-400'}`}>
-                                {isVerified ? <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : <span className="text-[10px] font-bold">SN</span>}
+                    {modalTicket.allocatedUnits && modalTicket.allocatedUnits.length > 0 ? (
+                      modalTicket.allocatedUnits.map(sn => {
+                        const isVerified = verifiedSNs.includes(sn)
+                        return (
+                          <div key={sn} className={`flex flex-col gap-3 p-3 rounded-xl border ${isVerified ? 'bg-blue-50/30 border-blue-200' : 'bg-gray-50 border-gray-200'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <button 
+                                  onClick={() => toggleSN(sn)}
+                                  title={isVerified ? "Batal verifikasi" : "Verifikasi manual (Stiker Rusak)"}
+                                  className={`w-6 h-6 rounded-md flex items-center justify-center transition-colors cursor-pointer hover:opacity-80 ${isVerified ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-200 text-gray-400 hover:bg-gray-300'}`}
+                                >
+                                  {isVerified ? <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg> : <span className="text-[10px] font-bold">SN</span>}
+                                </button>
+                                <span className={`text-sm font-mono font-bold ${isVerified ? 'text-gray-900' : 'text-gray-500'}`}>
+                                  {sn}
+                                </span>
                               </div>
-                              <span className={`text-sm font-mono font-bold ${isVerified ? 'text-gray-900' : 'text-gray-500'}`}>
-                                {sn}
-                              </span>
+                              {isVerified && <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Terverifikasi</span>}
                             </div>
-                            {isVerified && <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Terverifikasi</span>}
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })
+                    ) : (
+                      <>
+                        {verifiedSNs.map(sn => (
+                          <div key={sn} className="flex flex-col gap-3 p-3 rounded-xl border bg-blue-50/30 border-blue-200">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-6 h-6 rounded-md flex items-center justify-center bg-blue-600 text-white shadow-sm">
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                </div>
+                                <span className="text-sm font-mono font-bold text-gray-900">{sn}</span>
+                              </div>
+                              <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Terverifikasi</span>
+                            </div>
+                          </div>
+                        ))}
+                        {verifiedSNs.length < modalTicket.jumlah && (
+                          <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl">
+                            <p className="text-sm font-bold text-gray-700 mb-2">Menunggu Scan...</p>
+                            <p className="text-xs text-gray-500 mb-4">Aset ini tidak memiliki rekaman S/N awal. Silakan scan {modalTicket.jumlah} unit secara manual.</p>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -481,7 +542,7 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                       <input 
                         type="text"
                         className="w-full bg-white border border-blue-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12 disabled:bg-gray-100"
-                        placeholder="Scan S/N di sini..."
+                        placeholder="Ketik Kode Master Aset..."
                         value={scanInput}
                         onChange={e => setScanInput(e.target.value)}
                         onKeyDown={handleScanInput}
@@ -522,39 +583,13 @@ export default function ReturnProcess({ tickets = initialTickets }: Props) {
                       <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl">
                         <p className="text-sm font-bold text-gray-700 mb-2">Menunggu Scan...</p>
                         <p className="text-xs text-gray-500 mb-4">Cukup pindai salah satu dari {modalTicket.jumlah} unit {modalTicket.alat} yang dikembalikan.</p>
-                           <button onClick={() => verifySN('MASTER-QR')} className="text-xs px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm font-bold hover:bg-blue-700 transition-colors">
-                             Simulasi Scan 1 Unit
-                           </button>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Opsi Maintenance / Kalibrasi */}
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isMaintenance}
-                    onChange={(e) => setIsMaintenance(e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-bold text-gray-800">Aset Perlu Maintenance / Kalibrasi / Inspeksi HSSE</span>
-                </label>
-                {isMaintenance && (
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Catatan Pemeliharaan / Kendala</label>
-                    <input
-                      type="text"
-                      value={maintenanceNotes}
-                      onChange={(e) => setMaintenanceNotes(e.target.value)}
-                      placeholder="Mis. Perlu kalibrasi sensor atau pembersihan rutin..."
-                      className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                )}
-              </div>
+
 
             </div>
 

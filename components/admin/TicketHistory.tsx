@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
-import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 
 interface Props {
@@ -30,7 +29,8 @@ function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus,
   )
 }
 
-export default function TicketHistory({ tickets = initialTickets }: Props) {
+export default function TicketHistory({ tickets = [] }: Props) {
+
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
 
@@ -164,7 +164,7 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  {['ID Pengajuan', 'Pemohon', 'Aset & Lokasi', 'Kuantitas', 'Periode Pinjam', 'Status Akhir'].map((h, i) => (
+                  {['ID Pengajuan', 'Pemohon', 'Aset', 'Kuantitas', 'Periode Pinjam', 'Status Akhir'].map((h, i) => (
                     <th key={i} className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -189,10 +189,10 @@ export default function TicketHistory({ tickets = initialTickets }: Props) {
                       <div className="text-xs text-blue-600 font-medium mt-0.5">{ticket.jabatan}</div>
                     </td>
 
-                    {/* Aset & Lokasi */}
+                    {/* Aset & Alasan */}
                     <td className="px-6 py-4">
                       <p className="text-sm font-bold text-gray-900">{ticket.alat}</p>
-                      <p className="text-xs text-gray-500 mt-1">{ticket.lokasi}</p>
+
                       {ticket.allocatedUnits && ticket.allocatedUnits.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                             {ticket.allocatedUnits.map((sn, idx) => {

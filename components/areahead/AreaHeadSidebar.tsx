@@ -102,9 +102,7 @@ export default function Sidebar({ sidebarOpen, activeNav, setActiveNav, setSideb
           <NavIcon label={item.label} active={isActive} />
           {sidebarOpen && <span className="truncate">{item.label}</span>}
           {sidebarOpen && item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
-            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-md ${
-              isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
-            }`}>
+            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500 text-white">
               {pendingCount}
             </span>
           )}

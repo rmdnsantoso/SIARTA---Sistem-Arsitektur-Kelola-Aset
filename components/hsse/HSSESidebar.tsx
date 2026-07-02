@@ -13,7 +13,7 @@ interface HSSESidebarProps {
 function NavIcon({ label, active }: { label: string; active: boolean }) {
   const cls = active ? 'text-blue-600' : 'text-gray-500'
   switch (label) {
-    case 'Verifikasi Peminjaman':
+    case 'Verifikasi Pinjam':
       return (
         <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -56,7 +56,7 @@ function NavIcon({ label, active }: { label: string; active: boolean }) {
 }
 
 const mainNavItems = [
-  { label: 'Verifikasi Peminjaman' },
+  { label: 'Verifikasi Pinjam' },
   { label: 'Pengembalian Aset' },
   { label: 'Master Aset' },
   { label: 'Pemeliharaan Aset' },
@@ -88,10 +88,8 @@ export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, se
         >
           <NavIcon label={item.label} active={isActive} />
           {sidebarOpen && <span className="truncate">{item.label}</span>}
-          {sidebarOpen && item.label === 'Verifikasi Peminjaman' && pendingCount > 0 && (
-            <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-md ${
-              isActive ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-700'
-            }`}>
+          {sidebarOpen && item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
+            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-500 text-white">
               {pendingCount}
             </span>
           )}
@@ -101,7 +99,7 @@ export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, se
   }
 
   const mobilePrimaryTabs = [
-    { label: 'Verifikasi Peminjaman', shortLabel: 'Verifikasi' },
+    { label: 'Verifikasi Pinjam', shortLabel: 'Verifikasi' },
     { label: 'Pengembalian Aset', shortLabel: 'Kembali' },
     { label: 'Master Aset', shortLabel: 'Master' },
     { label: 'Pemeliharaan Aset', shortLabel: 'Pemeliharaan' },
@@ -174,7 +172,7 @@ export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, se
               <span className="text-[10px] text-center leading-tight mt-1 truncate w-full">
                 {item.shortLabel}
               </span>
-              {item.label === 'Verifikasi Peminjaman' && pendingCount > 0 && (
+              {item.label === 'Verifikasi Pinjam' && pendingCount > 0 && (
                 <span className="absolute top-1 right-2 bg-red-600 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
                   {pendingCount}
                 </span>

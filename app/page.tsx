@@ -3,19 +3,17 @@ import LoginForm from '../components/auth/LoginForm'
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white font-sans text-gray-900 relative overflow-hidden selection:bg-blue-100 selection:text-blue-900">
-      
-      {/* Banner Area (Left side on desktop) */}
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-gradient-to-br from-[#0B1120] via-[#0d2050] to-[#1a4fa3] font-sans select-none overflow-auto lg:overflow-hidden">
+
+      {/* Left: Banner — hidden on xs mobile, compact on sm, full on lg+ */}
       <LoginBanner />
 
-      {/* Form Area (Right side on desktop) */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-20 relative z-10">
-        
-        {/* Subtle background blob for mobile/tablet only */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob lg:hidden pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000 lg:hidden pointer-events-none"></div>
+      {/* Right: Form — stacks below banner on mobile, side-by-side on lg+ */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-8 sm:py-10 lg:py-0 relative z-10">
+        {/* Subtle light background effect only on right side (desktop) */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-100/20 to-white/30 lg:from-blue-200/20 lg:to-white/50 pointer-events-none" />
 
-        <div className="w-full max-w-md relative">
+        <div className="w-full max-w-sm sm:max-w-md relative z-10">
           <LoginForm />
         </div>
       </div>

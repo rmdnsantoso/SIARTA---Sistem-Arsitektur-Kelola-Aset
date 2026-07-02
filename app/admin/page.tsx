@@ -21,18 +21,23 @@ export default function AdminDashboard() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const dbTickets = await getAllTickets()
-        setTickets(adaptTickets(dbTickets))
-      } catch (err) {
-        console.error('Gagal memuat tiket admin:', err)
-      } finally {
-        setLoading(false)
-      }
+  const refreshData = async () => {
+    try {
+      const dbTickets = await getAllTickets()
+      setTickets(adaptTickets(dbTickets))
+    } catch (err) {
+      console.error('Gagal memuat ulang tiket admin:', err)
+    } finally {
+      setLoading(false)
     }
-    fetchData()
+  }
+
+  useEffect(() => {
+    refreshData()
+    const interval = setInterval(() => {
+      refreshData()
+    }, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const adminPendingCount = tickets.filter(
@@ -77,8 +82,8 @@ export default function AdminDashboard() {
             </div>
           )}
           
-          {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={tickets} />}
-          {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={tickets} />}
+          {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={tickets} onSuccess={refreshData} />}
+          {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
