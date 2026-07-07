@@ -181,6 +181,38 @@ export async function deleteAsset(id: string) {
   }
 }
 
+export async function archiveAsset(id: string) {
+  try {
+    await requireRole([Role.Admin])
+    const asset = await prisma.asset.findUnique({ where: { id } })
+    if (!asset) throw new Error('Aset tidak ditemukan.')
+    
+    const updated = await prisma.asset.update({ 
+      where: { id }, 
+      data: { isActive: false } 
+    })
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function unarchiveAsset(id: string) {
+  try {
+    await requireRole([Role.Admin])
+    const asset = await prisma.asset.findUnique({ where: { id } })
+    if (!asset) throw new Error('Aset tidak ditemukan.')
+    
+    const updated = await prisma.asset.update({ 
+      where: { id }, 
+      data: { isActive: true } 
+    })
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
 // ============================================================
 // UNIT CRUD OPERATIONS
 // ============================================================
@@ -279,9 +311,14 @@ export async function getAvailableSerials(assetId: string) {
   try {
     const units = await prisma.physicalUnit.findMany({
       where: { assetId, status: 'Tersedia' },
-      select: { serialNumber: true }
+      select: { serialNumber: true, unitId: true }
     })
-    return { success: true, data: units.map(u => u.serialNumber) }
+    const validCodes = units.flatMap(u => {
+      const codes = [u.unitId]
+      if (u.serialNumber && u.serialNumber !== 'N/A') codes.push(u.serialNumber)
+      return codes
+    })
+    return { success: true, data: validCodes }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

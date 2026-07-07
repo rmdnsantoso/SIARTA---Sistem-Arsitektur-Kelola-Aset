@@ -165,10 +165,10 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
       for (const sn of serials) {
         await prisma.physicalUnit.updateMany({
-          where: { assetId: ticket.assetId, serialNumber: sn },
+          where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] },
           data: { status: 'Dipinjam' }
         })
-        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, serialNumber: sn } })
+        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] } })
         for (const u of units) {
           await prisma.unitHistory.create({
             data: {
@@ -242,10 +242,10 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
       for (const sn of serials) {
         const unitStatus = isNeedingMaintenance ? 'Maintenance' : 'Tersedia'
         await prisma.physicalUnit.updateMany({
-          where: { assetId: ticket.assetId, serialNumber: sn },
+          where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] },
           data: { status: unitStatus }
         })
-        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, serialNumber: sn } })
+        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] } })
         for (const u of units) {
           await prisma.unitHistory.create({
             data: {
@@ -261,21 +261,33 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
 
     if (isNeedingMaintenance) {
       // Buat record maintenance baru agar terdeteksi di board AssetMaintenance
-      const count = await prisma.maintenanceRecord.count()
-      const recordCode = `ESC-${String(count + 1).padStart(3, '0')}`
+      const lastRecord = await prisma.maintenanceRecord.findFirst({ orderBy: { createdAt: 'desc' } })
+      let nextNum = 1
+      if (lastRecord && lastRecord.recordCode.startsWith('ESC-')) {
+        const parts = lastRecord.recordCode.split('-')
+        const lastNum = parseInt(parts[1])
+        if (!isNaN(lastNum)) nextNum = lastNum + 1
+      }
+      const recordCode = `ESC-${String(nextNum).padStart(3, '0')}`
       const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })
       
       await prisma.maintenanceRecord.create({
         data: {
           recordCode,
-          assetId: ticket.assetId,
-          assetName: ticket.asset.name,
-          assetCode: ticket.asset.assetCode,
           issue: maintenanceNotes || 'Dilaporkan rusak saat pengembalian',
           status: 'Menunggu Tindakan',
           reporterId: user.id,
           reporterName: `${user.name} (Admin)`,
           dateReported: today,
+          items: {
+            create: [{
+              assetId: ticket.assetId,
+              assetName: ticket.asset.name,
+              assetCode: ticket.asset.assetCode,
+              isSerialized: ticket.asset.isSerialized,
+              qty: 1
+            }]
+          }
         }
       })
 

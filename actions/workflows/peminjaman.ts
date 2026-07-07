@@ -31,8 +31,19 @@ export async function createBorrowTicket(input: CreateTicketInput) {
     }
 
     // 3. Buat Ticket dan catat log awal
-    const ticketCount = await prisma.ticket.count()
-    const ticketCode = `TK-${String(ticketCount + 1).padStart(3, '0')}`
+    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // format: YYMMDD
+    const lastTicket = await prisma.ticket.findFirst({ 
+      where: { ticketCode: { startsWith: `TK-${todayStr}-` } },
+      orderBy: { createdAt: 'desc' } 
+    })
+    
+    let nextNum = 1
+    if (lastTicket) {
+      const parts = lastTicket.ticketCode.split('-')
+      const lastNum = parseInt(parts[2])
+      if (!isNaN(lastNum)) nextNum = lastNum + 1
+    }
+    const ticketCode = `TK-${todayStr}-${String(nextNum).padStart(3, '0')}`
 
     const ticket = await prisma.ticket.create({
       data: {

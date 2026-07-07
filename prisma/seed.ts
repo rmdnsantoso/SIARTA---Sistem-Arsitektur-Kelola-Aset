@@ -447,32 +447,54 @@ async function main() {
   // ============================================================
   // 5. SEED MAINTENANCE RECORDS
   // ============================================================
-  await prisma.maintenanceRecord.createMany({
-    data: [
-      {
-        recordCode: 'ESC-A01', assetId: multimeter.id, assetName: multimeter.name, assetCode: multimeter.assetCode,
-        serialNumber: 'FLK-112', issue: 'Layar LCD bergaris, pembacaan tidak terbaca jelas.',
-        status: 'Menunggu Tindakan', resolution: 'Menunggu Tindakan',
-        reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
-        dateReported: '15 Jun 2026',
-      },
-      {
-        recordCode: 'ESC-H01', assetId: helmet.id, assetName: helmet.name, assetCode: helmet.assetCode,
-        issue: 'Retak struktural pada crown, tidak aman untuk digunakan.',
-        status: 'Selesai Diperbaiki', resolution: 'Selesai Diperbaiki',
-        reporterId: hsse.id, reporterName: 'Hendra (HSSE)',
-        dateReported: '10 Jun 2026', dateResolved: '12 Jun 2026',
-        notes: 'Helm diganti unit baru dari stok cadangan.',
-      },
-      {
-        recordCode: 'ESC-H02', assetId: weldingMask.id, assetName: weldingMask.name, assetCode: weldingMask.assetCode,
-        serialNumber: 'WM-002', issue: 'Auto-darkening tidak berfungsi, lensa macet di posisi gelap.',
-        status: 'Dimusnahkan', resolution: 'Dimusnahkan',
-        reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
-        dateReported: '08 Jun 2026', dateResolved: '09 Jun 2026',
-        notes: 'Komponen sensor tidak tersedia di pasaran. Write-off.',
-      },
-    ]
+  await prisma.maintenanceRecord.create({
+    data: {
+      recordCode: 'ESC-A01', 
+      issue: 'Layar LCD bergaris, pembacaan tidak terbaca jelas.',
+      status: 'Menunggu Tindakan', resolution: 'Menunggu Tindakan',
+      reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
+      dateReported: '15 Jun 2026',
+      items: {
+        create: [{
+          assetId: multimeter.id, assetName: multimeter.name, assetCode: multimeter.assetCode,
+          serialNumber: 'FLK-112', isSerialized: true
+        }]
+      }
+    }
+  })
+
+  await prisma.maintenanceRecord.create({
+    data: {
+      recordCode: 'ESC-H01',
+      issue: 'Retak struktural pada crown, tidak aman untuk digunakan.',
+      status: 'Selesai Diperbaiki', resolution: 'Selesai Diperbaiki',
+      reporterId: hsse.id, reporterName: 'Hendra (HSSE)',
+      dateReported: '10 Jun 2026', dateResolved: '12 Jun 2026',
+      notes: 'Helm diganti unit baru dari stok cadangan.',
+      items: {
+        create: [{
+          assetId: helmet.id, assetName: helmet.name, assetCode: helmet.assetCode,
+          qty: 1, isSerialized: false
+        }]
+      }
+    }
+  })
+
+  await prisma.maintenanceRecord.create({
+    data: {
+      recordCode: 'ESC-H02',
+      issue: 'Auto-darkening tidak berfungsi, lensa macet di posisi gelap.',
+      status: 'Dimusnahkan', resolution: 'Dimusnahkan',
+      reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
+      dateReported: '08 Jun 2026', dateResolved: '09 Jun 2026',
+      notes: 'Komponen sensor tidak tersedia di pasaran. Write-off.',
+      items: {
+        create: [{
+          assetId: weldingMask.id, assetName: weldingMask.name, assetCode: weldingMask.assetCode,
+          serialNumber: 'WM-002', isSerialized: true
+        }]
+      }
+    }
   })
   console.log('🔧 Maintenance Records berhasil dibuat.')
 
