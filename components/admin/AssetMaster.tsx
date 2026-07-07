@@ -451,14 +451,14 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       {/* ── Top Toolbar & Filters ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col shrink-0">
         {/* Header Row: Title, Search, Add Button */}
-        <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-gray-900">Master Aset</h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">Kelola data seluruh aset dan inventaris perusahaan.</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="relative w-full sm:w-64">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
+            <div className="relative w-full sm:w-72">
               <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
@@ -467,14 +467,14 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 placeholder="Cari Kode Aset atau nama..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none shadow-sm transition-all"
               />
             </div>
             
             {!isViewOnly && (
               <button 
                 onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm shrink-0"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 hover:-translate-y-[1px] transition-all shadow-md hover:shadow-lg shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 Input Barang
@@ -482,7 +482,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             )}
           </div>
         </div>
-
+        
         {/* Filters Row */}
         <div className="p-3 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-4 items-center">
           {/* Tipe Pelacakan */}
@@ -618,21 +618,21 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
-                          <button
-                            onClick={() => setAssetActionConfirm({ id: a.id, action: a.isActive === false ? 'unarchive' : 'archive' })}
-                            className={`flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 border rounded-lg transition-colors flex items-center justify-center ${
-                              a.isActive === false 
-                                ? 'bg-white border-green-200 text-green-600 hover:bg-green-50' 
-                                : 'bg-white border-amber-200 text-amber-600 hover:bg-amber-50'
-                            }`}
-                            title={a.isActive === false ? "Aktifkan Kembali" : "Arsipkan Barang"}
-                          >
-                            {a.isActive === false ? (
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                            )}
-                          </button>
+                        <button
+                          onClick={() => setAssetActionConfirm({ id: a.id, action: a.isActive === false ? 'unarchive' : 'archive' })}
+                          className={`flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 border rounded-lg transition-colors flex items-center justify-center ${
+                            a.isActive === false 
+                              ? 'bg-white border-green-200 text-green-600 hover:bg-green-50' 
+                              : 'bg-white border-amber-200 text-amber-600 hover:bg-amber-50'
+                          }`}
+                          title={a.isActive === false ? "Aktifkan Kembali" : "Arsipkan Barang"}
+                        >
+                          {a.isActive === false ? (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                          )}
+                        </button>
                       </div>
                     )}
                   </div>

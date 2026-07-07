@@ -34,18 +34,22 @@ enum TicketStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      Role     @default(Peminjam)
-  nip       String? // Nomor Induk Pegawai
-  wa        String? // Nomor WhatsApp
-  jabatan   String? // Jabatan / Posisi
-  office    String? // Kantor / Site
-  regional  String? // Regional / Area
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String
+  role           Role     @default(Peminjam)
+  nip            String? // Nomor Induk Pegawai
+  wa             String? // Nomor WhatsApp
+  jabatan        String? // Jabatan / Posisi
+  office         String? // Kantor / Site
+  regional       String? // Regional / Area
+  isActive       Boolean  @default(true)
+  passwordHash   String? // Hash bcrypt dari password
+  tempPassword   String? // Password sementara plain-text (dihapus setelah login pertama)
+  faceDescriptor String? // JSON array 128-dimensi face descriptor (face-api.js)
+  faceRegistered Boolean  @default(false) // Apakah wajah sudah direkam
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   tickets            Ticket[]            @relation("PeminjamTickets")
   maintenanceReports MaintenanceRecord[] @relation("ReporterRecords")
@@ -126,14 +130,16 @@ model TrackingLog {
 }
 
 model Notification {
-  id         String   @id @default(uuid())
-  title      String
-  desc       String
-  type       String // info, success, warning, urgent
-  targetRole String // Semua, Admin, Peminjam, HSSE, Area Head
-  unread     Boolean  @default(true)
-  time       String // e.g. 10 mnt lalu
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  recipientId String?  // (Opsional) Jika ditujukan untuk satu user spesifik
+  targetRole  Role?    // (Opsional) Jika ditujukan untuk satu role (Admin, HSSE, etc.)
+  title       String
+  message     String
+  type        String   @default("info") // info, success, warning, urgent
+  isRead      Boolean  @default(false)
+  link        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // Riwayat pemeliharaan aset (selesai diperbaiki atau write-off)

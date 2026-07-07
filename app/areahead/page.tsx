@@ -15,6 +15,7 @@ import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistoryAreaHead from '../../components/areahead/MaintenanceHistoryAreaHead'
 import { getTicketsForAreaHead } from '../../actions/core/ticket'
 import { approveTicketByAreaHead, rejectTicketByAreaHead } from '../../actions/workflows/approval'
+import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
 
 export default function ApprovalDashboard() {
@@ -23,11 +24,18 @@ export default function ApprovalDashboard() {
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [modal, setModal] = useState<{ ticket: Ticket; action: 'Setujui' | 'Tolak' } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
   const refreshData = async () => {
     try {
-      const dbTickets = await getTicketsForAreaHead()
+      const [dbTickets, sessionRes] = await Promise.all([
+        getTicketsForAreaHead(),
+        getLoggedInUser()
+      ])
       setTickets(adaptTickets(dbTickets))
+      if (sessionRes.success && sessionRes.user) {
+        setCurrentUser({ id: sessionRes.user.id, name: sessionRes.user.name, role: sessionRes.user.role })
+      }
     } catch (err) {
       console.error('Gagal memuat ulang data area head:', err)
     } finally {
@@ -108,14 +116,16 @@ export default function ApprovalDashboard() {
         setSidebarOpen={setSidebarOpen}
         activeNav={activeNav} 
         setActiveNav={setActiveNav} 
-        pendingCount={pendingCount} 
+        pendingCount={pendingCount}
+        sessionUser={currentUser}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
-          userName="Pak Joko"
+          userName={currentUser?.name || 'Area Head'}
+          userId={currentUser?.id}
           roleName="Area Head"
           hideHamburgerOnMobile={true}
         />
@@ -142,7 +152,7 @@ export default function ApprovalDashboard() {
           )}
 
           {activeNav === 'Master Aset' && <AssetMaster isViewOnly={true} />}
-          {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} />}
+          {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} currentUserId={currentUser?.id} />}
           {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistoryAreaHead />}
         </div>

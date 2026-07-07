@@ -3,7 +3,7 @@
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus } from '../../app/generated/prisma'
-import { createNotification } from '../core/notif'
+import { createNotification } from '../core/notification'
 
 // Tipe lengkap tiket dengan relasi (dipakai sebagai return type)
 export type TicketWithRelations = Awaited<ReturnType<typeof getAllTickets>>[number]
