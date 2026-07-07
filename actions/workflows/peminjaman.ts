@@ -3,7 +3,7 @@
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
-import { createNotification } from '../core/notif'
+import { createNotification } from '../core/notification'
 
 interface CreateTicketInput {
   assetId: string

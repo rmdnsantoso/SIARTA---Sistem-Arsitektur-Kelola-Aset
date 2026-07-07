@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import UserProfileModal from '../shared/UserProfileModal'
 
 interface HSSESidebarProps {
   sidebarOpen: boolean
-  setSidebarOpen: (open: boolean) => void
   activeNav: string
   setActiveNav: (nav: string) => void
+  setSidebarOpen?: (open: boolean) => void
   pendingCount?: number
+  sessionUser?: { id: string; name: string; role: string } | null
 }
 
 function NavIcon({ label, active }: { label: string; active: boolean }) {
@@ -50,6 +53,12 @@ function NavIcon({ label, active }: { label: string; active: boolean }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
+    case 'Kelola Pengguna':
+      return (
+        <svg className={`w-5 h-5 ${cls}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      )
     default:
       return null
   }
@@ -60,6 +69,7 @@ const mainNavItems = [
   { label: 'Pengembalian Aset' },
   { label: 'Master Aset' },
   { label: 'Pemeliharaan Aset' },
+  { label: 'Kelola Pengguna' },
 ]
 
 const bottomNavItems = [
@@ -67,8 +77,14 @@ const bottomNavItems = [
   { label: 'Riwayat Pemeliharaan' },
 ]
 
-export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, setActiveNav, pendingCount = 0 }: HSSESidebarProps) {
+export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, setActiveNav, pendingCount = 0, sessionUser }: HSSESidebarProps) {
   const [showMoreMenu, setShowMoreMenu] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const router = useRouter()
+
+  const displayName = sessionUser?.name || 'HSSE'
+  const displayRole = sessionUser?.role || 'HSSE'
+  const displayInitials = displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
 
   const renderNavItems = (items: { label: string }[]) => {
     return items.map((item) => {
@@ -106,6 +122,7 @@ export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, se
   ]
 
   const mobileMoreItems = [
+    { label: 'Kelola Pengguna' },
     { label: 'Riwayat Peminjaman' },
     { label: 'Riwayat Pemeliharaan' },
   ]
@@ -140,15 +157,18 @@ export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, se
 
         {sidebarOpen && (
           <div className="p-4 border-t border-gray-200 bg-gray-50">
-            <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsProfileModalOpen(true)}
+              className="flex items-center gap-3 w-full hover:bg-gray-200/50 p-1.5 rounded-lg transition-colors text-left"
+            >
               <div className="w-9 h-9 rounded bg-blue-600 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-white">HR</span>
+                <span className="text-sm font-bold text-white">{displayInitials}</span>
               </div>
-              <div className="overflow-hidden">
-                <p className="text-sm font-semibold text-gray-900 truncate">Hendra</p>
-                <p className="text-xs text-gray-500 truncate">HSSE</p>
+              <div className="overflow-hidden w-full">
+                <p className="text-sm font-semibold text-gray-900 break-words whitespace-pre-wrap leading-tight mb-0.5">{displayName}</p>
+                <p className="text-xs text-gray-500 break-words">{displayRole}</p>
               </div>
-            </div>
+            </button>
           </div>
         )}
       </aside>
@@ -234,10 +254,36 @@ export default function HSSESidebar({ sidebarOpen, setSidebarOpen, activeNav, se
                   </button>
                 )
               })}
+              
+              <div className="my-2 border-t border-gray-100"></div>
+              
+              <button
+                onClick={() => {
+                  setShowMoreMenu(false)
+                  setIsProfileModalOpen(true)
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50"
+              >
+                <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-white">{displayInitials}</span>
+                </div>
+                <div className="flex flex-col items-start overflow-hidden">
+                  <span className="text-sm font-bold text-gray-900 break-words text-left leading-tight mb-0.5">{displayName}</span>
+                  <span className="text-[10px] text-gray-500">{displayRole}</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
       )}
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        userId={sessionUser?.id || ''}
+        userName={displayName}
+        roleName={displayRole}
+      />
     </>
   )
 }

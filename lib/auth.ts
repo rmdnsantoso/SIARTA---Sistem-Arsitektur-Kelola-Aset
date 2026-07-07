@@ -1,47 +1,47 @@
 import { prisma } from './prisma'
 import { Role } from '../app/generated/prisma'
+import { getCurrentUser } from './session'
 
-interface SimulatedSession {
-  user: {
-    id: string
-    name: string
-    email: string
-    role: Role
-  }
-}
-
-// Simulasi penyimpanan sesi aktif (dalam implementasi nyata, gunakan NextAuth / Auth.js / Cookies)
-let currentSimulatedUser: { id: string; name: string; email: string; role: Role } = {
-  id: 'usr-peminjam-01',
-  name: 'Ahmad',
-  email: 'ahmad@siarta.com',
-  role: Role.Peminjam
-}
-
-export async function getSimulatedSession(): Promise<SimulatedSession> {
-  // Simulasikan pengambilan sesi dari database atau cookie
-  return {
-    user: currentSimulatedUser
-  }
-}
-
-export async function setSimulatedRole(role: Role, name: string, email: string) {
-  currentSimulatedUser = {
-    id: `usr-${role.toLowerCase()}-01`,
-    name,
-    email,
-    role
-  }
-  return currentSimulatedUser
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
 // Helper RBAC (Role-Based Access Control) untuk Server Actions
+// Membaca sesi dari cookie iron-session yang nyata
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function requireRole(allowedRoles: Role[]) {
-  let session = await getSimulatedSession()
-  if (!allowedRoles.includes(session.user.role)) {
-    // Otomatis sesuaikan role simulasi berdasarkan aksi yang dipanggil
-    await setSimulatedRole(allowedRoles[0], `Simulated ${allowedRoles[0]}`, `${allowedRoles[0].toLowerCase()}@siarta.com`)
-    session = await getSimulatedSession()
+  const user = await getCurrentUser()
+
+  // Jika tidak ada session → unauthorized
+  if (!user) {
+    // Fallback sementara untuk development: jika env dev, izinkan tanpa session
+    if (process.env.NODE_ENV === 'development') {
+      return {
+        id: 'dev-fallback',
+        name: 'Dev User',
+        email: 'dev@siarta.dev',
+        role: allowedRoles[0]
+      }
+    }
+    throw new Error('Unauthorized: Anda belum login.')
   }
-  return session.user
+
+  // Map session role string ke Prisma Role enum
+  const roleMap: Record<string, Role> = {
+    'Admin': Role.Admin,
+    'HSSE': Role.HSSE,
+    'AreaHead': Role.AreaHead,
+    'Peminjam': Role.Peminjam,
+  }
+
+  const userRole = roleMap[user.role] || Role.Peminjam
+
+  if (!allowedRoles.includes(userRole)) {
+    throw new Error(`Unauthorized: Role '${user.role}' tidak memiliki akses ke operasi ini.`)
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: userRole
+  }
 }

@@ -503,13 +503,13 @@ async function main() {
   // ============================================================
   await prisma.notification.createMany({
     data: [
-      { title: 'Pembaruan Sistem SIARTA v2.0', desc: 'Arsitektur backend baru dengan Prisma & Server Actions berhasil diluncurkan.', type: 'info', targetRole: 'Semua', unread: false, time: '1 jam lalu' },
-      { title: 'Verifikasi Pengembalian Selesai', desc: 'Ahmad telah mengembalikan 1 unit Chain Block 2T dalam kondisi baik.', type: 'success', targetRole: 'Admin', unread: true, time: '30 mnt lalu' },
-      { title: 'Stok Aset Kritis: APAR CO2', desc: 'Stok APAR CO2 di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan.', type: 'urgent', targetRole: 'Admin', unread: true, time: '2 jam lalu' },
-      { title: 'Menunggu Persetujuan Anda', desc: 'Tiket TKT-001 (Gas Detector) dari Budi Santoso menunggu verifikasi HSSE.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '1 jam lalu' },
-      { title: 'Pengajuan Disetujui!', desc: 'Tiket TKT-102 (Gas Detector) telah disetujui Area Head. Ambil di Gudang Utama.', type: 'success', targetRole: 'Peminjam', unread: true, time: '2 jam lalu' },
-      { title: 'Peringatan Masa Aktif Pinjaman', desc: 'Tiket TKT-101 (Helm Safety) akan jatuh tempo besok. Harap kembalikan tepat waktu.', type: 'warning', targetRole: 'Peminjam', unread: true, time: '3 jam lalu' },
-      { title: 'Laporan Kerusakan Baru', desc: 'Multimeter Fluke (AST-004) dilaporkan rusak oleh Admin. Status: Menunggu Tindakan.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '20 mnt lalu' },
+      { title: 'Pembaruan Sistem SIARTA v2.0', message: 'Arsitektur backend baru dengan Prisma & Server Actions berhasil diluncurkan.', type: 'info', targetRole: null, isRead: true },
+      { title: 'Verifikasi Pengembalian Selesai', message: 'Ahmad telah mengembalikan 1 unit Chain Block 2T dalam kondisi baik.', type: 'success', targetRole: Role.Admin, isRead: false },
+      { title: 'Stok Aset Kritis: APAR CO2', message: 'Stok APAR CO2 di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan.', type: 'urgent', targetRole: Role.Admin, isRead: false },
+      { title: 'Menunggu Persetujuan Anda', message: 'Tiket TKT-001 (Gas Detector) dari Budi Santoso menunggu verifikasi HSSE.', type: 'urgent', targetRole: Role.HSSE, isRead: false },
+      { title: 'Pengajuan Disetujui!', message: 'Tiket TKT-102 (Gas Detector) telah disetujui Area Head. Ambil di Gudang Utama.', type: 'success', targetRole: Role.Peminjam, isRead: false },
+      { title: 'Peringatan Masa Aktif Pinjaman', message: 'Tiket TKT-101 (Helm Safety) akan jatuh tempo besok. Harap kembalikan tepat waktu.', type: 'warning', targetRole: Role.Peminjam, isRead: false },
+      { title: 'Laporan Kerusakan Baru', message: 'Multimeter Fluke (AST-004) dilaporkan rusak oleh Admin. Status: Menunggu Tindakan.', type: 'urgent', targetRole: Role.HSSE, isRead: false },
     ]
   })
   console.log('🔔 Notifications berhasil dibuat.')

@@ -3,7 +3,7 @@
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, AssetStatus } from '../../app/generated/prisma'
-import { createNotification } from './notif'
+import { createNotification } from './notification'
 
 // ─── READ ─────────────────────────────────────────────────────────────────────
 

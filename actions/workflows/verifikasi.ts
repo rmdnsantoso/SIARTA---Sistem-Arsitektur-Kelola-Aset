@@ -3,7 +3,7 @@
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
-import { createNotification } from '../core/notif'
+import { createNotification } from '../core/notification'
 
 // 1. Admin menyetujui tahap pertama dan meneruskan ke HSSE (bukan langsung Area Head)
 export async function verifyTicketByAdmin(ticketId: string, notes?: string, allocatedSerials?: string[]) {

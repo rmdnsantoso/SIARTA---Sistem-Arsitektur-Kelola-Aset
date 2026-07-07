@@ -3,7 +3,7 @@
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus } from '../../app/generated/prisma'
-import { createNotification } from '../core/notif'
+import { createNotification } from '../core/notification'
 
 // 1. Area Head melakukan approval akhir
 export async function approveTicketByAreaHead(ticketId: string, notes?: string) {
