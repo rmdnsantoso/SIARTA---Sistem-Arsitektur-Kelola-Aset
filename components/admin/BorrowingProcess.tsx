@@ -19,20 +19,6 @@ type ModalState = {
   type: 'setujui' | 'tolak' | 'serah_terima' | 'detail'
 }
 
-function ConflictWarning({ conflictWith }: { conflictWith: string }) {
-  return (
-    <div className="flex items-start gap-1.5 mt-2 bg-red-50 border border-red-100 rounded p-2">
-      <svg className="w-4 h-4 text-red-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-      <span className="text-xs text-red-700">
-        Konflik Stok! Diminta juga oleh <strong>{conflictWith}</strong>.
-      </span>
-    </div>
-  )
-}
-
 export default function BorrowingProcess({ tickets = initialTickets, onSuccess }: Props) {
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets)
   
@@ -50,38 +36,34 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [validSerials, setValidSerials] = useState<string[]>([])
 
-  // Auto-close scanner when limit is reached
+  // Auto-close scanner when allocation limit is reached
   React.useEffect(() => {
     if (isScannerOpen && modal && modal.ticket.jumlah > 0) {
-      const targetLength = modal.ticket.assetType === 'NON_SERIALIZED' ? 1 : modal.ticket.jumlah;
+      const targetLength = modal.ticket.assetType === 'NON_SERIALIZED' ? 1 : modal.ticket.jumlah
       if (allocatedSerials.length >= targetLength) {
         setIsScannerOpen(false)
       }
     }
   }, [allocatedSerials, isScannerOpen, modal])
-  
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
   
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<'Semua' | 'Verifikasi Fisik' | 'Siap Serah Terima' | 'Konflik Stok'>('Semua')
+  const [activeFilter, setActiveFilter] = useState<'Semua' | 'Verifikasi Fisik' | 'Siap Serah Terima'>('Semua')
 
   const filteredTickets = localTickets.filter(t => {
-    const isVerifikasi = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && !t.conflictWith
+    const isVerifikasi = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin'
     const isSiapSerahTerima = t.overallStatus === 'Disetujui' && t.currentStage === 'Serah Terima'
-    const isKonflik = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && !!t.conflictWith
 
     let passesFilter = false
     if (activeFilter === 'Semua') {
-      passesFilter = isVerifikasi || isSiapSerahTerima || isKonflik || (t.overallStatus === 'Menunggu' && t.currentStage === 'Admin')
+      passesFilter = isVerifikasi || isSiapSerahTerima
     } else if (activeFilter === 'Verifikasi Fisik') {
-      passesFilter = t.overallStatus === 'Menunggu' && t.currentStage === 'Admin' && !t.conflictWith
+      passesFilter = isVerifikasi
     } else if (activeFilter === 'Siap Serah Terima') {
       passesFilter = isSiapSerahTerima
-    } else if (activeFilter === 'Konflik Stok') {
-      passesFilter = isKonflik
     }
 
     if (!passesFilter) return false
@@ -134,25 +116,35 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
 
     if (modal.ticket.assetType === 'SERIALIZED') {
       if (!validSerials.includes(code)) {
-        toast.error(`Kode QR Tidak Dikenali (Bukan S/N yang valid untuk ${modal.ticket.alat}).`, { id: 'err-qr' })
+        toast.error('QR Tidak Valid — bukan S/N yang terdaftar untuk aset ini.', { id: 'err-qr', duration: 3000 })
+        return
+      }
+      if (allocatedSerialsRef.current.includes(code)) {
+        toast.error('S/N ini sudah di-scan sebelumnya.', { duration: 2000, id: 'dup-sn' })
         return
       }
     } else {
       if (modal.ticket.assetCode && code.toUpperCase() !== modal.ticket.assetCode.toUpperCase()) {
-        toast.error(`Kode salah. Harap ketik/scan QR Master yang benar.`, { id: 'err-qr2' })
+        toast.error('Kode Salah — scan QR Master aset yang sesuai tiket ini.', { id: 'err-qr2', duration: 3000 })
+        return
+      }
+      if (allocatedSerialsRef.current.includes(code)) {
+        toast.error('Aset ini sudah terverifikasi.', { duration: 2000, id: 'dup-ns' })
         return
       }
     }
 
-    if (!allocatedSerialsRef.current.includes(code)) {
-      const newSerials = [...allocatedSerialsRef.current, code]
-      allocatedSerialsRef.current = newSerials
-      setAllocatedSerials(newSerials)
-      setCurrentScan('')
-      toast.success(`Berhasil scan: ${code}`, { duration: 1500, id: `succ-${code}` })
-    } else {
-      toast.error(`'${code}' sudah ditambahkan.`, { duration: 1500, id: `dup-${code}` })
-    }
+    const newSerials = [...allocatedSerialsRef.current, code]
+    allocatedSerialsRef.current = newSerials
+    setAllocatedSerials(newSerials)
+    setCurrentScan('')
+    toast.success(`Berhasil discan & ditambahkan: ${code}`, { duration: 1500, id: `succ-${code}` })
+  }
+
+  const handleRemoveSerial = (sn: string) => {
+    const newSerials = allocatedSerialsRef.current.filter(s => s !== sn)
+    allocatedSerialsRef.current = newSerials
+    setAllocatedSerials(newSerials)
   }
 
   const handleConfirm = async () => {
@@ -206,12 +198,10 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
   // Calculate stats
   const pendingVerifikasi = localTickets.filter(t => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin').length
   const pendingSerahTerima = localTickets.filter(t => t.overallStatus === 'Disetujui' && t.currentStage === 'Serah Terima').length
-  const konflikCount = localTickets.filter(t => t.conflictWith && t.overallStatus === 'Menunggu' && t.currentStage === 'Admin').length
 
   const stats = [
     { label: 'Verifikasi Fisik (Antrean)', value: pendingVerifikasi, iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4', colorTheme: 'blue' as const },
     { label: 'Siap Serah Terima', value: pendingSerahTerima, iconPath: 'M5 13l4 4L19 7', colorTheme: 'green' as const },
-    { label: 'Konflik Stok', value: konflikCount, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'red' as const },
   ]
 
   return (
@@ -220,7 +210,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
       <div className="flex flex-col gap-3 sm:gap-6 lg:gap-8">
         
         {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 lg:gap-6 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:gap-6">
           {stats.map((card) => (
             <StatCard key={card.label} {...card} />
           ))}
@@ -263,7 +253,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                 {isFilterOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
-                      {(['Semua', 'Verifikasi Fisik', 'Siap Serah Terima', 'Konflik Stok'] as const).map((filterOpt) => (
+                      {(['Semua', 'Verifikasi Fisik', 'Siap Serah Terima'] as const).map((filterOpt) => (
                         <button
                           key={filterOpt}
                           onClick={() => {
@@ -290,7 +280,6 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
             {paginatedTickets.map((ticket) => {
               const isAdminActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
               const isHandoverActionable = ticket.overallStatus === 'Disetujui' && ticket.currentStage === 'Serah Terima'
-              const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
               
               return (
                 <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
@@ -300,14 +289,12 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                       <div className="text-xs sm:text-sm font-medium text-blue-600 mt-0.5 sm:mt-1">{ticket.id}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className={`inline-flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                      <span className={`inline-flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md sm:rounded-lg border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                         {ticket.jumlah} unit
                       </span>
                       <div className="text-[9px] sm:text-[10px] font-medium text-gray-500 mt-0.5 sm:mt-1">Stok: {ticket.stokTersedia}</div>
                     </div>
                   </div>
-
-                  {hasConflict && <div className="mt-1"><ConflictWarning conflictWith={ticket.conflictWith!} /></div>}
 
                   <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                     <div>
@@ -393,18 +380,12 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                 {paginatedTickets.map((ticket) => {
                   const isAdminActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
                   const isHandoverActionable = ticket.overallStatus === 'Disetujui' && ticket.currentStage === 'Serah Terima'
-                  const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Admin'
                   
                   return (
                     <tr key={ticket.id} className="group hover:bg-blue-50 transition-colors even:bg-gray-50">
                       {/* ID Pengajuan */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
-                        {hasConflict && (
-                          <span className="block mt-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded w-fit uppercase">
-                            Konflik Stok
-                          </span>
-                        )}
                       </td>
 
                       {/* Pemohon */}
@@ -427,13 +408,12 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                             ))}
                           </div>
                         )}
-                        {hasConflict && <ConflictWarning conflictWith={ticket.conflictWith!} />}
                       </td>
 
                       {/* Kuantitas */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col gap-1.5">
-                          <div className={`text-sm font-bold ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'text-red-600' : 'text-gray-900'}`}>
+                          <div className={`text-sm font-bold ${ticket.jumlah > ticket.stokTersedia ? 'text-red-600' : 'text-gray-900'}`}>
                             {ticket.jumlah} <span className="text-xs font-normal text-gray-500">unit diajukan</span>
                           </div>
                           <div className="text-[11px] font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded px-2 py-0.5 w-fit">
@@ -571,7 +551,13 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                 <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
                   <div className="text-sm font-bold text-gray-900">{modal.ticket.alat}</div>
                   <div className="text-xs text-gray-500 mt-1">Diminta: <strong className="text-gray-900">{modal.ticket.jumlah}</strong> unit</div>
-                  <div className="text-xs text-gray-500 mt-0.5">Tipe: <strong className="text-gray-900">{modal.ticket.assetType === 'SERIALIZED' ? 'Serialized' : modal.ticket.assetType === 'NON_SERIALIZED' ? 'Non-Serialized' : 'N/A'}</strong></div>
+                  <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">Tipe: <strong className="text-gray-900 flex items-center gap-1">
+                    {modal.ticket.assetType === 'SERIALIZED' ? (
+                      <><svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>Serialized</>
+                    ) : modal.ticket.assetType === 'NON_SERIALIZED' ? (
+                      <><svg className="w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>Non-Serialized</>
+                    ) : 'N/A'}
+                  </strong></div>
                 </div>
               )}
 
@@ -587,12 +573,13 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                           value={currentScan}
                           onChange={e => setCurrentScan(e.target.value)}
                           placeholder="Ketik SN..."
-                          className="w-full pl-3 sm:pl-4 pr-12 py-2 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full pl-3 sm:pl-4 pr-12 py-2 sm:py-3 border border-gray-300 rounded-xl text-sm sm:text-base focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          disabled={allocatedSerials.length >= modal.ticket.jumlah}
                         />
                         <button 
                           onClick={() => setIsScannerOpen(true)}
                           disabled={allocatedSerials.length >= modal.ticket.jumlah}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Scan dengan Kamera"
                         >
                           <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -608,7 +595,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                         isOpen={isScannerOpen}
                         onClose={() => setIsScannerOpen(false)}
                         onScanSuccess={(text) => {
-                          if (allocatedSerials.length < modal.ticket.jumlah) {
+                          if (allocatedSerialsRef.current.length < modal.ticket.jumlah) {
                             handleAddSerial(text)
                           }
                         }}
@@ -627,7 +614,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                         allocatedSerials.map(sn => (
                           <div key={sn} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
                             <span className="text-sm font-mono font-bold text-gray-800">{sn}</span>
-                            <button onClick={() => setAllocatedSerials(allocatedSerials.filter(s => s !== sn))} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                            <button onClick={() => handleRemoveSerial(sn)} className="text-red-500 hover:bg-red-50 p-1 rounded">
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                           </div>
@@ -649,7 +636,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                           value={currentScan}
                           onChange={e => setCurrentScan(e.target.value)}
                           placeholder="Ketik Kode Master Aset..."
-                          className="w-full pl-4 pr-12 py-2 sm:py-3 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                          className="w-full pl-4 pr-12 py-2 sm:py-3 border border-blue-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
                           disabled={allocatedSerials.length >= 1}
                         />
                         <button 
@@ -678,7 +665,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                         isOpen={isScannerOpen}
                         onClose={() => setIsScannerOpen(false)}
                         onScanSuccess={(text) => {
-                          if (allocatedSerials.length < 1) {
+                          if (allocatedSerialsRef.current.length < 1) {
                             handleAddSerial(text)
                           }
                         }}
@@ -714,6 +701,7 @@ export default function BorrowingProcess({ tickets = initialTickets, onSuccess }
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan <span className="text-red-500">*</span></label>
                     <textarea 
+                      spellCheck={false}
                       value={catatan}
                       onChange={e => setCatatan(e.target.value)}
                       placeholder="Misal: Stok fisik saat ini sedang dikalibrasi..."

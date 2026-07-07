@@ -243,13 +243,13 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
         ))}
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white z-10 shrink-0 rounded-t-2xl">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col">
+        <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 bg-white z-10 shrink-0">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">Direktori Pengguna</h2>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Kelola data, peran, dan akses sistem untuk seluruh pengguna.</p>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">Manajemen Pengguna</h2>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">Kelola data seluruh admin, Area Head, HSSE, dan peminjam dalam sistem.</p>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-4 lg:mt-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="relative w-full sm:w-auto">
               <svg className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               <input 
@@ -266,7 +266,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                 className="px-4 sm:px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors whitespace-nowrap shadow-sm flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                Registrasi Pegawai
+                Registrasi Pengguna
               </button>
             )}
           </div>
@@ -275,7 +275,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
       <div className="bg-gray-50/50 p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4 rounded-b-2xl">
         {/* Header Kolom (Hanya Tampil di Desktop) */}
         <div className="hidden lg:flex items-center px-6 text-xs font-extrabold text-gray-400 uppercase tracking-wider">
-          <div className="w-[30%]">Identitas Pegawai</div>
+          <div className="w-[30%]">Identitas Pengguna</div>
           <div className="w-[25%]">Kontak & Lokasi</div>
           <div className="w-[20%]">Peran (Role)</div>
           <div className="w-[15%]">Status</div>
@@ -287,7 +287,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
           {paginatedUsers.length === 0 ? (
             <div className="py-8 sm:py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
-              <p className="text-gray-500 font-medium">Tidak ada pegawai yang cocok dengan pencarian "{searchQuery}"</p>
+              <p className="text-gray-500 font-medium">Tidak ada pengguna yang cocok dengan pencarian "{searchQuery}"</p>
             </div>
           ) : (
             paginatedUsers.map(u => (
@@ -457,7 +457,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
               <div className="space-y-4 sm:space-y-5 bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm">
                 <h4 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                  Informasi Pegawai
+                  Informasi Pengguna
                 </h4>
                 
                 <div>
@@ -554,7 +554,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
                       className="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                      Edit Data Pegawai
+                      Edit Data Pengguna
                     </button>
                     <button 
                       onClick={handleResetPassword}
@@ -621,8 +621,8 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
           <div className="bg-white shadow-2xl flex flex-col overflow-hidden rounded-3xl w-full max-h-[90vh] max-w-2xl">
             <div className="px-6 sm:px-8 py-5 sm:py-6 border-b border-gray-100 flex items-center justify-between bg-slate-50">
               <div>
-                <h3 className="text-lg sm:text-xl font-extrabold text-gray-900">Registrasi Pegawai Baru</h3>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">Buat kredensial akses untuk pegawai masuk ke sistem.</p>
+                <h3 className="text-lg sm:text-xl font-extrabold text-gray-900">Registrasi Pengguna Baru</h3>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">Buat kredensial akses untuk pengguna masuk ke sistem.</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 bg-white border border-gray-200 shadow-sm p-2 rounded-full transition-colors">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -694,7 +694,7 @@ export default function UserManagement({ isViewOnly = false }: { isViewOnly?: bo
             <div className="px-8 py-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsModalOpen(false)} className="px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-sm">Batal</button>
               <button onClick={handleAddUser} disabled={loading} className="px-6 py-3 text-sm font-bold text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors shadow-md disabled:opacity-50">
-                {loading ? 'Mendaftarkan...' : 'Buat Akun Pegawai'}
+                {loading ? 'Mendaftarkan...' : 'Buat Akun Pengguna'}
               </button>
             </div>
           </div>

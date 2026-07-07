@@ -129,7 +129,7 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
           }
         ))
         onSuccess?.()
-        toast.error(`Tiket ${ticket.id} ditolak oleh HSSE.`)
+        toast.success('Tiket berhasil ditolak oleh HSSE.')
       }
     } catch (err: any) {
       toast.error(`Terjadi kesalahan: ${err.message}`)
@@ -164,24 +164,24 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
       value: localTickets.filter(t => t.overallStatus === 'Ditolak' && (t.currentStage as string).includes('HSSE')).length,
       iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',
       colorTheme: 'red'
-    },
+    }
   ]
 
   return (
     <div className="font-sans space-y-6">
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 shrink-0">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8 shrink-0">
         {stats.map((card) => (
           <StatCard key={card.label} {...card} />
         ))}
       </div>
 
       {/* Ticket List */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
         {/* Header */}
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white">
+        <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0 bg-white">
           <div>
-            <h2 className="text-base sm:text-lg font-extrabold text-gray-900">Antrean Verifikasi</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Antrean Verifikasi</h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">Tiket yang memerlukan verifikasi HSSE sebelum diteruskan ke Area Head.</p>
           </div>
           <div className="relative w-full sm:w-auto">
@@ -325,8 +325,14 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
               ))}
               {paginatedTickets.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    Tidak ada tiket yang memerlukan verifikasi.
+                  <td colSpan={6}>
+                    <div className="text-center py-12">
+                      <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak ada tiket</h3>
+                      <p className="mt-1 text-sm text-gray-500">Antrean kosong atau tidak ditemukan hasil pencarian.</p>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -410,6 +416,7 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5">Catatan Verifikasi <span className="text-gray-400 font-normal">(opsional)</span></label>
                     <textarea
+                      spellCheck={false}
                       rows={3}
                       value={catatan}
                       onChange={e => setCatatan(e.target.value)}
@@ -446,6 +453,7 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5">Alasan Penolakan <span className="text-red-500">*</span></label>
                     <textarea
+                      spellCheck={false}
                       rows={3}
                       value={catatan}
                       onChange={e => setCatatan(e.target.value)}

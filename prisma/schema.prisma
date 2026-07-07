@@ -19,8 +19,8 @@ enum Role {
 }
 
 enum AssetStatus {
-  Available   // Tersedia di gudang
-  Borrowed    // Sedang dipinjam di lapangan
+  Available // Tersedia di gudang
+  Borrowed // Sedang dipinjam di lapangan
   Maintenance // Dalam pemeliharaan / kalibrasi / perbaikan (TIDAK ADA STATUS RUSAK)
 }
 
@@ -38,89 +38,90 @@ model User {
   email     String   @unique
   name      String
   role      Role     @default(Peminjam)
-  nip       String?  // Nomor Induk Pegawai
-  wa        String?  // Nomor WhatsApp
-  jabatan   String?  // Jabatan / Posisi
-  office    String?  // Kantor / Site
-  regional  String?  // Regional / Area
+  nip       String? // Nomor Induk Pegawai
+  wa        String? // Nomor WhatsApp
+  jabatan   String? // Jabatan / Posisi
+  office    String? // Kantor / Site
+  regional  String? // Regional / Area
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tickets            Ticket[]           @relation("PeminjamTickets")
+  tickets            Ticket[]            @relation("PeminjamTickets")
   maintenanceReports MaintenanceRecord[] @relation("ReporterRecords")
 }
 
 model Asset {
-  id           String      @id @default(uuid())
-  assetCode    String      @unique // e.g. AST-001
+  id           String  @id @default(uuid())
+  assetCode    String  @unique // e.g. AST-001
   name         String
-  category     String      // e.g. Alat Ukur, Keselamatan
-  isSerialized Boolean     @default(true)
-  imageUrl     String?     // URL atau path foto barang
+  category     String // e.g. Alat Ukur, Keselamatan
+  isSerialized Boolean @default(true)
+  imageUrl     String? // URL atau path foto barang
+  isActive     Boolean @default(true) // Untuk fitur Arsip
 
-  quantity     Int         @default(1)
-  spec         String?     // Spesifikasi teknis
-  status       AssetStatus @default(Available)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  quantity  Int         @default(1)
+  spec      String? // Spesifikasi teknis
+  status    AssetStatus @default(Available)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
-  tickets      Ticket[]    @relation("AssetTickets")
-  units        PhysicalUnit[] @relation("AssetUnits")
+  tickets Ticket[]       @relation("AssetTickets")
+  units   PhysicalUnit[] @relation("AssetUnits")
 }
 
 model PhysicalUnit {
-  id           String      @id @default(uuid())
+  id           String   @id @default(uuid())
   assetId      String
-  asset        Asset       @relation("AssetUnits", fields: [assetId], references: [id], onDelete: Cascade)
-  unitId       String      @unique // e.g. AST-001-01
-  serialNumber String      // e.g. SN-1234
-  status       String      @default("Tersedia") // Tersedia, Dipinjam, Maintenance, dll.
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  asset        Asset    @relation("AssetUnits", fields: [assetId], references: [id], onDelete: Cascade)
+  unitId       String   @unique // e.g. AST-001-01
+  serialNumber String // e.g. SN-1234
+  status       String   @default("Tersedia") // Tersedia, Dipinjam, Maintenance, dll.
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  history      UnitHistory[] @relation("UnitHistory")
+  history UnitHistory[] @relation("UnitHistory")
 }
 
 model UnitHistory {
-  id           String      @id @default(uuid())
-  unitId       String
-  unit         PhysicalUnit @relation("UnitHistory", fields: [unitId], references: [id], onDelete: Cascade)
-  action       String
-  actor        String
-  timestamp    String      // Waktu kejadian format string/WIB
+  id        String       @id @default(uuid())
+  unitId    String
+  unit      PhysicalUnit @relation("UnitHistory", fields: [unitId], references: [id], onDelete: Cascade)
+  action    String
+  actor     String
+  timestamp String // Waktu kejadian format string/WIB
 }
 
 model Ticket {
-  id            String       @id @default(uuid())
-  ticketCode    String       @unique // e.g. TK-001
-  peminjamId    String
-  peminjam      User         @relation("PeminjamTickets", fields: [peminjamId], references: [id])
-  assetId       String
-  asset         Asset        @relation("AssetTickets", fields: [assetId], references: [id])
-  jumlah        Int          @default(1)
-  tanggalPinjam String
+  id             String       @id @default(uuid())
+  ticketCode     String       @unique // e.g. TK-001
+  peminjamId     String
+  peminjam       User         @relation("PeminjamTickets", fields: [peminjamId], references: [id])
+  assetId        String
+  asset          Asset        @relation("AssetTickets", fields: [assetId], references: [id])
+  jumlah         Int          @default(1)
+  tanggalPinjam  String
   tanggalKembali String
-  alasan        String       @default("Tidak disebutkan")
-  overallStatus TicketStatus @default(Menunggu)
-  currentStage  String       @default("Menunggu Persetujuan Admin")
-  notes         String?
-  allocatedUnits String?     // Disimpan sebagai JSON array atau comma-separated string
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  alasan         String       @default("Tidak disebutkan")
+  overallStatus  TicketStatus @default(Menunggu)
+  currentStage   String       @default("Menunggu Persetujuan Admin")
+  notes          String?
+  allocatedUnits String? // Disimpan sebagai JSON array atau comma-separated string
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  logs          TrackingLog[]
+  logs TrackingLog[]
 }
 
 model TrackingLog {
   id        String   @id @default(uuid())
   ticketId  String
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  stage     String   // e.g. Admin, HSSE, Area Head
-  status    String   // Keterangan aksi (Disetujui, Ditolak, dll)
-  actor     String   // Nama dan Role pelaku
-  notes     String?  // Catatan opsional
-  timestamp String   // Waktu kejadian format string/WIB
+  stage     String // e.g. Admin, HSSE, Area Head
+  status    String // Keterangan aksi (Disetujui, Ditolak, dll)
+  actor     String // Nama dan Role pelaku
+  notes     String? // Catatan opsional
+  timestamp String // Waktu kejadian format string/WIB
   createdAt DateTime @default(now())
 }
 
@@ -128,10 +129,10 @@ model Notification {
   id         String   @id @default(uuid())
   title      String
   desc       String
-  type       String   // info, success, warning, urgent
-  targetRole String   // Semua, Admin, Peminjam, HSSE, Area Head
+  type       String // info, success, warning, urgent
+  targetRole String // Semua, Admin, Peminjam, HSSE, Area Head
   unread     Boolean  @default(true)
-  time       String   // e.g. 10 mnt lalu
+  time       String // e.g. 10 mnt lalu
   createdAt  DateTime @default(now())
 }
 
@@ -139,20 +140,40 @@ model Notification {
 model MaintenanceRecord {
   id           String   @id @default(uuid())
   recordCode   String   @unique // e.g. ESC-001
-  assetId      String
-  assetName    String   // Nama aset (snapshot saat pencatatan)
-  assetCode    String   // Kode aset (snapshot)
-  serialNumber String?  // Serial number jika ada
-  issue        String   // Deskripsi masalah / kerusakan
+  issue        String // Deskripsi masalah / kerusakan umum
   resolution   String   @default("Menunggu Tindakan") // Hasil akhir
   status       String   @default("Menunggu Tindakan") // Menunggu Tindakan | Selesai Diperbaiki | Dimusnahkan
   reporterId   String
   reporter     User     @relation("ReporterRecords", fields: [reporterId], references: [id])
-  reporterName String   // Nama reporter (snapshot)
-  dateReported String   // Tanggal laporan (format string)
-  dateResolved String?  // Tanggal selesai (opsional)
-  photoUrl     String?  // Foto bukti kerusakan
-  notes        String?  // Catatan tambahan
+  reporterName String // Nama reporter (snapshot)
+  dateReported String // Tanggal laporan (format string)
+  dateResolved String? // Tanggal selesai (opsional)
+  photoUrl     String? // Foto bukti kerusakan (legacy)
+  notes        String? // Catatan tambahan
+  items        MaintenanceItem[] // Daftar aset yang rusak
+  photos       MaintenancePhoto[] // Kumpulan foto kerusakan
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model MaintenancePhoto {
+  id        String   @id @default(uuid())
+  recordId  String
+  record    MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  image     String
+  createdAt DateTime @default(now())
+}
+
+model MaintenanceItem {
+  id           String   @id @default(uuid())
+  recordId     String
+  record       MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  assetId      String
+  assetName    String
+  assetCode    String
+  isSerialized Boolean  @default(false)
+  qty          Int      @default(1) // Jika non-serialized
+  serialNumber String?  // Kumpulan S/N jika serialized (disimpan dengan koma) atau satuan S/N
+  issue        String?  // Deskripsi masalah spesifik per barang/SN
+  createdAt    DateTime @default(now())
 }

@@ -399,6 +399,7 @@ export default function ReturnAudit() {
                   Catatan Pengecekan <span className="text-gray-400 font-normal">(opsional)</span>
                 </label>
                 <textarea
+                  spellCheck={false}
                   rows={2}
                   value={returnNote}
                   onChange={e => setReturnNote(e.target.value)}

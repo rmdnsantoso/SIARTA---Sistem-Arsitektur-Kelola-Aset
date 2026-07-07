@@ -24,19 +24,6 @@ function StatusBadge({ status }: { status: TicketStatus }) {
   )
 }
 
-function ConflictWarning({ conflictWith }: { conflictWith: string }) {
-  return (
-    <div className="flex items-start gap-1.5 mt-2 bg-red-50 border border-red-100 rounded p-2">
-      <svg className="w-4 h-4 text-red-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-      <span className="text-xs text-red-700">
-        Konflik Stok! Diminta juga oleh <strong>{conflictWith}</strong>.
-      </span>
-    </div>
-  )
-}
 
 export default function TicketTable({ tickets, handleAction }: TicketTableProps) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,7 +71,6 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
       <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
         {paginatedTickets.map((ticket) => {
           const isActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Area Head'
-          const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu'
 
           return (
             <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
@@ -94,14 +80,12 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
                   <div className="text-xs sm:text-sm font-medium text-blue-600 mt-0.5 sm:mt-1">{ticket.id}</div>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={`inline-flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
+                  <span className={`inline-flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                     {ticket.jumlah} unit
                   </span>
                   <div className="text-[9px] sm:text-[10px] font-medium text-gray-500 mt-0.5 sm:mt-1">Stok: {ticket.stokTersedia}</div>
                 </div>
               </div>
-
-              {hasConflict && <div className="mt-1"><ConflictWarning conflictWith={ticket.conflictWith!} /></div>}
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
                 <div>
@@ -158,18 +142,12 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedTickets.map((ticket) => {
               const isActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Area Head'
-              const hasConflict = !!ticket.conflictWith && ticket.overallStatus === 'Menunggu'
               return (
                 <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
                   
                   {/* ID Pengajuan */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-medium text-blue-600">{ticket.id}</span>
-                    {hasConflict && (
-                      <span className="block mt-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 px-1.5 py-0.5 rounded w-fit uppercase">
-                        Konflik Stok
-                      </span>
-                    )}
                   </td>
 
                   {/* Pemohon */}
@@ -200,13 +178,12 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
                         })}
                       </div>
                     )}
-                    {hasConflict && <ConflictWarning conflictWith={ticket.conflictWith!} />}
                   </td>
 
                   {/* Kuantitas */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex flex-col gap-1.5">
-                      <div className={`text-sm font-bold ${ticket.jumlah > ticket.stokTersedia || hasConflict ? 'text-red-600' : 'text-gray-900'}`}>
+                      <div className={`text-sm font-bold ${ticket.jumlah > ticket.stokTersedia ? 'text-red-600' : 'text-gray-900'}`}>
                         {ticket.jumlah} <span className="text-xs font-normal text-gray-500">unit diajukan</span>
                       </div>
                       <div className="text-[11px] font-medium text-gray-500 bg-gray-50 border border-gray-100 rounded px-2 py-0.5 w-fit">
@@ -247,8 +224,14 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
             })}
             {paginatedTickets.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  Tidak ada tiket yang cocok dengan pencarian "{searchQuery}".
+                <td colSpan={6}>
+                  <div className="text-center py-12">
+                    <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Tidak ada tiket</h3>
+                    <p className="mt-1 text-sm text-gray-500">Antrean kosong atau tidak ditemukan hasil pencarian.</p>
+                  </div>
                 </td>
               </tr>
             )}
