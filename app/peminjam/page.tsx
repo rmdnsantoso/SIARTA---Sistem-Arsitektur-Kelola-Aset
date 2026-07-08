@@ -7,7 +7,7 @@ import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
-import NotificationDropdown from '../../components/peminjam/NotificationDropdown'
+
 import { getTicketsByUser } from '../../actions/core/ticket'
 import { getAvailableAssets } from '../../actions/core/asset'
 import { createBorrowTicket } from '../../actions/workflows/peminjaman'
@@ -126,9 +126,7 @@ export default function PeminjamDashboard() {
           setSidebarOpen={setSidebarOpen}
           userName={currentUser?.name || 'Peminjam'}
           roleName="Peminjam"
-          hideNotificationBell={true}
           hideHamburgerOnMobile={true}
-          customNotificationNode={<NotificationDropdown tickets={tickets} peminjamName={currentUser?.name || 'Peminjam'} />}
         />
 
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">

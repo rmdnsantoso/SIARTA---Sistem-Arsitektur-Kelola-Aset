@@ -11,7 +11,6 @@ import { AssetStatus, Role } from '../../app/generated/prisma'
 export async function getAvailableAssets() {
   try {
     const assets = await prisma.asset.findMany({
-      where: { status: AssetStatus.Available },
       orderBy: { createdAt: 'asc' },
       include: { units: { include: { history: { orderBy: { timestamp: 'desc' } } } } }
     })
@@ -21,11 +20,25 @@ export async function getAvailableAssets() {
     })
     
     const data = assets.map(a => {
-      const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+      let computedTotal = 0;
+      let computedAvailable = 0;
+      
+      if (a.isSerialized) {
+        // Serialized: total adalah yang belum dimusnahkan
+        computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
+        // Tersedia adalah yang statusnya beneran 'Tersedia'
+        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0;
+      } else {
+        // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
+        const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+        computedAvailable = a.quantity;
+        computedTotal = a.quantity + borrowed;
+      }
+      
       return {
         ...a,
-        computedTotalStock: a.isSerialized ? (a.units?.length || 0) : (a.quantity + borrowed),
-        computedAvailableStock: a.quantity
+        computedTotalStock: computedTotal,
+        computedAvailableStock: computedAvailable
       }
     })
     
@@ -57,11 +70,25 @@ export async function getAllAssetsForAdmin() {
     })
     
     const data = assets.map(a => {
-      const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+      let computedTotal = 0;
+      let computedAvailable = 0;
+      
+      if (a.isSerialized) {
+        // Serialized: total adalah yang belum dimusnahkan
+        computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
+        // Tersedia adalah yang statusnya beneran 'Tersedia'
+        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0;
+      } else {
+        // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
+        const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+        computedAvailable = a.quantity;
+        computedTotal = a.quantity + borrowed;
+      }
+      
       return {
         ...a,
-        computedTotalStock: a.isSerialized ? (a.units?.length || 0) : (a.quantity + borrowed),
-        computedAvailableStock: a.quantity
+        computedTotalStock: computedTotal,
+        computedAvailableStock: computedAvailable
       }
     })
 

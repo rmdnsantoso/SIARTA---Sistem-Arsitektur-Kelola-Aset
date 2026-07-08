@@ -118,7 +118,8 @@ export async function rejectTicketByHSSE(ticketId: string, rejectReason: string)
       'Pengajuan Ditolak oleh HSSE',
       `Tiket ${ticket.ticketCode} ditolak oleh HSSE. Alasan: ${rejectReason}`,
       'urgent',
-      'Peminjam'
+      'Semua',
+      ticket.peminjamId
     )
 
     return { success: true, data: updated }
@@ -186,7 +187,8 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
       'Aset Diserahkan',
       `Serah terima aset untuk tiket ${ticket.ticketCode} selesai. Aset aktif dipinjam.`,
       'success',
-      'Peminjam'
+      'Semua',
+      ticket.peminjamId
     )
 
     return { success: true, data: updatedTicket }
@@ -299,6 +301,14 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
       )
     }
 
+    await createNotification(
+      'Aset Dikembalikan',
+      `Pengembalian aset tiket ${ticket.ticketCode} selesai. Tidak ada masalah.`,
+      'success',
+      'Semua',
+      ticket.peminjamId
+    )
+
     return { success: true, data: updatedTicket }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -367,10 +377,11 @@ export async function rejectTicketByAdmin(ticketId: string, rejectReason: string
     })
 
     await createNotification(
-      'Pengajuan Ditolak',
-      `Tiket ${ticket.ticketCode} ditolak oleh Admin. Alasan: ${rejectReason}`,
+      'Tiket Ditolak Admin',
+      `Tiket ${ticket.ticketCode} ditolak. Alasan: ${rejectReason}`,
       'urgent',
-      'Peminjam'
+      'Semua',
+      ticket.peminjamId
     )
 
     return { success: true, data: updated }

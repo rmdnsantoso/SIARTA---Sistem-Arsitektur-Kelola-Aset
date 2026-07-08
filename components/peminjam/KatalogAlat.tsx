@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 type TrackingType = 'SERIALIZED' | 'NON_SERIALIZED'
 type Asset = {
   id: string
+  assetCode?: string
   name: string
   totalStock: number
   availableStock: number
@@ -117,43 +118,50 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
     setAlasan('')
   }
   const filtered = assets.filter(a => {
+    const searchTarget = `${a.name} ${a.assetCode || ''} ${a.id}`.toLowerCase()
+    const matchSearch = searchTarget.includes(search.toLowerCase())
     const matchTracking = filterTracking === 'Semua' || a.trackingType === filterTracking
-    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
-    return matchTracking && matchSearch
+    return matchSearch && matchTracking
   })
   return (
     <div className="space-y-4 sm:space-y-6 font-sans">
       {/* ── Toolbar ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="px-4 py-4 sm:px-6 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-4 py-4 sm:px-6">
+          <div className="relative w-full max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <input 
-                type="text" 
-                placeholder="Cari ID atau nama aset..." 
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
             </div>
+            <input
+              type="text"
+              placeholder="Cari ID atau nama aset..."
+              className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-            {TRACKING_FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setFilterTracking(f)}
-                className={`${f === 'Semua' ? 'col-span-2' : 'col-span-1'} sm:flex-none px-2 sm:px-3 py-1.5 rounded-md text-[11px] sm:text-xs font-medium transition-colors text-center whitespace-nowrap ${
-                  filterTracking === f
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {f === 'Semua' ? 'Semua' : f === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
-              </button>
-            ))}
+        </div>
+        
+        {/* Filters Row */}
+        <div className="p-3 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-4 items-center">
+          <div className="flex items-center w-full sm:w-auto">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto">
+              {TRACKING_FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilterTracking(f)}
+                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+                    filterTracking === f 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {f === 'Semua' ? 'Semua Aset' : f === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

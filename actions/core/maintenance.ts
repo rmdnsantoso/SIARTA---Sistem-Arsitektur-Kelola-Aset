@@ -82,12 +82,24 @@ export async function createMaintenanceRecord(input: {
     }
     const recordCode = `ESC-${todayStr}-${String(nextNum).padStart(3, '0')}`
 
-    // Ubah status aset ke Maintenance
+    // Logika Pengurangan Stok / Perubahan Status
     for (const item of input.items) {
-      await prisma.asset.update({
-        where: { id: item.assetId },
-        data: { status: AssetStatus.Maintenance }
-      })
+      if (item.isSerialized && item.serialNumber) {
+        const unit = await prisma.physicalUnit.findFirst({
+          where: { assetId: item.assetId, serialNumber: item.serialNumber }
+        })
+        if (unit) {
+          await prisma.physicalUnit.update({
+            where: { id: unit.id },
+            data: { status: 'Maintenance' }
+          })
+        }
+      } else {
+        await prisma.asset.update({
+          where: { id: item.assetId },
+          data: { quantity: { decrement: item.qty || 1 } }
+        })
+      }
     }
 
     const today = new Date().toLocaleDateString('id-ID', {
@@ -155,14 +167,36 @@ export async function resolveMaintenanceRecord(
       day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta'
     })
 
-    // Update status aset: jika selesai diperbaiki → Available, jika dimusnahkan → tetap Maintenance
-    const newAssetStatus = resolution === 'Selesai Diperbaiki' ? AssetStatus.Available : AssetStatus.Maintenance
-
+    // Jika Selesai Diperbaiki: Kembalikan stok / ubah status unit jadi Tersedia
+    // Jika Dimusnahkan: Stok non-serialized tetap terkurangi permanen, unit serialized dihapus/diubah statusnya
     for (const item of record.items) {
-      await prisma.asset.update({
-        where: { id: item.assetId },
-        data: { status: newAssetStatus }
-      })
+      if (item.isSerialized && item.serialNumber) {
+        const unit = await prisma.physicalUnit.findFirst({
+          where: { assetId: item.assetId, serialNumber: item.serialNumber }
+        })
+        if (unit) {
+          if (resolution === 'Selesai Diperbaiki') {
+            await prisma.physicalUnit.update({
+              where: { id: unit.id },
+              data: { status: 'Tersedia' }
+            })
+          } else {
+            await prisma.physicalUnit.update({
+              where: { id: unit.id },
+              data: { status: 'Dimusnahkan' }
+            })
+          }
+        }
+      } else {
+        if (resolution === 'Selesai Diperbaiki') {
+          // Kembalikan ke stok karena sudah beres
+          await prisma.asset.update({
+            where: { id: item.assetId },
+            data: { quantity: { increment: item.qty } }
+          })
+        }
+        // Jika dimusnahkan, biarkan saja karena saat createMaintenanceRecord stok sudah dikurangi
+      }
     }
 
     const updated = await prisma.maintenanceRecord.update({

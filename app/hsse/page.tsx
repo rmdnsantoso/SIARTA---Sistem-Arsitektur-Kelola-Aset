@@ -83,10 +83,7 @@ export default function HSSEDashboard() {
         />
         
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
-          <div className="mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Pusat Kendali Verifikasi & Pengawasan (HSSE)</p>
-          </div>
+
           
           {activeNav === 'Verifikasi Pinjam' && <HSSEBorrowingProcess tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Pengembalian Aset' && <HSSEReturnProcess tickets={tickets} onSuccess={refreshData} />}

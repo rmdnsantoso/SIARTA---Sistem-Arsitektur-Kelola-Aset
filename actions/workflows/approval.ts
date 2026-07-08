@@ -35,7 +35,8 @@ export async function approveTicketByAreaHead(ticketId: string, notes?: string) 
       'Pengajuan Disetujui!',
       `Tiket ${ticket.ticketCode} (${ticket.asset.name}) telah disetujui Area Head. Ambil di Gudang Utama.`,
       'success',
-      'Peminjam'
+      'Semua',
+      ticket.peminjamId
     )
 
     return { success: true, data: updated }
@@ -80,7 +81,8 @@ export async function rejectTicketByAreaHead(ticketId: string, rejectReason: str
       'Pengajuan Ditolak',
       `Tiket ${ticket.ticketCode} ditolak oleh Area Head. Alasan: ${rejectReason}`,
       'urgent',
-      'Peminjam'
+      'Semua',
+      ticket.peminjamId
     )
 
     return { success: true, data: updated }
