@@ -42,8 +42,8 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
 
   useEffect(() => {
     fetchNotifications()
-    // Opsional: Polling interval (setiap 30 detik)
-    const interval = setInterval(fetchNotifications, 30000)
+    // Polling interval setiap 5 detik agar terasa real-time
+    const interval = setInterval(fetchNotifications, 5000)
     return () => clearInterval(interval)
   }, [userId, roleName])
 

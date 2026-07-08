@@ -70,11 +70,11 @@ export default function AssetMaintenance() {
     }
   }, [isCameraOpen])
 
-  useEffect(() => {
+  const refreshData = () => {
     // Load aset dari DB untuk dropdown
     getAllAssetsForAdmin().then(res => {
       if (res.success && res.data) {
-        setDbAssets(res.data.map(a => ({ id: a.id, name: a.name, assetCode: a.assetCode, isSerialized: a.isSerialized, units: a.units || [] })))
+        setDbAssets(res.data.map(a => ({ id: a.id, name: a.name, assetCode: a.assetCode, isSerialized: a.isSerialized, units: a.units || [], computedAvailableStock: (a as any).computedAvailableStock })))
       }
     })
     // Load tiket aktif dari DB
@@ -96,6 +96,12 @@ export default function AssetMaintenance() {
         setTickets([])
       }
     }).finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    refreshData()
+    const interval = setInterval(refreshData, 5000)
+    return () => clearInterval(interval)
   }, [])
 
   const handleAction = async (newStatus: EscalationStatus | 'Selesai') => {
@@ -114,6 +120,13 @@ export default function AssetMaintenance() {
       setTickets(prev => prev.filter(t => t.id !== selectedTicket.id))
       if (newStatus === 'Selesai') toast.success(`Laporan ${selectedTicket.id} berhasil diselesaikan. Aset dikembalikan ke stok.`)
       if (newStatus === 'Dimusnahkan') toast.success(`Aset dimusnahkan dan dipindah ke Riwayat Pemeliharaan.`)
+      
+      // Refetch assets
+      getAllAssetsForAdmin().then(res => {
+        if (res.success && res.data) {
+          setDbAssets(res.data.map(a => ({ id: a.id, name: a.name, assetCode: a.assetCode, isSerialized: a.isSerialized, units: a.units || [], computedAvailableStock: (a as any).computedAvailableStock })))
+        }
+      })
     } else {
       setTickets(prev => prev.map(t => t.id === selectedTicket.id ? { ...t, status: newStatus } : t))
     }
@@ -126,6 +139,11 @@ export default function AssetMaintenance() {
     const isSerializedReport = reportForm.items.length > 0 && reportForm.items[0].isSerialized;
     if (reportForm.items.length === 0 || (!isSerializedReport && !reportForm.notes)) {
       toast.error('Pilih minimal 1 aset dan lengkapi keterangan kerusakan.')
+      return
+    }
+
+    if (reportForm.photos.length === 0) {
+      toast.error('Wajib mengunggah minimal 1 foto bukti kerusakan.')
       return
     }
 
@@ -174,16 +192,24 @@ export default function AssetMaintenance() {
         dbId: res.data?.id,
         items: payloadItems,
         issue: reportForm.notes,
-        reporter: 'Admin / HSSE',
-        dateReported: 'Hari Ini',
+        reporter: res.data?.reporterName || 'Admin / HSSE',
+        dateReported: res.data?.dateReported || 'Hari Ini',
         status: 'Menunggu Tindakan',
         photoUrl: reportForm.photos.length > 0 ? reportForm.photos.join(',') : undefined,
+        photos: reportForm.photos,
         timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
       }
       setTickets([newTicket, ...tickets])
       setIsReportModalOpen(false)
       setReportForm({ items: [], notes: '', photos: [] })
-      toast.success(`Laporan kerusakan masal berhasil dicatat. Status aset diubah ke Maintenance.`)
+      toast.success(`Laporan kerusakan masal berhasil dicatat.`)
+      
+      // Refetch assets to reflect the reduced stock in the UI
+      getAllAssetsForAdmin().then(res => {
+        if (res.success && res.data) {
+          setDbAssets(res.data.map(a => ({ id: a.id, name: a.name, assetCode: a.assetCode, isSerialized: a.isSerialized, units: a.units || [], computedAvailableStock: (a as any).computedAvailableStock })))
+        }
+      })
     } catch (err) {
       console.error(err)
     }
@@ -456,13 +482,13 @@ export default function AssetMaintenance() {
               </button>
             </div>
 
-            <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden min-h-0 md:min-h-[400px]">
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden min-h-0 md:min-h-[400px]">
               {/* Left: Photos & Reporter (Sticky/Full height on Desktop) */}
               <div className="w-full md:w-5/12 bg-gray-900 shrink-0 relative flex flex-col">
                 {(() => {
                   const photos = selectedTicket.photos?.length ? selectedTicket.photos : selectedTicket.photoUrl?.split(',') || [];
                   return photos.length > 0 ? (
-                    <div className="relative w-full h-64 sm:h-72 md:h-auto md:absolute md:inset-0 flex items-center justify-center bg-black overflow-hidden group">
+                    <div className="relative w-full h-48 sm:h-56 md:h-auto md:absolute md:inset-0 flex items-center justify-center bg-black overflow-hidden group">
                       <img 
                         src={photos[currentPhotoIdx]} 
                         alt="Kerusakan" 
@@ -484,13 +510,13 @@ export default function AssetMaintenance() {
                       )}
                     </div>
                   ) : (
-                    <div className="relative w-full h-32 sm:h-48 md:h-auto md:absolute md:inset-0 flex items-center justify-center text-gray-500 bg-gray-900 font-medium text-sm">
+                    <div className="relative w-full h-48 sm:h-56 md:h-auto md:absolute md:inset-0 flex items-center justify-center text-gray-500 bg-gray-900 font-medium text-sm">
                       Tidak ada foto
                     </div>
                   );
                 })()}
                 
-                <div className="absolute bottom-0 w-full p-3 sm:p-4 bg-gradient-to-t from-black/90 to-transparent pt-12 mt-auto">
+                <div className="absolute bottom-0 w-full p-3 sm:p-4 bg-gradient-to-t from-black/90 to-transparent pt-12 mt-auto z-10 pointer-events-none">
                   <p className="text-[9px] sm:text-[10px] text-gray-300 uppercase tracking-widest font-semibold mb-0.5">Dilaporkan Oleh</p>
                   <p className="text-xs sm:text-sm font-bold text-white line-clamp-1">{selectedTicket.reporter}</p>
                   <p className="text-[10px] sm:text-xs text-gray-300 mt-1 flex items-center gap-1.5 sm:gap-2">
@@ -503,14 +529,14 @@ export default function AssetMaintenance() {
               </div>
 
               {/* Right: Items Details & Actions */}
-              <div className="w-full md:w-7/12 p-4 sm:p-6 lg:p-8 flex flex-col bg-white md:overflow-y-auto overscroll-y-contain">
-                <div className="flex-1 overflow-y-auto pr-1 sm:pr-2 min-h-full flex flex-col">
+              <div className="w-full md:w-7/12 flex-1 flex flex-col bg-white overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 min-h-0 flex flex-col">
                   <h4 className="text-base sm:text-lg font-extrabold text-gray-900 leading-tight mb-3 sm:mb-4 flex items-center gap-1.5 sm:gap-2">
                     <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     {selectedTicket.items.length} Jenis Aset Dilaporkan
                   </h4>
                   
-                  <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="space-y-3 sm:space-y-4 pb-4">
                     {selectedTicket.items.map((item, idx) => (
                       <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-3 sm:p-4 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-1 h-full bg-red-400"></div>
@@ -528,9 +554,9 @@ export default function AssetMaintenance() {
                 </div>
 
                 {/* Actions Grid */}
-                <div className="pt-4 border-t border-gray-100 mt-auto shrink-0">
+                <div className="p-4 sm:p-6 lg:p-8 pt-0 border-t border-gray-100 mt-auto shrink-0 bg-white">
                   {selectedTicket.status === 'Menunggu Tindakan' && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-3 mt-4">
                       <button 
                         onClick={() => handleAction('Dimusnahkan')}
                         className="flex flex-col items-center justify-center gap-1.5 p-2 sm:p-3 rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
@@ -774,8 +800,8 @@ export default function AssetMaintenance() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Foto Temuan Fisik <span className="text-gray-400 font-normal">(Maks. 5 Foto)</span>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 flex justify-between items-center">
+                    <span>Foto Temuan Fisik <span className="text-red-500">*</span> <span className="text-gray-400 font-normal">(Wajib, Maks. 5)</span></span>
                   </label>
                   <span className="text-xs font-bold text-gray-500">{reportForm.photos.length} / 5</span>
                 </div>

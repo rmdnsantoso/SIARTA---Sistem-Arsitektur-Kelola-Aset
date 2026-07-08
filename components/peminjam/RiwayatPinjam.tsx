@@ -66,9 +66,11 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        {stats.map((card) => (
-          <StatCard key={card.label} {...card} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 lg:gap-6">
+        {stats.map((card, idx) => (
+          <div key={card.label} className={idx === 2 ? "col-span-2 sm:col-span-1" : ""}>
+            <StatCard {...card} />
+          </div>
         ))}
       </div>
 
