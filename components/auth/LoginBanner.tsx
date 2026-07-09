@@ -77,13 +77,13 @@ export default function LoginBanner() {
       </div>
 
       {/* Animated Background Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/20 mix-blend-screen filter blur-[80px] lg:blur-[100px] animate-blob pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/20 mix-blend-screen filter blur-[80px] lg:blur-[100px] animate-blob animation-delay-2000 pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/20 mix-blend-screen filter blur-[80px] lg:blur-[100px] animate-blob pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-500/20 mix-blend-screen filter blur-[80px] lg:blur-[100px] animate-blob animation-delay-2000 pointer-events-none" />
 
       {/* Main content — centered vertically on desktop, compact on mobile */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-10 py-4 lg:py-0 pt-16 sm:pt-16 lg:pt-14">
         {/* Glassmorphism Card */}
-        <div className="relative z-10 w-full max-w-sm sm:max-w-md lg:max-w-lg p-5 sm:p-7 lg:p-10 rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/10 shadow-2xl">
+        <div className="relative z-10 w-full max-w-sm sm:max-w-md lg:max-w-lg p-5 sm:p-7 lg:p-10 rounded-2xl bg-white/[0.05] backdrop-blur-md border border-white/10 shadow-2xl">
 
           {/* SIARTA Logo — slides in from RIGHT */}
           <div className="flex items-center gap-3 mb-4 lg:mb-6 animate-slide-from-right">
@@ -102,13 +102,13 @@ export default function LoginBanner() {
               <h1 className={`text-xl sm:text-2xl lg:text-4xl font-bold leading-snug text-white transition-all duration-500 transform ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                 {headlines[headlineIndex].split(' ').map((word, idx) => {
                   if (['aset','presisi','cerdas','perusahaan','inventaris'].includes(word.toLowerCase().replace('.', ''))) {
-                    return <span key={idx} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">{word} </span>
+                    return <span key={idx} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">{word} </span>
                   }
                   return word + ' '
                 })}
               </h1>
             </div>
-            <p className="block text-gray-400 text-xs lg:text-sm leading-relaxed max-w-sm mt-1">
+            <p className="block text-blue-200/70 text-xs lg:text-sm leading-relaxed max-w-sm mt-1">
               Platform korporat terpadu untuk pemantauan inventaris, manajemen siklus hidup aset, dan persetujuan operasional.
             </p>
           </div>
@@ -117,17 +117,17 @@ export default function LoginBanner() {
           <div className="flex items-center gap-3 lg:gap-6 p-3 lg:p-5 rounded-xl bg-black/20 border border-white/5 mt-5 lg:mt-12">
             <div className="flex-1 text-center">
               <p className="text-lg lg:text-2xl font-bold text-white mb-0.5">500+</p>
-              <p className="text-[8px] lg:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Aset Terdaftar</p>
+              <p className="text-[8px] lg:text-[10px] text-blue-300/80 uppercase tracking-wider font-semibold">Aset Terdaftar</p>
             </div>
             <div className="w-px h-7 lg:h-10 bg-white/10" />
             <div className="flex-1 text-center">
               <p className="text-lg lg:text-2xl font-bold text-white mb-0.5">24</p>
-              <p className="text-[8px] lg:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Kategori</p>
+              <p className="text-[8px] lg:text-[10px] text-blue-300/80 uppercase tracking-wider font-semibold">Kategori</p>
             </div>
             <div className="w-px h-7 lg:h-10 bg-white/10" />
             <div className="flex-1 text-center">
               <p className="text-lg lg:text-2xl font-bold text-[#22C55E] mb-0.5">99.9%</p>
-              <p className="text-[8px] lg:text-[10px] text-gray-400 uppercase tracking-wider font-semibold">System Uptime</p>
+              <p className="text-[8px] lg:text-[10px] text-blue-300/80 uppercase tracking-wider font-semibold">System Uptime</p>
             </div>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function LoginBanner() {
       {/* Footer */}
       <div className="relative z-10 pb-4 lg:pb-8 text-center flex-shrink-0">
         <p className="text-[9px] lg:text-[10px] text-[#94A3B8] font-bold tracking-widest uppercase">
-          SIARTA 2026 · PTGAS TELEKOMUNIKASI NUSANTARA, RO LAMPUNG
+          SIARTA 2026 · PTGAS TELEKOMUNIKASI NUSANTARA RO LAMPUNG
         </p>
       </div>
     </div>
