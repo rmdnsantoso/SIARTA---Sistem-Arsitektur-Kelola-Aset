@@ -72,16 +72,11 @@ const [targetRole, setTargetRole] = useState<
 
 
   return (
-    <div className="bg-white rounded-[1.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.10)] border border-slate-100/80 p-5 sm:p-6 lg:p-7 w-full select-none relative z-20 animate-fade-in-slide-right">
+    <div className="bg-[#0f1f3e]/85 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.3)] border-none p-5 sm:p-6 lg:p-7 w-full select-none relative z-20 animate-fade-in-slide-right">
       {/* Welcome Branding */}
       <div className="text-center mb-4">
-        <p className="text-xs font-bold text-slate-400">Selamat Datang di</p>
-        <h1 className="text-2xl font-extrabold tracking-[0.08em] text-[#3B82F6] mt-0.5 flex items-center justify-center gap-1.5">
-          <span className="text-rose-400 font-normal animate-pulse">•</span>
-          <span>SIARTA</span>
-          <span className="text-rose-400 font-normal animate-pulse">•</span>
-        </h1>
-        <p className="text-[10.5px] font-bold text-slate-400 mt-1 tracking-wide">
+        <h1 className="text-xl font-extrabold text-white tracking-wide">Selamat Datang</h1>
+        <p className="text-[10.5px] font-bold text-blue-200/60 mt-1 tracking-wide">
           Masukkan kredensial Anda untuk melanjutkan.
         </p>
       </div>
@@ -90,11 +85,11 @@ const [targetRole, setTargetRole] = useState<
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Email Input */}
         <div>
-          <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider mb-1 ml-0.5">
+          <label className="block text-[10px] font-extrabold text-blue-200 uppercase tracking-wider mb-1 ml-0.5">
             Email
           </label>
           <div className="relative flex items-center">
-            <div className="absolute left-3 text-slate-400 pointer-events-none">
+            <div className="absolute left-3 text-blue-300/60 pointer-events-none">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
@@ -105,7 +100,7 @@ const [targetRole, setTargetRole] = useState<
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
-              className="w-full pl-9 pr-3 py-4 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-xs text-slate-800 placeholder-slate-400/90 focus:outline-none focus:ring-0 focus:border-[#2563EB] focus:shadow-[0_0_0_4px_rgba(37,99,235,0.15)] transition-all font-medium disabled:opacity-50"
+              className="w-full pl-9 pr-3 py-4 bg-blue-950/60 border border-blue-800/60 rounded-2xl text-xs text-white placeholder-blue-300/40 focus:outline-none focus:ring-0 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] transition-all font-medium disabled:opacity-50"
               placeholder="nama@perusahaan.com"
             />
           </div>
@@ -113,11 +108,11 @@ const [targetRole, setTargetRole] = useState<
 
         {/* Password Input */}
         <div>
-          <label className="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider mb-1 ml-0.5">
+          <label className="block text-[10px] font-extrabold text-blue-200 uppercase tracking-wider mb-1 ml-0.5">
             Kata Sandi
           </label>
           <div className="relative flex items-center">
-            <div className="absolute left-3 text-slate-400 pointer-events-none">
+            <div className="absolute left-3 text-blue-300/60 pointer-events-none">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
@@ -128,14 +123,14 @@ const [targetRole, setTargetRole] = useState<
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
-              className="w-full pl-9 pr-9 py-4 bg-slate-50/50 border border-slate-200/80 rounded-2xl text-xs text-slate-800 placeholder-slate-400/90 focus:outline-none focus:ring-0 focus:border-[#2563EB] focus:shadow-[0_0_0_4px_rgba(37,99,235,0.15)] transition-all font-medium disabled:opacity-50"
+              className="w-full pl-9 pr-9 py-4 bg-blue-950/60 border border-blue-800/60 rounded-2xl text-xs text-white placeholder-blue-300/40 focus:outline-none focus:ring-0 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] transition-all font-medium disabled:opacity-50"
               placeholder="Masukkan kata sandi"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
-              className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute right-3 text-blue-300/60 hover:text-blue-200 transition-colors"
             >
               {showPassword ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -156,13 +151,13 @@ const [targetRole, setTargetRole] = useState<
           <label className="flex items-center cursor-pointer select-none">
             <input
               type="checkbox"
-              className="w-4 h-4 text-blue-500 bg-slate-50 border-slate-200 rounded focus:ring-blue-500/20"
+              className="w-4 h-4 text-blue-500 bg-blue-950 border-blue-800/60 rounded focus:ring-blue-500/20 focus:ring-offset-0"
             />
-            <span className="ml-2 text-[11px] font-bold text-slate-500">Ingat sesi ini</span>
+            <span className="ml-2 text-[11px] font-bold text-blue-200/80">Ingat sesi ini</span>
           </label>
           <a
             href="#"
-            className="text-[11px] font-extrabold text-rose-400 hover:text-rose-500 transition-colors"
+            className="text-[11px] font-extrabold text-rose-300 hover:text-rose-200 transition-colors"
           >
             Lupa sandi?
           </a>
@@ -172,7 +167,7 @@ const [targetRole, setTargetRole] = useState<
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-1.5 py-4 px-4 rounded-2xl font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] hover:-translate-y-[2px] hover:shadow-[0_12px_30px_rgba(37,99,235,0.3)] active:scale-[0.99] transition-all duration-300 shadow-[0_4px_10px_rgba(37,99,235,0.15)] disabled:opacity-75 disabled:cursor-not-allowed text-xs mt-2"
+          className="w-full flex items-center justify-center gap-1.5 py-4 px-4 rounded-2xl font-bold text-white bg-blue-600 hover:bg-blue-500 hover:-translate-y-[2px] hover:shadow-[0_12px_30px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-all duration-300 shadow-[0_4px_10px_rgba(37,99,235,0.15)] disabled:opacity-75 disabled:cursor-not-allowed text-xs mt-2"
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-1.5">
@@ -196,10 +191,10 @@ const [targetRole, setTargetRole] = useState<
       {/* Akses Cepat Divider */}
       <div className="relative my-4">
         <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-slate-100"></div>
+          <div className="w-full border-t border-blue-800/40"></div>
         </div>
         <div className="relative flex justify-center text-[8.5px] font-bold uppercase tracking-widest">
-          <span className="bg-white px-2.5 text-slate-400">Atau Pilih Akses Cepat</span>
+          <span className="bg-[#0f1f3e] border border-blue-800/40 rounded-full px-3 py-0.5 text-blue-300/70">Atau Pilih Akses Cepat</span>
         </div>
       </div>
 
@@ -210,16 +205,16 @@ const [targetRole, setTargetRole] = useState<
           type="button"
           onClick={() => handleQuickLogin('admin')}
           disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-100 bg-white hover:border-blue-100 hover:bg-blue-50/10 hover:shadow-sm transition-all text-left group disabled:opacity-50"
+          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-blue-500/60 hover:bg-blue-500/10 transition-all duration-300 text-left group disabled:opacity-50"
         >
-          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
+          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-blue-500/20 group-hover:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
           <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-800 leading-tight">Admin</div>
-            <div className="text-[8.5px] text-slate-400 font-semibold truncate">Kelola sistem & aset</div>
+            <div className="text-[11px] font-bold text-slate-400 group-hover:text-blue-200 transition-colors duration-300 leading-tight">Admin</div>
+            <div className="text-[8.5px] text-slate-500 group-hover:text-blue-300/60 transition-colors duration-300 font-semibold truncate">Kelola sistem & aset</div>
           </div>
         </button>
 
@@ -228,16 +223,16 @@ const [targetRole, setTargetRole] = useState<
           type="button"
           onClick={() => handleQuickLogin('peminjam')}
           disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-100 bg-white hover:border-rose-100 hover:bg-rose-50/10 hover:shadow-sm transition-all text-left group disabled:opacity-50"
+          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-rose-500/50 hover:bg-rose-500/10 transition-all duration-300 text-left group disabled:opacity-50"
         >
-          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-rose-50/80 group-hover:text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
+          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-rose-500/20 group-hover:text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
           <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-800 leading-tight">Peminjam</div>
-            <div className="text-[8.5px] text-slate-400 font-semibold truncate">Ajukan & kelola pinjam</div>
+            <div className="text-[11px] font-bold text-slate-400 group-hover:text-rose-200 transition-colors duration-300 leading-tight">Peminjam</div>
+            <div className="text-[8.5px] text-slate-500 group-hover:text-rose-300/60 transition-colors duration-300 font-semibold truncate">Ajukan & kelola pinjam</div>
           </div>
         </button>
 
@@ -246,16 +241,16 @@ const [targetRole, setTargetRole] = useState<
           type="button"
           onClick={() => handleQuickLogin('hsse')}
           disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-100 bg-white hover:border-pink-100 hover:bg-pink-50/10 hover:shadow-sm transition-all text-left group disabled:opacity-50"
+          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-pink-500/50 hover:bg-pink-50/10 transition-all duration-300 text-left group disabled:opacity-50"
         >
-          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-pink-50 group-hover:text-pink-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
+          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-pink-500/20 group-hover:text-pink-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
             </svg>
           </div>
           <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-800 leading-tight">Hsse</div>
-            <div className="text-[8.5px] text-slate-400 font-semibold truncate">Kelola keamanan & K3</div>
+            <div className="text-[11px] font-bold text-slate-400 group-hover:text-pink-200 transition-colors duration-300 leading-tight">Hsse</div>
+            <div className="text-[8.5px] text-slate-500 group-hover:text-pink-300/60 transition-colors duration-300 font-semibold truncate">Kelola keamanan & K3</div>
           </div>
         </button>
 
@@ -264,16 +259,16 @@ const [targetRole, setTargetRole] = useState<
           type="button"
           onClick={() => handleQuickLogin('areahead')}
           disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-100 bg-white hover:border-indigo-100 hover:bg-indigo-50/10 hover:shadow-sm transition-all text-left group disabled:opacity-50"
+          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all duration-300 text-left group disabled:opacity-50"
         >
-          <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
+          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
           <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-800 leading-tight">Area Head</div>
-            <div className="text-[8.5px] text-slate-400 font-semibold truncate">Monitoring & setuju</div>
+            <div className="text-[11px] font-bold text-slate-400 group-hover:text-indigo-200 transition-colors duration-300 leading-tight">Area Head</div>
+            <div className="text-[8.5px] text-slate-500 group-hover:text-indigo-300/60 transition-colors duration-300 font-semibold truncate">Monitoring & setuju</div>
           </div>
         </button>
       </div>
