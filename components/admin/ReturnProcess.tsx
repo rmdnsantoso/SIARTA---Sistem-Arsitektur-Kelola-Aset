@@ -25,11 +25,18 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
   const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
   
   const [verifiedSNs, setVerifiedSNs] = useState<string[]>([])
+  const verifiedSNsRef = React.useRef<string[]>([])
   const [scanInput, setScanInput] = useState('')
   
   const [searchQuery, setSearchQuery] = useState('')
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [scannerContext, setScannerContext] = useState<'main' | 'detail'>('main')
+
+  // Helper: always update both state AND ref together
+  const setVerifiedSNsWithRef = (sns: string[]) => {
+    verifiedSNsRef.current = sns
+    setVerifiedSNs(sns)
+  }
 
   // Auto-close scanner when limit is reached
   React.useEffect(() => {
@@ -44,20 +51,19 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
   // Simulate scanning a specific SN
   const verifySN = (sn: string) => {
     if (modalTicket?.assetType === 'NON_SERIALIZED') {
-      setVerifiedSNs(['NON_SERIALIZED_VERIFIED'])
+      setVerifiedSNsWithRef(['NON_SERIALIZED_VERIFIED'])
     } else {
-      setVerifiedSNs(prev => {
-        if (!prev.includes(sn)) return [...prev, sn]
-        return prev
-      })
+      const current = verifiedSNsRef.current
+      if (!current.includes(sn)) {
+        setVerifiedSNsWithRef([...current, sn])
+      }
     }
   }
 
   const toggleSN = (sn: string) => {
-    setVerifiedSNs(prev => {
-      if (prev.includes(sn)) return prev.filter(s => s !== sn)
-      return [...prev, sn]
-    })
+    const current = verifiedSNsRef.current
+    const next = current.includes(sn) ? current.filter(s => s !== sn) : [...current, sn]
+    setVerifiedSNsWithRef(next)
   }
 
   const handleScanInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -65,25 +71,28 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
       const sn = scanInput.trim()
       if (modalTicket?.assetType === 'NON_SERIALIZED') {
         if (modalTicket.assetCode && sn.toUpperCase() !== modalTicket.assetCode.toUpperCase()) {
-          toast.error(`Kode salah. Harap ketik/scan QR Master yang benar.`)
+          toast.error('Kode salah. Harap ketik/scan QR Master yang benar.')
           return
         }
         verifySN(sn)
         setScanInput('')
+        toast.success(`Berhasil diverifikasi: ${sn}`, { duration: 1500, id: `succ-${sn}` })
       } else if (modalTicket?.allocatedUnits && modalTicket.allocatedUnits.length > 0) {
         if (modalTicket.allocatedUnits.includes(sn)) {
           verifySN(sn)
           setScanInput('')
+          toast.success(`Berhasil diverifikasi: ${sn}`, { duration: 1500, id: `succ-${sn}` })
         } else {
-          toast.error(`Serial Number ${sn} tidak valid untuk tiket ini.`)
+          toast.error('Serial Number tidak valid untuk tiket ini.')
         }
       } else {
         // Fallback for legacy tickets without allocatedUnits
-        if (modalTicket && verifiedSNs.length < modalTicket.jumlah) {
+        if (modalTicket && verifiedSNsRef.current.length < modalTicket.jumlah) {
           verifySN(sn)
           setScanInput('')
+          toast.success(`Berhasil diverifikasi: ${sn}`, { duration: 1500, id: `succ-${sn}` })
         } else {
-          toast.error(`Kapasitas penuh.`)
+          toast.error('Kapasitas penuh.')
         }
       }
     }
@@ -97,27 +106,34 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
         handleOpenProcess(scannedTicket, sn);
         toast.success(`Aset ${sn} ditemukan, memproses pengembalian...`);
       } else {
-        toast.error(`Aset dengan kode ${sn} tidak ditemukan dalam daftar peminjaman aktif.`);
+        toast.error('Aset tidak ditemukan dalam daftar peminjaman aktif.');
       }
     } else {
       if (modalTicket?.assetType === 'NON_SERIALIZED') {
         if (modalTicket.assetCode && sn.toUpperCase() !== modalTicket.assetCode.toUpperCase()) {
-          toast.error(`Kode salah. Harap ketik/scan QR Master yang benar.`)
+          toast.error('Kode salah. Harap ketik/scan QR Master yang benar.')
           return
         }
         verifySN(sn)
+        toast.success(`Berhasil discan & diverifikasi: ${sn}`, { duration: 1500, id: `succ-${sn}` })
       } else if (modalTicket?.allocatedUnits && modalTicket.allocatedUnits.length > 0) {
         if (modalTicket.allocatedUnits.includes(sn)) {
-          verifySN(sn)
+          if (!verifiedSNsRef.current.includes(sn)) {
+            verifySN(sn)
+            toast.success(`Berhasil discan & diverifikasi: ${sn}`, { duration: 1500, id: `succ-${sn}` })
+          } else {
+            toast.error('S/N ini sudah terverifikasi.', { duration: 2000, id: 'dup-sn' })
+          }
         } else {
-          toast.error(`Kode QR Tidak Dikenali (Bukan S/N yang dipinjam pada tiket ini).`)
+          toast.error('Kode QR Tidak Dikenali (Bukan S/N yang dipinjam pada tiket ini).')
         }
       } else {
-        // Fallback
-        if (modalTicket && verifiedSNs.length < modalTicket.jumlah) {
+        // Fallback — use ref to avoid stale closure
+        if (modalTicket && verifiedSNsRef.current.length < modalTicket.jumlah) {
           verifySN(sn)
+          toast.success(`Berhasil discan & diverifikasi: ${sn}`, { duration: 1500, id: `succ-${sn}` })
         } else {
-          toast.error(`Kapasitas penuh.`)
+          toast.error('Kapasitas penuh.')
         }
       }
     }
@@ -125,7 +141,8 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
 
   const handleOpenProcess = (ticket: Ticket, preScannedSN?: string) => {
     setModalTicket(ticket)
-    setVerifiedSNs(preScannedSN ? [preScannedSN] : [])
+    const initial = preScannedSN ? [preScannedSN] : []
+    setVerifiedSNsWithRef(initial)
     setScanInput('')
   }
 
@@ -200,22 +217,26 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
           ))}
         </div>
 
-        {/* Unified Table */}
+        {/* Active Tickets List */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
             <div>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Pengembalian Aset (Walk-in)</h2>
-              <p className="text-sm text-gray-500">Pindai barang yang dibawa peminjam untuk memproses pengembalian.</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">Antrean Pengembalian</h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Tiket yang sedang dalam proses pengembalian oleh peminjam.</p>
             </div>
-            <div className="flex flex-col lg:flex-row lg:items-center gap-3 mt-4 lg:mt-0 w-full lg:w-auto">
-              <div className="relative w-full lg:w-auto">
-                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input 
-                  type="text" 
-                  placeholder="Cari ID, Nama, atau Aset..." 
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-auto mt-2 sm:mt-0">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Cari ID tiket atau nama..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64 transition-all"
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-64 shadow-sm"
                 />
               </div>
                 <button 
@@ -462,11 +483,13 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
                         value={scanInput}
                         onChange={e => setScanInput(e.target.value)}
                         onKeyDown={handleScanInput}
-                        className="w-full bg-white border border-gray-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12"
+                        className="w-full bg-white border border-gray-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        disabled={verifiedSNs.length >= (modalTicket.allocatedUnits?.length || 0)}
                       />
                       <button 
                         onClick={openDetailScanner}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        disabled={verifiedSNs.length >= (modalTicket.allocatedUnits?.length || 0)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -541,7 +564,7 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
                     <div className="relative w-full sm:w-auto">
                       <input 
                         type="text"
-                        className="w-full bg-white border border-blue-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12 disabled:bg-gray-100"
+                        className="w-full bg-white border border-blue-300 rounded-xl pl-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none pr-12 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         placeholder="Ketik Kode Master Aset..."
                         value={scanInput}
                         onChange={e => setScanInput(e.target.value)}
@@ -551,7 +574,7 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
                       <button 
                         onClick={openDetailScanner}
                         disabled={verifiedSNs.length > 0}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Scan dengan Kamera"
                       >
                         <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

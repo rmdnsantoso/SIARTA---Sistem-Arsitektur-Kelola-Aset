@@ -15,6 +15,7 @@ import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistoryAreaHead from '../../components/areahead/MaintenanceHistoryAreaHead'
 import { getTicketsForAreaHead } from '../../actions/core/ticket'
 import { approveTicketByAreaHead, rejectTicketByAreaHead } from '../../actions/workflows/approval'
+import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
 
 export default function ApprovalDashboard() {
@@ -23,11 +24,18 @@ export default function ApprovalDashboard() {
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [modal, setModal] = useState<{ ticket: Ticket; action: 'Setujui' | 'Tolak' } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
   const refreshData = async () => {
     try {
-      const dbTickets = await getTicketsForAreaHead()
+      const [dbTickets, sessionRes] = await Promise.all([
+        getTicketsForAreaHead(),
+        getLoggedInUser()
+      ])
       setTickets(adaptTickets(dbTickets))
+      if (sessionRes.success && sessionRes.user) {
+        setCurrentUser({ id: sessionRes.user.id, name: sessionRes.user.name, role: sessionRes.user.role })
+      }
     } catch (err) {
       console.error('Gagal memuat ulang data area head:', err)
     } finally {
@@ -86,8 +94,8 @@ export default function ApprovalDashboard() {
   const stats = [
     { label: 'Menunggu Persetujuan', value: pendingCount, iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'amber' as const },
     { label: 'Total Pengajuan', value: tickets.length, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' as const },
-    { label: 'Selesai Disetujui', value: tickets.filter((t) => t.overallStatus === 'Disetujui').length, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'green' as const },
-    { label: 'Konflik Stok', value: tickets.filter((t) => t.conflictWith && t.overallStatus === 'Menunggu').length, iconPath: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', colorTheme: 'red' as const },
+    { label: 'Disetujui Area Head', value: tickets.filter((t) => t.overallStatus === 'Disetujui' || (t.flow.find(f => f.stage === 'Area Head')?.status === 'Disetujui')).length, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'green' as const },
+    { label: 'Ditolak Area Head', value: tickets.filter((t) => t.overallStatus === 'Ditolak' && (t.currentStage as string).includes('Area Head')).length, iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'red' as const },
   ]
 
   if (loading) {
@@ -108,31 +116,28 @@ export default function ApprovalDashboard() {
         setSidebarOpen={setSidebarOpen}
         activeNav={activeNav} 
         setActiveNav={setActiveNav} 
-        pendingCount={pendingCount} 
+        pendingCount={pendingCount}
+        sessionUser={currentUser}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
-          userName="Pak Joko"
+          userName={currentUser?.name || 'Area Head'}
+          userId={currentUser?.id}
           roleName="Area Head"
           hideHamburgerOnMobile={true}
         />
 
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
-          {activeNav !== 'Analitik' && activeNav !== 'Verifikasi Pinjam' && (
-            <div className="mb-4 sm:mb-6">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
-              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Pusat Kendali Manajerial (Area Head)</p>
-            </div>
-          )}
+
 
           {activeNav === 'Analitik' && <AnalyticsContent />}
           
           {activeNav === 'Verifikasi Pinjam' && (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
                 {stats.map((card) => (
                   <StatCard key={card.label} {...card} />
                 ))}
@@ -142,7 +147,7 @@ export default function ApprovalDashboard() {
           )}
 
           {activeNav === 'Master Aset' && <AssetMaster isViewOnly={true} />}
-          {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} />}
+          {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} currentUserId={currentUser?.id} />}
           {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistoryAreaHead />}
         </div>

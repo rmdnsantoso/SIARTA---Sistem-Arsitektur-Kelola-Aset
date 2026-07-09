@@ -447,32 +447,54 @@ async function main() {
   // ============================================================
   // 5. SEED MAINTENANCE RECORDS
   // ============================================================
-  await prisma.maintenanceRecord.createMany({
-    data: [
-      {
-        recordCode: 'ESC-A01', assetId: multimeter.id, assetName: multimeter.name, assetCode: multimeter.assetCode,
-        serialNumber: 'FLK-112', issue: 'Layar LCD bergaris, pembacaan tidak terbaca jelas.',
-        status: 'Menunggu Tindakan', resolution: 'Menunggu Tindakan',
-        reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
-        dateReported: '15 Jun 2026',
-      },
-      {
-        recordCode: 'ESC-H01', assetId: helmet.id, assetName: helmet.name, assetCode: helmet.assetCode,
-        issue: 'Retak struktural pada crown, tidak aman untuk digunakan.',
-        status: 'Selesai Diperbaiki', resolution: 'Selesai Diperbaiki',
-        reporterId: hsse.id, reporterName: 'Hendra (HSSE)',
-        dateReported: '10 Jun 2026', dateResolved: '12 Jun 2026',
-        notes: 'Helm diganti unit baru dari stok cadangan.',
-      },
-      {
-        recordCode: 'ESC-H02', assetId: weldingMask.id, assetName: weldingMask.name, assetCode: weldingMask.assetCode,
-        serialNumber: 'WM-002', issue: 'Auto-darkening tidak berfungsi, lensa macet di posisi gelap.',
-        status: 'Dimusnahkan', resolution: 'Dimusnahkan',
-        reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
-        dateReported: '08 Jun 2026', dateResolved: '09 Jun 2026',
-        notes: 'Komponen sensor tidak tersedia di pasaran. Write-off.',
-      },
-    ]
+  await prisma.maintenanceRecord.create({
+    data: {
+      recordCode: 'ESC-A01', 
+      issue: 'Layar LCD bergaris, pembacaan tidak terbaca jelas.',
+      status: 'Menunggu Tindakan', resolution: 'Menunggu Tindakan',
+      reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
+      dateReported: '15 Jun 2026',
+      items: {
+        create: [{
+          assetId: multimeter.id, assetName: multimeter.name, assetCode: multimeter.assetCode,
+          serialNumber: 'FLK-112', isSerialized: true
+        }]
+      }
+    }
+  })
+
+  await prisma.maintenanceRecord.create({
+    data: {
+      recordCode: 'ESC-H01',
+      issue: 'Retak struktural pada crown, tidak aman untuk digunakan.',
+      status: 'Selesai Diperbaiki', resolution: 'Selesai Diperbaiki',
+      reporterId: hsse.id, reporterName: 'Hendra (HSSE)',
+      dateReported: '10 Jun 2026', dateResolved: '12 Jun 2026',
+      notes: 'Helm diganti unit baru dari stok cadangan.',
+      items: {
+        create: [{
+          assetId: helmet.id, assetName: helmet.name, assetCode: helmet.assetCode,
+          qty: 1, isSerialized: false
+        }]
+      }
+    }
+  })
+
+  await prisma.maintenanceRecord.create({
+    data: {
+      recordCode: 'ESC-H02',
+      issue: 'Auto-darkening tidak berfungsi, lensa macet di posisi gelap.',
+      status: 'Dimusnahkan', resolution: 'Dimusnahkan',
+      reporterId: admin.id, reporterName: 'Siti Aminah (Admin)',
+      dateReported: '08 Jun 2026', dateResolved: '09 Jun 2026',
+      notes: 'Komponen sensor tidak tersedia di pasaran. Write-off.',
+      items: {
+        create: [{
+          assetId: weldingMask.id, assetName: weldingMask.name, assetCode: weldingMask.assetCode,
+          serialNumber: 'WM-002', isSerialized: true
+        }]
+      }
+    }
   })
   console.log('🔧 Maintenance Records berhasil dibuat.')
 
@@ -481,13 +503,13 @@ async function main() {
   // ============================================================
   await prisma.notification.createMany({
     data: [
-      { title: 'Pembaruan Sistem SIARTA v2.0', desc: 'Arsitektur backend baru dengan Prisma & Server Actions berhasil diluncurkan.', type: 'info', targetRole: 'Semua', unread: false, time: '1 jam lalu' },
-      { title: 'Verifikasi Pengembalian Selesai', desc: 'Ahmad telah mengembalikan 1 unit Chain Block 2T dalam kondisi baik.', type: 'success', targetRole: 'Admin', unread: true, time: '30 mnt lalu' },
-      { title: 'Stok Aset Kritis: APAR CO2', desc: 'Stok APAR CO2 di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan.', type: 'urgent', targetRole: 'Admin', unread: true, time: '2 jam lalu' },
-      { title: 'Menunggu Persetujuan Anda', desc: 'Tiket TKT-001 (Gas Detector) dari Budi Santoso menunggu verifikasi HSSE.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '1 jam lalu' },
-      { title: 'Pengajuan Disetujui!', desc: 'Tiket TKT-102 (Gas Detector) telah disetujui Area Head. Ambil di Gudang Utama.', type: 'success', targetRole: 'Peminjam', unread: true, time: '2 jam lalu' },
-      { title: 'Peringatan Masa Aktif Pinjaman', desc: 'Tiket TKT-101 (Helm Safety) akan jatuh tempo besok. Harap kembalikan tepat waktu.', type: 'warning', targetRole: 'Peminjam', unread: true, time: '3 jam lalu' },
-      { title: 'Laporan Kerusakan Baru', desc: 'Multimeter Fluke (AST-004) dilaporkan rusak oleh Admin. Status: Menunggu Tindakan.', type: 'urgent', targetRole: 'HSSE', unread: true, time: '20 mnt lalu' },
+      { title: 'Pembaruan Sistem SIARTA v2.0', message: 'Arsitektur backend baru dengan Prisma & Server Actions berhasil diluncurkan.', type: 'info', targetRole: null, isRead: true },
+      { title: 'Verifikasi Pengembalian Selesai', message: 'Ahmad telah mengembalikan 1 unit Chain Block 2T dalam kondisi baik.', type: 'success', targetRole: Role.Admin, isRead: false },
+      { title: 'Stok Aset Kritis: APAR CO2', message: 'Stok APAR CO2 di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan.', type: 'urgent', targetRole: Role.Admin, isRead: false },
+      { title: 'Menunggu Persetujuan Anda', message: 'Tiket TKT-001 (Gas Detector) dari Budi Santoso menunggu verifikasi HSSE.', type: 'urgent', targetRole: Role.HSSE, isRead: false },
+      { title: 'Pengajuan Disetujui!', message: 'Tiket TKT-102 (Gas Detector) telah disetujui Area Head. Ambil di Gudang Utama.', type: 'success', targetRole: Role.Peminjam, isRead: false },
+      { title: 'Peringatan Masa Aktif Pinjaman', message: 'Tiket TKT-101 (Helm Safety) akan jatuh tempo besok. Harap kembalikan tepat waktu.', type: 'warning', targetRole: Role.Peminjam, isRead: false },
+      { title: 'Laporan Kerusakan Baru', message: 'Multimeter Fluke (AST-004) dilaporkan rusak oleh Admin. Status: Menunggu Tindakan.', type: 'urgent', targetRole: Role.HSSE, isRead: false },
     ]
   })
   console.log('🔔 Notifications berhasil dibuat.')

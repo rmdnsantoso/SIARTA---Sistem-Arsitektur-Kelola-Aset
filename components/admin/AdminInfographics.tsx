@@ -10,7 +10,7 @@ export default function AdminInfographics() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 lg:gap-6">
         {stats.map(s => <StatCard key={s.label} {...s} />)}
       </div>
 

@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import FaceScanner from './FaceScanner'
+import toast from 'react-hot-toast'
+import { loginWithCredentials } from '../../actions/core/user'
+import { quickLoginAs } from '../../actions/core/auth'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -10,53 +13,69 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  
   const [loginStep, setLoginStep] = useState<'credentials' | 'face_scan'>('credentials')
+  const [authenticatedUser, setAuthenticatedUser] = useState<{ id: string; name: string; email: string; role: string; faceRegistered?: boolean } | null>(null)
 
-const [targetRole, setTargetRole] = useState<
-  'admin' | 'peminjam' | 'hsse' | 'areahead' | null
->(null)
-
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
-    setTimeout(() => {
-  const lowerEmail = email.toLowerCase()
-
-  if (lowerEmail.includes('admin')) {
-    setTargetRole('admin')
-  } else if (lowerEmail.includes('peminjam') || lowerEmail.includes('pinjam')) {
-    setTargetRole('peminjam')
-  } else if (lowerEmail.includes('hsse')) {
-    setTargetRole('hsse')
-  } else if (lowerEmail.includes('area') || lowerEmail.includes('head')) {
-    setTargetRole('areahead')
-  } else {
-    setTargetRole('peminjam')
-  }
-
-  setLoginStep('face_scan')
-  setIsLoading(false)
-}, 1200)
-  }
-
-  const handleQuickLogin = (role: 'admin' | 'peminjam' | 'hsse' | 'areahead') => {
-    setIsLoading(true)
-    setTimeout(() => {
-    setTargetRole(role)
-    setLoginStep('face_scan')
-    setIsLoading(false)
-},1000)
-  }
-
-  const handleFaceScanSuccess = () => {
-    if (targetRole) {
-      if (targetRole === 'admin') router.push('/admin')
-      if (targetRole === 'areahead') router.push('/areahead')
-      if (targetRole === 'peminjam') router.push('/peminjam')
-      if (targetRole === 'hsse') router.push('/hsse')
+    try {
+      const res = await loginWithCredentials(email, password)
+      if (res.success && res.user) {
+        setAuthenticatedUser({
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email,
+          role: res.user.role,
+          faceRegistered: res.user.faceRegistered
+        })
+        setLoginStep('face_scan')
+      } else {
+        toast.error(res.error || 'Login gagal.')
+      }
+    } catch (err: any) {
+      toast.error('Terjadi kesalahan sistem.')
+    } finally {
+      setIsLoading(false)
     }
+  }
+
+  const handleQuickLogin = async (role: 'admin' | 'peminjam' | 'hsse' | 'areahead') => {
+    setIsLoading(true)
+    try {
+      const roleMap = {
+        admin: 'Admin' as const,
+        peminjam: 'Peminjam' as const,
+        hsse: 'HSSE' as const,
+        areahead: 'AreaHead' as const,
+      }
+      const res = await quickLoginAs(roleMap[role])
+      if (res.success) {
+        // Testing mode: route langsung setelah session dibuat
+        if (role === 'admin') router.push('/admin')
+        else if (role === 'areahead') router.push('/areahead')
+        else if (role === 'hsse') router.push('/hsse')
+        else router.push('/peminjam')
+      } else {
+        toast.error('Quick login gagal: ' + (res.error || 'Error tidak diketahui'))
+        setIsLoading(false)
+      }
+    } catch (err) {
+      toast.error('Terjadi kesalahan saat quick login.')
+      setIsLoading(false)
+    }
+  }
+
+  // Dipanggil oleh FaceScanner setelah wajah berhasil dikenali dari DB (atau bypass)
+  const handleFaceScanSuccess = (user?: { name: string; email: string; role: string }) => {
+    const targetRole = user?.role || authenticatedUser?.role || 'peminjam'
+    const role = targetRole.toLowerCase()
+    
+    if (role === 'admin') router.push('/admin')
+    else if (role === 'areahead' || role === 'area head') router.push('/areahead')
+    else if (role === 'hsse') router.push('/hsse')
+    else router.push('/peminjam')
   }
 
   if (loginStep === 'face_scan') {
@@ -65,6 +84,14 @@ const [targetRole, setTargetRole] = useState<
         <FaceScanner 
           onSuccess={handleFaceScanSuccess} 
           onCancel={() => setLoginStep('credentials')} 
+          userId={authenticatedUser?.id}
+          skipFaceCheck={authenticatedUser ? !authenticatedUser.faceRegistered : false}
+          skipFaceUser={authenticatedUser && !authenticatedUser.faceRegistered ? {
+            id: authenticatedUser.id,
+            name: authenticatedUser.name || '',
+            email: authenticatedUser.email || '',
+            role: authenticatedUser.role
+          } : undefined}
         />
       </div>
     )

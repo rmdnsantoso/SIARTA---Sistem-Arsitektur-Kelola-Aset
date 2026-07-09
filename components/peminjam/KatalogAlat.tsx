@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 type TrackingType = 'SERIALIZED' | 'NON_SERIALIZED'
 type Asset = {
   id: string
+  assetCode?: string
   name: string
   totalStock: number
   availableStock: number
@@ -117,48 +118,55 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
     setAlasan('')
   }
   const filtered = assets.filter(a => {
+    const searchTarget = `${a.name} ${a.assetCode || ''} ${a.id}`.toLowerCase()
+    const matchSearch = searchTarget.includes(search.toLowerCase())
     const matchTracking = filterTracking === 'Semua' || a.trackingType === filterTracking
-    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase()) || a.id.toLowerCase().includes(search.toLowerCase())
-    return matchTracking && matchSearch
+    return matchSearch && matchTracking
   })
   return (
     <div className="space-y-4 sm:space-y-6 font-sans">
       {/* ── Toolbar ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="px-4 py-4 sm:px-6 flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <svg className="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-4 py-4 sm:px-6">
+          <div className="relative w-full max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <input 
-                type="text" 
-                placeholder="Cari ID atau nama aset..." 
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
             </div>
+            <input
+              type="text"
+              placeholder="Cari ID atau nama aset..."
+              className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {TRACKING_FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setFilterTracking(f)}
-                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-center whitespace-nowrap ${
-                  filterTracking === f
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {f === 'Semua' ? 'Semua' : f === 'SERIALIZED' ? 'Per Unit (Serialized)' : 'Per Unit (Non-Serialized)'}
-              </button>
-            ))}
+        </div>
+        
+        {/* Filters Row */}
+        <div className="p-3 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-4 items-center">
+          <div className="flex items-center w-full sm:w-auto">
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto">
+              {TRACKING_FILTERS.map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilterTracking(f)}
+                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+                    filterTracking === f 
+                    ? 'bg-white text-gray-900 shadow-sm' 
+                    : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {f === 'Semua' ? 'Semua Aset' : f === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
       {/* ── E-Commerce Style Grid Layout ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
         {filtered.map(a => {
           const isLow = a.availableStock === 0
           
@@ -170,19 +178,29 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                 </div>
               )}
               {/* Product Image Placeholder */}
-              <div className="h-28 sm:h-36 bg-gray-50 border-b border-gray-100 flex items-center justify-center p-3 relative overflow-hidden group-hover:bg-gray-100 transition-colors">
+              <div className="h-40 sm:h-48 bg-gray-50 border-b border-gray-100 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100 transition-colors">
                 {a.imageUrl ? (
-                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-contain" />
+                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-contain mix-blend-multiply" />
                 ) : (
                   <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                   </svg>
                 )}
                 {/* Tracking Badge */}
-                <div className={`absolute top-2 right-2 px-2 py-0.5 rounded shadow text-[10px] font-bold tracking-wider ${
+                <div className={`absolute top-2 right-2 px-2 py-1 flex items-center gap-1 rounded shadow text-[10px] font-bold tracking-wider ${
                   a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-500 text-white'
                 }`}>
-                  {a.trackingType === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
+                  {a.trackingType === 'SERIALIZED' ? (
+                    <>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                      Serialized
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                      Non-Serialized
+                    </>
+                  )}
                 </div>
 
               </div>
@@ -273,6 +291,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                           const val = parseInt(e.target.value) || 1
                           setBorrowDuration(Math.min(30, Math.max(1, val)))
                         }}
+                        onKeyDown={(e) => { if (['-', '+', 'e', 'E', '.', ','].includes(e.key)) e.preventDefault(); }}
                         className="w-16 sm:w-20 border border-gray-300 rounded-xl text-center h-8 sm:h-9 font-bold text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                       />
                       <button
@@ -311,6 +330,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                         const val = parseInt(e.target.value) || 1
                         setBorrowQty(Math.min(borrowAsset.availableStock, Math.max(1, val)))
                       }}
+                      onKeyDown={(e) => { if (['-', '+', 'e', 'E', '.', ','].includes(e.key)) e.preventDefault(); }}
                       className="w-16 sm:w-20 border border-gray-300 rounded-xl text-center h-8 sm:h-9 font-bold text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50/50 focus:bg-white transition-all"
                     />
                     <button
@@ -326,6 +346,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                 <div>
                   <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-1">Alasan Peminjaman <span className="text-red-500">*</span></label>
                   <textarea
+                    spellCheck={false}
                     required
                     rows={2}
                     value={alasan}

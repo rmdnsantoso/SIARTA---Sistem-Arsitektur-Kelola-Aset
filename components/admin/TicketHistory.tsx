@@ -78,23 +78,24 @@ export default function TicketHistory({ tickets = [] }: Props) {
 
         {/* Unified Table */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+          <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shrink-0">
             <div>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Rekapitulasi Pengajuan</h2>
-              <p className="text-sm text-gray-500">Melihat seluruh riwayat tiket yang sudah selesai, ditolak, atau dikembalikan.</p>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">Semua Tiket</h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-0.5">Daftar seluruh riwayat peminjaman aset.</p>
             </div>
-            <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full lg:w-auto mt-4 lg:mt-0">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-3 w-full lg:w-auto">
               <div className="relative w-full lg:w-auto">
-                <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input 
-                  type="text" 
-                  placeholder="Cari ID, Nama, atau Aset..." 
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Cari ID tiket atau nama..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64"
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64 shadow-sm"
                 />
               </div>
               <select

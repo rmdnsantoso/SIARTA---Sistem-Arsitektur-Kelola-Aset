@@ -12,6 +12,7 @@ import ReturnProcess from '../../components/admin/ReturnProcess'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
 import { getAllTickets } from '../../actions/core/ticket'
+import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
 import type { Ticket } from '../../types/ticket'
 
@@ -20,11 +21,18 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
   const refreshData = async () => {
     try {
-      const dbTickets = await getAllTickets()
+      const [dbTickets, sessionRes] = await Promise.all([
+        getAllTickets(),
+        getLoggedInUser()
+      ])
       setTickets(adaptTickets(dbTickets))
+      if (sessionRes.success && sessionRes.user) {
+        setCurrentUser({ id: sessionRes.user.id, name: sessionRes.user.name, role: sessionRes.user.role })
+      }
     } catch (err) {
       console.error('Gagal memuat ulang tiket admin:', err)
     } finally {
@@ -63,31 +71,28 @@ export default function AdminDashboard() {
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         pendingCount={adminPendingCount}
+        sessionUser={currentUser}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen} 
-          userName="Siti Aminah" 
+          userName={currentUser?.name || 'Admin'} 
+          userId={currentUser?.id}
           roleName="Admin" 
           hideHamburgerOnMobile={true}
         />
         
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
-          {activeNav !== 'Analitik' && (
-            <div className="mb-4 sm:mb-6">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{activeNav}</h1>
-              <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Pusat Kendali Logistik & Inventaris (Admin)</p>
-            </div>
-          )}
+
           
           {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
-          {activeNav === 'Kelola Pengguna' && <UserManagement />}
+          {activeNav === 'Kelola Pengguna' && <UserManagement currentUserId={currentUser?.id} />}
           {activeNav === 'Master Aset' && <AssetMaster />}
           {activeNav === 'Pemeliharaan Aset' && <AssetMaintenance />}
         </div>

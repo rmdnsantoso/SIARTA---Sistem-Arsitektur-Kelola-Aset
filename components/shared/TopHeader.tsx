@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../actions/core/notification'
 
 interface TopHeaderProps {
   sidebarOpen: boolean
   setSidebarOpen: (val: boolean) => void
+  userId?: string
   userName?: string
   roleName?: string
   hideHamburgerOnMobile?: boolean
@@ -13,122 +15,51 @@ interface TopHeaderProps {
   customNotificationNode?: React.ReactNode
 }
 
-// Data notifikasi default berbasis role & universal
-const defaultNotifications = [
-  {
-    id: 1,
-    title: 'Pembaruan Sistem SIARTA v2.4',
-    desc: 'Fitur pelacakan Non-Serialized dengan QR Master berhasil diluncurkan.',
-    time: '10 mnt lalu',
-    unread: true,
-    type: 'info',
-    targetRole: 'Semua'
-  },
-  {
-    id: 2,
-    title: 'Verifikasi Pengembalian Selesai',
-    desc: 'Budi telah mengembalikan 2 unit Gas Detector (AST-001) dalam kondisi baik.',
-    time: '1 jam lalu',
-    unread: true,
-    type: 'success',
-    targetRole: 'Admin'
-  },
-  {
-    id: 3,
-    title: 'Peringatan Stok Kritis!',
-    desc: 'Stok APAR di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan baru.',
-    time: '2 jam lalu',
-    unread: true,
-    type: 'urgent',
-    targetRole: 'Admin'
-  },
-  {
-    id: 4,
-    title: 'Menunggu Persetujuan Area Head',
-    desc: 'Pengajuan pinjaman 15 unit Safety Harness untuk Proyek BUMN menunggu approval akhir Anda.',
-    time: '15 mnt lalu',
-    unread: true,
-    type: 'urgent',
-    targetRole: 'Area Head'
-  },
-  {
-    id: 5,
-    title: 'Laporan Pemanfaatan Aset Bulanan',
-    desc: 'Tingkat utilisasi alat berat bulan ini mencapai 88%. Efisiensi operasional meningkat.',
-    time: '1 jam lalu',
-    unread: false,
-    type: 'success',
-    targetRole: 'Area Head'
-  },
-  {
-    id: 6,
-    title: 'Inspeksi Keselamatan Terjadwal',
-    desc: 'Ada 5 unit APAR dan Gas Detector yang membutuhkan verifikasi kelayakan keselamatan kerja minggu ini.',
-    time: '20 mnt lalu',
-    unread: true,
-    type: 'urgent',
-    targetRole: 'HSSE'
-  },
-  {
-    id: 7,
-    title: 'Laporan Audit Investigasi HSSE',
-    desc: 'Dokumen panduan standar inspeksi alat berat terbaru telah ditambahkan ke pustaka sistem.',
-    time: '2 jam lalu',
-    unread: false,
-    type: 'info',
-    targetRole: 'HSSE'
-  },
-  {
-    id: 8,
-    title: 'Pengajuan Pinjam Disetujui',
-    desc: 'Tiket pinjaman TIK-102 (Helm Safety) telah disetujui. Ambil di Gudang Utama.',
-    time: '30 mnt lalu',
-    unread: true,
-    type: 'success',
-    targetRole: 'Peminjam'
-  },
-  {
-    id: 9,
-    title: 'Peringatan Masa Aktif Pinjaman',
-    desc: 'Tiket pinjaman TIK-101 (Gas Detector) akan jatuh tempo besok. Harap kembalikan tepat waktu.',
-    time: '1 jam lalu',
-    unread: true,
-    type: 'warning',
-    targetRole: 'Peminjam'
-  },
-  {
-    id: 10,
-    title: 'Jadwal Pemeliharaan Berkala',
-    desc: '5 unit Bor Listrik memasuki siklus inspeksi kelistrikan wajib bulan ini.',
-    time: '3 jam lalu',
-    unread: false,
-    type: 'warning',
-    targetRole: 'Semua'
-  },
-]
-
-export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleName, hideHamburgerOnMobile, hideNotificationBell, customNotificationNode }: TopHeaderProps) {
+export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userName, roleName, hideHamburgerOnMobile, hideNotificationBell, customNotificationNode }: TopHeaderProps) {
   const router = useRouter()
   const [showNotifications, setShowNotifications] = useState(false)
-  const [notifications, setNotifications] = useState(defaultNotifications)
-
-  // Filter notifikasi yang sesuai dengan role aktif saat ini (atau 'Semua')
-  const currentRoleMatch = roleName ? (
-    roleName.toLowerCase().includes('admin') ? 'Admin' :
-    roleName.toLowerCase().includes('area') || roleName.toLowerCase().includes('manajer') || roleName.toLowerCase().includes('manajemen') ? 'Area Head' :
-    roleName.toLowerCase().includes('hsse') ? 'HSSE' :
-    roleName.toLowerCase().includes('peminjam') ? 'Peminjam' : 'Semua'
-  ) : 'Semua'
-
-  const filteredNotifs = notifications.filter(n => n.targetRole === 'Semua' || n.targetRole === currentRoleMatch)
-  const unreadCount = filteredNotifs.filter(n => n.unread).length
-
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, unread: false } : n))
+  
+  // State from backend
+  const [dbNotifs, setDbNotifs] = useState<any[]>([])
+  
+  // Format waktu sederhana
+  const formatTime = (dateString: string) => {
+    const d = new Date(dateString)
+    const diff = Math.floor((Date.now() - d.getTime()) / 60000)
+    if (diff < 1) return 'Baru saja'
+    if (diff < 60) return `${diff} mnt lalu`
+    if (diff < 1440) return `${Math.floor(diff/60)} jam lalu`
+    return `${Math.floor(diff/1440)} hari lalu`
   }
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => (n.targetRole === 'Semua' || n.targetRole === currentRoleMatch) ? { ...n, unread: false } : n))
+  const fetchNotifications = async () => {
+    if (!roleName) return
+    const res = await getUserNotifications(userId || '', roleName)
+    if (res.success && res.data) {
+      setDbNotifs(res.data)
+    }
+  }
+
+  useEffect(() => {
+    fetchNotifications()
+    // Polling interval setiap 5 detik agar terasa real-time
+    const interval = setInterval(fetchNotifications, 5000)
+    return () => clearInterval(interval)
+  }, [userId, roleName])
+
+  // Hitung jumlah yang belum dibaca dari dbNotifs
+  const unreadCount = dbNotifs.filter(n => !n.isRead).length
+
+  const markAsRead = async (id: string) => {
+    // Optimistic UI update
+    setDbNotifs(dbNotifs.map(n => n.id === id ? { ...n, isRead: true } : n))
+    await markNotificationAsRead(id)
+  }
+
+  const markAllAsRead = async () => {
+    if (!userId || !roleName) return
+    setDbNotifs(dbNotifs.map(n => ({ ...n, isRead: true })))
+    await markAllNotificationsAsRead(userId, roleName)
   }
 
   return (
@@ -207,14 +138,14 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleN
 
                 {/* Body */}
                 <div className="max-h-[280px] sm:max-h-[360px] overflow-y-auto divide-y divide-gray-100">
-                  {filteredNotifs.length === 0 ? (
+                  {dbNotifs.length === 0 ? (
                     <div className="p-6 text-center text-gray-400 text-xs">Belum ada notifikasi baru.</div>
                   ) : (
-                    filteredNotifs.map(n => (
+                    dbNotifs.map(n => (
                       <div 
                         key={n.id} 
                         onClick={() => markAsRead(n.id)}
-                        className={`p-3 sm:p-4 transition-all cursor-pointer hover:bg-slate-50/80 flex items-start gap-2.5 sm:gap-3 ${n.unread ? 'bg-blue-50/30' : ''}`}
+                        className={`p-3 sm:p-4 transition-all cursor-pointer hover:bg-slate-50/80 flex items-start gap-2.5 sm:gap-3 ${!n.isRead ? 'bg-blue-50/30' : ''}`}
                       >
                         {/* Icon badge */}
                         <div className={`p-1.5 sm:p-2 rounded-xl shrink-0 mt-0.5 ${
@@ -231,11 +162,11 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleN
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1.5 mb-1">
-                            <p className={`text-[11px] sm:text-xs font-bold truncate ${n.unread ? 'text-gray-900' : 'text-gray-600'}`}>{n.title}</p>
-                            <span className="text-[9px] sm:text-[10px] font-semibold text-gray-400 shrink-0">{n.time}</span>
+                            <p className={`text-[11px] sm:text-xs font-bold truncate ${!n.isRead ? 'text-gray-900' : 'text-gray-600'}`}>{n.title}</p>
+                            <span className="text-[9px] sm:text-[10px] font-semibold text-gray-400 shrink-0">{formatTime(n.createdAt)}</span>
                           </div>
-                          <p className="text-[10px] sm:text-xs text-gray-500 leading-relaxed line-clamp-2">{n.desc}</p>
-                          {n.unread && (
+                          <p className="text-[10px] sm:text-xs text-gray-500 leading-relaxed line-clamp-2">{n.message}</p>
+                          {!n.isRead && (
                             <span className="inline-block w-1.5 h-1.5 bg-blue-600 rounded-full mt-1"></span>
                           )}
                         </div>
@@ -245,13 +176,13 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userName, roleN
                 </div>
 
                 {/* Footer */}
-                {filteredNotifs.length > 0 && (
+                {dbNotifs.length > 0 && (
                   <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-gray-100 text-center">
                     <button 
-                      onClick={() => setNotifications(notifications.filter(n => !(n.targetRole === 'Semua' || n.targetRole === currentRoleMatch)))}
-                      className="text-[11px] sm:text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+                      onClick={markAllAsRead}
+                      className="text-[11px] sm:text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors"
                     >
-                      Bersihkan Semua Notifikasi
+                      Tandai Semua Sudah Dibaca
                     </button>
                   </div>
                 )}

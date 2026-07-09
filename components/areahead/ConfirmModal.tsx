@@ -47,11 +47,7 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
             <div className="text-xs text-gray-500 mt-0.5">Diminta: <strong className="text-gray-900">{ticket.jumlah}</strong> unit</div>
           </div>
 
-          {isApprove && ticket.conflictWith ? (
-            <div className="bg-red-50 border border-red-200 p-3 sm:p-4 rounded-xl">
-              <p className="text-sm text-red-800 font-medium"><strong>Peringatan:</strong> Terdapat konflik ketersediaan stok dengan tiket {ticket.conflictWith}.</p>
-            </div>
-          ) : isApprove ? (
+          {isApprove ? (
             <div className="bg-blue-50 border border-blue-200 p-3 sm:p-4 rounded-xl">
               <p className="text-sm text-blue-800 font-medium">Anda akan menyetujui pengajuan ini untuk dilanjutkan ke tahap Serah Terima.</p>
             </div>
@@ -65,6 +61,7 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-2">Alasan Penolakan <span className="text-red-500">*</span></label>
                 <textarea 
+                  spellCheck={false}
                   value={catatan}
                   onChange={e => setCatatan(e.target.value)}
                   placeholder="Misal: Proyek dihentikan sementara..."

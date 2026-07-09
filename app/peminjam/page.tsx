@@ -7,10 +7,11 @@ import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
-import NotificationDropdown from '../../components/peminjam/NotificationDropdown'
+
 import { getTicketsByUser } from '../../actions/core/ticket'
 import { getAvailableAssets } from '../../actions/core/asset'
 import { createBorrowTicket } from '../../actions/workflows/peminjaman'
+import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
 import type { Ticket } from '../../types/ticket'
 
@@ -20,28 +21,37 @@ export default function PeminjamDashboard() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [assets, setAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  // Ahmad pakai ID tetap dari seed (simulasi sesi login)
-  const AHMAD_USER_ID = 'usr-peminjam-01'
+  const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
   const refreshData = async () => {
     try {
-      const [dbTickets, dbAssets] = await Promise.all([
-        getTicketsByUser(AHMAD_USER_ID),
+      // Ambil session user dan data lainnya bersamaan
+      const [sessionRes, dbAssets] = await Promise.all([
+        getLoggedInUser(),
         getAvailableAssets()
       ])
-      setTickets(adaptTickets(dbTickets))
+
+      // Dapatkan userId dari session (fallback ke string kosong jika belum login)
+      const userId = sessionRes.user?.id || ''
+      const userName = sessionRes.user?.name || 'Pengguna'
+      const userRole = sessionRes.user?.role || 'Peminjam'
+      setCurrentUser({ id: userId, name: userName, role: userRole })
+
+      // Ambil tiket berdasarkan userId dari session
+      if (userId) {
+        const dbTickets = await getTicketsByUser(userId)
+        setTickets(adaptTickets(dbTickets))
+      }
+
       if (dbAssets.success && dbAssets.data) {
-        const adaptedAssets = dbAssets.data.map((a: any) => {
-          return {
-            id: a.id,
-            name: a.name,
-            totalStock: a.computedTotalStock,
-            availableStock: a.computedAvailableStock,
-            trackingType: a.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
-            imageUrl: a.spec || ''
-          }
-        })
+        const adaptedAssets = dbAssets.data.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          totalStock: a.computedTotalStock,
+          availableStock: a.computedAvailableStock,
+          trackingType: a.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+          imageUrl: a.spec || ''
+        }))
         setAssets(prev => JSON.stringify(prev) !== JSON.stringify(adaptedAssets) ? adaptedAssets : prev)
       }
     } catch (err) {
@@ -108,16 +118,15 @@ export default function PeminjamDashboard() {
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         setSidebarOpen={setSidebarOpen}
+        sessionUser={currentUser}
       />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <TopHeader 
           sidebarOpen={sidebarOpen} 
           setSidebarOpen={setSidebarOpen}
-          userName="Ahmad"
+          userName={currentUser?.name || 'Peminjam'}
           roleName="Peminjam"
-          hideNotificationBell={true}
           hideHamburgerOnMobile={true}
-          customNotificationNode={<NotificationDropdown tickets={tickets} peminjamName="Ahmad" />}
         />
 
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
@@ -130,8 +139,8 @@ export default function PeminjamDashboard() {
             </p>
           </div>
           
-          {activeNav === 'Katalog Alat' && <KatalogAlat onAddTicket={handleAddTicket} assets={assets.length > 0 ? assets : undefined} />}
-          {activeNav === 'Tiket Saya' && <TiketSaya tickets={tickets} onSuccess={refreshData} />}
+          {activeNav === 'Katalog Alat' && <KatalogAlat onAddTicket={handleAddTicket} assets={assets} />}
+          {activeNav === 'Tiket Saya' && <TiketSaya tickets={tickets} onUpdateTickets={setTickets} />}
           {activeNav === 'Riwayat Pinjam' && <RiwayatPinjam tickets={tickets} />}
         </div>
       </div>

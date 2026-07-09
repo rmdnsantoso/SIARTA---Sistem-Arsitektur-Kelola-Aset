@@ -11,7 +11,6 @@ import { AssetStatus, Role } from '../../app/generated/prisma'
 export async function getAvailableAssets() {
   try {
     const assets = await prisma.asset.findMany({
-      where: { status: AssetStatus.Available },
       orderBy: { createdAt: 'asc' },
       include: { units: { include: { history: { orderBy: { timestamp: 'desc' } } } } }
     })
@@ -21,11 +20,25 @@ export async function getAvailableAssets() {
     })
     
     const data = assets.map(a => {
-      const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+      let computedTotal = 0;
+      let computedAvailable = 0;
+      
+      if (a.isSerialized) {
+        // Serialized: total adalah yang belum dimusnahkan
+        computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
+        // Tersedia adalah yang statusnya beneran 'Tersedia'
+        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0;
+      } else {
+        // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
+        const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+        computedAvailable = a.quantity;
+        computedTotal = a.quantity + borrowed;
+      }
+      
       return {
         ...a,
-        computedTotalStock: a.isSerialized ? (a.units?.length || 0) : (a.quantity + borrowed),
-        computedAvailableStock: a.quantity
+        computedTotalStock: computedTotal,
+        computedAvailableStock: computedAvailable
       }
     })
     
@@ -57,11 +70,25 @@ export async function getAllAssetsForAdmin() {
     })
     
     const data = assets.map(a => {
-      const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+      let computedTotal = 0;
+      let computedAvailable = 0;
+      
+      if (a.isSerialized) {
+        // Serialized: total adalah yang belum dimusnahkan
+        computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
+        // Tersedia adalah yang statusnya beneran 'Tersedia'
+        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0;
+      } else {
+        // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
+        const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
+        computedAvailable = a.quantity;
+        computedTotal = a.quantity + borrowed;
+      }
+      
       return {
         ...a,
-        computedTotalStock: a.isSerialized ? (a.units?.length || 0) : (a.quantity + borrowed),
-        computedAvailableStock: a.quantity
+        computedTotalStock: computedTotal,
+        computedAvailableStock: computedAvailable
       }
     })
 
@@ -181,6 +208,38 @@ export async function deleteAsset(id: string) {
   }
 }
 
+export async function archiveAsset(id: string) {
+  try {
+    await requireRole([Role.Admin])
+    const asset = await prisma.asset.findUnique({ where: { id } })
+    if (!asset) throw new Error('Aset tidak ditemukan.')
+    
+    const updated = await prisma.asset.update({ 
+      where: { id }, 
+      data: { isActive: false } 
+    })
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+export async function unarchiveAsset(id: string) {
+  try {
+    await requireRole([Role.Admin])
+    const asset = await prisma.asset.findUnique({ where: { id } })
+    if (!asset) throw new Error('Aset tidak ditemukan.')
+    
+    const updated = await prisma.asset.update({ 
+      where: { id }, 
+      data: { isActive: true } 
+    })
+    return { success: true, data: updated }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
 // ============================================================
 // UNIT CRUD OPERATIONS
 // ============================================================
@@ -279,9 +338,14 @@ export async function getAvailableSerials(assetId: string) {
   try {
     const units = await prisma.physicalUnit.findMany({
       where: { assetId, status: 'Tersedia' },
-      select: { serialNumber: true }
+      select: { serialNumber: true, unitId: true }
     })
-    return { success: true, data: units.map(u => u.serialNumber) }
+    const validCodes = units.flatMap(u => {
+      const codes = [u.unitId]
+      if (u.serialNumber && u.serialNumber !== 'N/A') codes.push(u.serialNumber)
+      return codes
+    })
+    return { success: true, data: validCodes }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
