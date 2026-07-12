@@ -27,7 +27,11 @@ export async function createBorrowTicket(input: CreateTicketInput) {
     }
 
     if (input.jumlah > asset.quantity) {
-      throw new Error(`Jumlah pinjaman (${input.jumlah}) melebihi stok yang tersedia (${asset.quantity}).`)
+      return { 
+        success: false, 
+        error: `Stok tidak cukup. Sisa stok saat ini: ${asset.quantity} unit.`,
+        trueStock: asset.quantity
+      }
     }
 
     // 3. Buat Ticket dan catat log awal
@@ -70,7 +74,7 @@ export async function createBorrowTicket(input: CreateTicketInput) {
     })
 
     // 4. Kurangi stok aset secara langsung (Reservasi)
-    await prisma.asset.update({
+    const updatedAsset = await prisma.asset.update({
       where: { id: asset.id },
       data: { quantity: { decrement: input.jumlah } }
     })
@@ -83,7 +87,7 @@ export async function createBorrowTicket(input: CreateTicketInput) {
       'Admin'
     )
 
-    return { success: true, data: ticket }
+    return { success: true, data: ticket, updatedAsset }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -97,8 +101,8 @@ export async function cancelBorrowTicket(ticketId: string) {
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
     if (ticket.peminjamId !== user.id) throw new Error('Anda tidak berhak membatalkan tiket orang lain.')
-    if (ticket.overallStatus !== TicketStatus.Menunggu) {
-      throw new Error('Tiket yang sudah diproses tidak dapat dibatalkan.')
+    if (ticket.overallStatus !== TicketStatus.Menunggu && ticket.overallStatus !== TicketStatus.Disetujui) {
+      throw new Error('Tiket yang sudah dipinjam atau selesai tidak dapat dibatalkan.')
     }
 
     const updatedTicket = await prisma.ticket.update({

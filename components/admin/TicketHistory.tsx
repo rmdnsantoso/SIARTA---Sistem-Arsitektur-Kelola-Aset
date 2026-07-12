@@ -29,8 +29,13 @@ function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus,
   )
 }
 
-export default function TicketHistory({ tickets = [] }: Props) {
+import { getAllTickets } from '../../actions/core/ticket'
+import { adaptTickets } from '../../types/db'
+import { usePolling } from '../../hooks/usePolling'
+import { isOverdue } from '../../lib/dateUtils'
 
+export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
+  const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
 
@@ -39,7 +44,16 @@ export default function TicketHistory({ tickets = [] }: Props) {
   const itemsPerPage = 5
 
   // Modal State for details
-  const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
+  const [modalTicketId, setModalTicketId] = useState<string | null>(null)
+  const modalTicket = modalTicketId ? tickets.find(t => t.id === modalTicketId) || null : null
+
+  const refreshData = () => {
+    getAllTickets().then(res => {
+      setTickets(adaptTickets(res))
+    }).catch(err => console.error('Gagal memuat riwayat:', err))
+  }
+
+  usePolling(refreshData, 10000)
 
   const filteredTickets = tickets.filter(t => {
     const matchesSearch = 
@@ -140,12 +154,17 @@ export default function TicketHistory({ tickets = [] }: Props) {
                   <div>
                     <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Periode Pinjam</p>
                     <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.tanggalPinjam}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">s.d. {ticket.tanggalKembali}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <p className={`text-[10px] sm:text-xs ${ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) ? 'text-red-600 font-bold' : 'text-gray-500'}`}>s.d. {ticket.tanggalKembali}</p>
+                      {ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) && (
+                        <span className="bg-red-100 text-red-700 text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Terlambat</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => setModalTicket(ticket)}
+                  onClick={() => setModalTicketId(ticket.id)}
                   className="w-full py-1.5 sm:py-2.5 mt-1 bg-white border border-gray-200 text-gray-700 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -227,7 +246,14 @@ export default function TicketHistory({ tickets = [] }: Props) {
                     {/* Periode */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <p className="text-sm text-gray-900">{ticket.tanggalPinjam}</p>
-                      <p className="text-xs text-gray-500">{ticket.tanggalKembali}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className={`text-xs ${ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) ? 'text-red-600 font-bold' : 'text-gray-500'}`}>
+                          {ticket.tanggalKembali}
+                        </p>
+                        {ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) && (
+                          <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Terlambat</span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status */}
@@ -238,7 +264,7 @@ export default function TicketHistory({ tickets = [] }: Props) {
                     {/* Detail Riwayat */}
                     <td className="px-6 py-4 whitespace-nowrap text-left transition-colors">
                       <button 
-                        onClick={() => setModalTicket(ticket)}
+                        onClick={() => setModalTicketId(ticket.id)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-100"
                         title="Lihat Detail Riwayat"
                       >
@@ -351,7 +377,7 @@ export default function TicketHistory({ tickets = [] }: Props) {
 
             <div className="p-6 border-t border-gray-100 bg-gray-50 flex shrink-0">
               <button
-                onClick={() => setModalTicket(null)}
+                onClick={() => setModalTicketId(null)}
                 className="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800"
               >
                 Tutup Riwayat

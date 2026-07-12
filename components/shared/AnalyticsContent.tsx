@@ -17,11 +17,13 @@ import {
   Legend,
   LineChart,
   Line,
+  LabelList,
 } from 'recharts'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import StatCard from './StatCard'
 import { getAnalyticsDashboardData, getExportData } from '../../actions/core/analytics'
+import { AlertTriangle, TrendingUp, TrendingDown, Tag, Clock, CalendarDays, CheckCircle2, Activity } from 'lucide-react'
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
@@ -61,18 +63,47 @@ export default function AnalyticsContent() {
       }
 
       // Format CSV
-      let csvContent = "Laporan,Kategori,Kode_Aset,Nama_Barang,Total_Stok,Tersedia,Dipinjam,Kondisi_Stok\n"
+      // Add BOM for Excel UTF-8 support
+      let csvContent = "\uFEFF";
+      
+      const escapeCsvField = (field: any) => {
+        if (field === null || field === undefined) return '""';
+        let str = String(field);
+        // Prevent formula injection
+        if (/^[=+\-@]/.test(str)) {
+          str = "'" + str;
+        }
+        // Escape double quotes
+        str = str.replace(/"/g, '""');
+        return `"${str}"`;
+      };
+
+      // Calculate KPI
+      const totalJenis = result.data.masterAset.length
+      const totalFisik = result.data.masterAset.reduce((acc: number, val: any) => acc + val.Total_Stok, 0)
+      const totalTersedia = result.data.masterAset.reduce((acc: number, val: any) => acc + val.Tersedia, 0)
+      const totalDipinjam = result.data.masterAset.reduce((acc: number, val: any) => acc + val.Dipinjam, 0)
+      
+      csvContent += "=== RINGKASAN KPI ===\n"
+      csvContent += `Total Jenis Barang,${escapeCsvField(totalJenis)}\n`
+      csvContent += `Total Fisik Aset,${escapeCsvField(totalFisik)}\n`
+      csvContent += `Total Tersedia,${escapeCsvField(totalTersedia)}\n`
+      csvContent += `Total Sedang Dipinjam,${escapeCsvField(totalDipinjam)}\n\n`
       
       // Master Aset
+      csvContent += "=== DATA MASTER ASET ===\n"
+      csvContent += "Kategori,Kode_Aset,Nama_Barang,Total_Stok,Tersedia,Dipinjam,Kondisi_Stok\n"
       result.data.masterAset.forEach((a: any) => {
-        csvContent += `"Master Aset","${a.Kategori}","${a.Kode_Aset}","${a.Nama_Barang}","${a.Total_Stok}","${a.Tersedia}","${a.Dipinjam}","${a.Kondisi_Stok}"\n`
+        csvContent += `${escapeCsvField(a.Kategori)},${escapeCsvField(a.Kode_Aset)},${escapeCsvField(a.Nama_Barang)},${escapeCsvField(a.Total_Stok)},${escapeCsvField(a.Tersedia)},${escapeCsvField(a.Dipinjam)},${escapeCsvField(a.Kondisi_Stok)}\n`
       })
+      csvContent += "\n"
 
-      csvContent += `\nLaporan,ID_Tiket,Nama_Peminjam,Nama_Barang,Tgl_Pinjam,Tgl_Kembali_Batas,Status_Akhir,Alasan_Pinjam\n`
-      
       // Transaksi
+      csvContent += "=== RIWAYAT TRANSAKSI (30 HARI TERAKHIR) ===\n"
+      csvContent += `ID_Tiket,Nama_Peminjam,Nama_Barang,Tgl_Pinjam,Tgl_Kembali_Batas,Status_Akhir,Alasan_Pinjam\n`
+      
       result.data.transaksi.forEach((t: any) => {
-        csvContent += `"Transaksi","${t.ID_Tiket}","${t.Nama_Peminjam}","${t.Nama_Barang}","${t.Tgl_Pinjam}","${t.Tgl_Kembali_Batas}","${t.Status_Akhir}","${t.Alasan_Pinjam}"\n`
+        csvContent += `${escapeCsvField(t.ID_Tiket)},${escapeCsvField(t.Nama_Peminjam)},${escapeCsvField(t.Nama_Barang)},${escapeCsvField(t.Tgl_Pinjam)},${escapeCsvField(t.Tgl_Kembali_Batas)},${escapeCsvField(t.Status_Akhir)},${escapeCsvField(t.Alasan_Pinjam)}\n`
       })
 
       // Download trigger
@@ -104,8 +135,63 @@ export default function AnalyticsContent() {
       }
 
       const doc = new jsPDF()
+      
+      const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+      const currentMonth = `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`
 
-      // --- HALAMAN 1: RINGKASAN EKSEKUTIF & GRAFIK ---
+      // --- HALAMAN SAMPUL (COVER PAGE) ---
+      doc.setFontSize(24)
+      doc.setFont("helvetica", "bold")
+      doc.text("LAPORAN INVENTARIS", 105, 120, { align: "center" })
+      doc.setFontSize(20)
+      doc.text("& PEMINJAMAN BULANAN", 105, 132, { align: "center" })
+      
+      doc.setFontSize(14)
+      doc.setFont("helvetica", "normal")
+      doc.text("SIARTA - Sistem Arsitektur Kelola Aset", 105, 145, { align: "center" })
+      
+      doc.setFontSize(12)
+      doc.text(`Periode Laporan: ${currentMonth}`, 105, 160, { align: "center" })
+      
+      doc.setFontSize(10)
+      doc.setTextColor(120)
+      doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 105, 270, { align: "center" })
+      doc.setTextColor(0)
+      
+      doc.addPage()
+      
+      // --- DAFTAR ISI ---
+      doc.setFontSize(16)
+      doc.setFont("helvetica", "bold")
+      doc.text("DAFTAR ISI", 105, 30, { align: "center" })
+      
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "normal")
+      const tocItems = [
+        { title: "A. Ringkasan Eksekutif", page: "3" },
+        { title: "B. Visualisasi Aktivitas & Status", page: "3" },
+        { title: "C. Tren Aset Paling Sering Dipinjam", page: "4" },
+        { title: "D. Data Master Aset & Kondisi Stok", page: "5" },
+        { title: "E. Riwayat Transaksi Peminjaman", page: "5" },
+        { title: "F. Top 5 Peminjam Paling Aktif", page: "6" },
+        { title: "G. Peringatan Dini Stok Kritis", page: "6" }
+      ]
+      
+      let tocY = 50
+      tocItems.forEach(item => {
+        doc.text(item.title, 20, tocY)
+        doc.text(item.page, 185, tocY, { align: "right" })
+        // Dotted line
+        const dotCount = Math.floor((175 - doc.getTextWidth(item.title) - 20) / 2)
+        let dots = ""
+        for(let i = 0; i < dotCount; i++) dots += "."
+        doc.text(dots, 25 + doc.getTextWidth(item.title), tocY)
+        tocY += 10
+      })
+      
+      doc.addPage()
+
+      // --- HALAMAN 3: RINGKASAN EKSEKUTIF & GRAFIK ---
       
       // Header
       doc.setFontSize(14)
@@ -114,8 +200,6 @@ export default function AnalyticsContent() {
       
       doc.setFontSize(10)
       doc.setFont("helvetica", "normal")
-      const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
-      const currentMonth = `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`
       doc.text(`Periode: ${currentMonth} | Dibuat Oleh: SIARTA (Sistem Arsitektur Kelola Aset)`, 105, 28, { align: "center" })
 
       doc.setLineWidth(0.5)
@@ -131,15 +215,15 @@ export default function AnalyticsContent() {
       
       // Calculate basic stats
       const totalJenis = result.data.masterAset.length
-      const totalFisik = result.data.masterAset.reduce((acc: number, val: any) => acc + val.Total_Stok, 0)
-      const totalTersedia = result.data.masterAset.reduce((acc: number, val: any) => acc + val.Tersedia, 0)
-      const totalDipinjam = result.data.masterAset.reduce((acc: number, val: any) => acc + val.Dipinjam, 0)
-      const utilization = totalFisik > 0 ? Math.round((totalDipinjam / totalFisik) * 100) : 0
-      const onTimeTickets = result.data.transaksi.filter((t: any) => t.Status_Akhir === "Sesuai Jadwal").length
-      const totalReturned = result.data.transaksi.filter((t: any) => t.Status_Akhir === "Sesuai Jadwal" || t.Status_Akhir.includes("Melewati Batas")).length
+      const totalFisik = result.data.masterAset.reduce((acc, val) => acc + val.Total_Stok, 0)
+      const totalTersedia = result.data.masterAset.reduce((acc, val) => acc + val.Tersedia, 0)
+      const totalDipinjam = result.data.masterAset.reduce((acc, val) => acc + val.Dipinjam, 0)
+      const onTimeTickets = result.data.transaksi.filter((t) => t.Status_Akhir === "Sesuai Jadwal").length
+      const totalReturned = result.data.transaksi.filter((t) => t.Status_Akhir === "Sesuai Jadwal" || t.Status_Akhir.includes("Melewati Batas")).length
       const onTimeRate = totalReturned > 0 ? Math.round((onTimeTickets / totalReturned) * 100) : 0
 
-      const summaryText = `Pada periode ${currentMonth}, sistem SIARTA memantau sebanyak ${totalJenis} jenis barang dengan total fisik mencapai ${totalFisik} unit. Dari jumlah tersebut, ${totalTersedia} unit dalam keadaan siap digunakan, sementara ${totalDipinjam} unit sedang beroperasi di lapangan. Tingkat utilisasi aset secara keseluruhan adalah ${utilization}%. Dari segi kedisiplinan pengembalian alat, tingkat kepatuhan on-time rate berada pada angka ${onTimeRate}%.`
+      // Hapus penyebutan Tingkat Utilisasi sesuai permintaan
+      const summaryText = `Pada periode ${currentMonth}, sistem SIARTA memantau sebanyak ${totalJenis} jenis barang dengan total fisik mencapai ${totalFisik} unit. Dari jumlah tersebut, ${totalTersedia} unit dalam keadaan siap digunakan, sementara ${totalDipinjam} unit sedang beroperasi di lapangan. Dari segi kedisiplinan pengembalian alat, tingkat kepatuhan on-time rate berada pada angka ${onTimeRate}%.`
       
       const splitSummary = doc.splitTextToSize(summaryText, 180)
       doc.text(splitSummary, 14, 50)
@@ -155,99 +239,149 @@ export default function AnalyticsContent() {
       // Capture charts using html2canvas
       const chartTrendElement = document.getElementById("chart-trend")
       const chartStatusElement = document.getElementById("chart-status")
+      const chartTopAssetsElement = document.getElementById("chart-top-assets-print")
 
-      if (chartTrendElement && chartStatusElement) {
-        // HACK: Serialize SVG directly to avoid DOM cloning bugs with Recharts
-        const getSvgDataUrl = async (container: HTMLElement): Promise<string | null> => {
-          const svg = container.querySelector('svg')
-          if (!svg) return null
-          
-          const clone = svg.cloneNode(true) as SVGSVGElement
-          const rect = svg.getBoundingClientRect()
-          clone.setAttribute('width', String(rect.width))
-          clone.setAttribute('height', String(rect.height))
-          if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-          
-          const svgString = new XMLSerializer().serializeToString(clone)
-          const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
-          const url = URL.createObjectURL(blob)
-          
-          return new Promise((resolve) => {
-            const img = new Image()
-            img.onload = () => {
-              const canvas = document.createElement('canvas')
-              canvas.width = rect.width * 2
-              canvas.height = rect.height * 2
-              const ctx = canvas.getContext('2d')
-              if (ctx) {
-                ctx.fillStyle = '#ffffff'
-                ctx.fillRect(0, 0, canvas.width, canvas.height)
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-                resolve(canvas.toDataURL('image/png'))
-              } else {
-                resolve(null)
-              }
+      // HACK: Serialize SVG directly to avoid DOM cloning bugs with Recharts
+      const getSvgDataUrl = async (container: HTMLElement) => {
+        const svg = container.querySelector('svg')
+        if (!svg) return null
+        
+        const clone = svg.cloneNode(true) as SVGElement
+        const rect = svg.getBoundingClientRect()
+        const aspectRatio = rect.width / rect.height
+        
+        clone.setAttribute('width', String(rect.width))
+        clone.setAttribute('height', String(rect.height))
+        if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        
+        const svgString = new XMLSerializer().serializeToString(clone)
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        
+        return new Promise<{url: string, ratio: number} | null>((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            // Skala capture dinaikkan jadi *3 untuk cetak tajam
+            canvas.width = rect.width * 3
+            canvas.height = rect.height * 3
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+              ctx.fillStyle = '#ffffff'
+              ctx.fillRect(0, 0, canvas.width, canvas.height)
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+              resolve({ url: canvas.toDataURL('image/png'), ratio: aspectRatio })
+            } else {
+              resolve(null)
             }
-            img.onerror = () => resolve(null)
-            img.src = url
-          })
-        }
+          }
+          img.onerror = () => resolve(null)
+          img.src = url
+        })
+      }
 
-        const imgTrend = await getSvgDataUrl(chartTrendElement)
-        if (imgTrend) {
+      if (chartTrendElement) {
+        const trendDataUrl = await getSvgDataUrl(chartTrendElement)
+        if (trendDataUrl) {
+          // Trend legend
+          doc.setFontSize(9)
+          doc.setFillColor(59, 130, 246)
+          doc.rect(14, currentY - 3, 4, 4, 'F')
+          doc.text("Dipinjam", 20, currentY)
+          doc.setFillColor(147, 197, 253)
+          doc.rect(55, currentY - 3, 4, 4, 'F')
+          doc.text("Dikembalikan", 61, currentY)
+          currentY += 8
+
           const trendWidth = 180
-          const trendHeight = 70 
-          doc.addImage(imgTrend, 'PNG', 14, currentY, trendWidth, trendHeight)
+          const trendHeight = trendWidth / trendDataUrl.ratio
+          doc.addImage(trendDataUrl.url, 'PNG', 14, currentY, trendWidth, trendHeight)
           currentY += trendHeight + 15
         }
-        
-        if (currentY > 230) { doc.addPage(); currentY = 20; }
-        
-        const imgStatus = await getSvgDataUrl(chartStatusElement)
-        if (imgStatus) {
-          const statusWidth = 110
-          const statusHeight = 60
-          doc.addImage(imgStatus, 'PNG', 50, currentY, statusWidth, statusHeight)
-          currentY += statusHeight + 15
+      }
+      
+      if (currentY > 230) { doc.addPage(); currentY = 20; }
+      
+      if (chartStatusElement) {
+        const statusDataUrl = await getSvgDataUrl(chartStatusElement)
+        if (statusDataUrl) {
+          const statusWidth = 140
+          const statusHeight = statusWidth / statusDataUrl.ratio
+          doc.addImage(statusDataUrl.url, 'PNG', 35, currentY, statusWidth, statusHeight)
+          
+          // Angka total di tengah donut
+          doc.setFontSize(11)
+          doc.setFont("helvetica", "bold")
+          doc.text(`${totalFisik}`, 35 + statusWidth / 2, currentY + statusHeight / 2 - 2, { align: "center" })
+          doc.setFontSize(8)
+          doc.setFont("helvetica", "normal")
+          doc.text("TOTAL", 35 + statusWidth / 2, currentY + statusHeight / 2 + 3, { align: "center" })
+
+          currentY += statusHeight + 8
+
+          // Legend dengan swatch warna + angka + persentase
+          const pctTersedia = totalFisik > 0 ? Math.round((totalTersedia / totalFisik) * 100) : 0
+          const pctDipinjam = totalFisik > 0 ? Math.round((totalDipinjam / totalFisik) * 100) : 0
+          const legendItems = [
+            { color: [16, 185, 129], label: `Tersedia: ${totalTersedia} unit (${pctTersedia}%)` },
+            { color: [59, 130, 246], label: `Dipinjam: ${totalDipinjam} unit (${pctDipinjam}%)` },
+          ]
+          let legendY = currentY
+          legendItems.forEach(item => {
+            doc.setFillColor(item.color[0], item.color[1], item.color[2])
+            doc.rect(14, legendY - 3, 4, 4, 'F')
+            doc.setFontSize(9)
+            doc.setTextColor(0)
+            doc.text(item.label, 20, legendY)
+            legendY += 6
+          })
+          currentY = legendY + 10
+          
+          // Paragraf Penjelasan Section B
+          doc.setFontSize(9)
+          doc.setFont("helvetica", "italic")
+          doc.setTextColor(100)
+          const vizDesc = `Grafik tren di atas memperlihatkan dinamika peminjaman dan pengembalian unit selama 6 bulan terakhir, sementara diagram status menunjukkan proporsi ${pctTersedia}% aset dalam kondisi tersedia dan ${pctDipinjam}% sedang dipinjam. Data ini membantu tim memantau kecukupan stok secara real-time.`
+          const splitVizDesc = doc.splitTextToSize(vizDesc, 180)
+          doc.text(splitVizDesc, 14, currentY)
+          currentY += (splitVizDesc.length * 5) + 10
+          doc.setTextColor(0)
         }
       }
 
-      // --- HALAMAN 2: ANALISIS KHUSUS & LAMPIRAN ---
-      doc.addPage()
-      currentY = 20
-
-      // Section C: Barang Kritis & Top Aset
-      doc.setFontSize(12)
-      doc.setFont("helvetica", "bold")
-      doc.text("C. Peringatan Dini Stok Kritis", 14, currentY)
-      
-      const barangKritis = result.data.masterAset.filter((a: any) => a.Tersedia <= 3)
-      if (barangKritis.length > 0) {
-        const headKritis = [['Kode', 'Nama Barang', 'Stok Total', 'Sisa Tersedia']]
-        const bodyKritis = barangKritis.map((a: any) => [a.Kode_Aset, a.Nama_Barang, a.Total_Stok, a.Tersedia])
-        autoTable(doc, {
-          startY: currentY + 5,
-          head: headKritis,
-          body: bodyKritis,
-          theme: 'grid',
-          headStyles: { fillColor: [231, 76, 60] },
-          styles: { fontSize: 9 }
-        })
-        currentY = (doc as any).lastAutoTable.finalY + 15
-      } else {
-        doc.setFontSize(10)
-        doc.setFont("helvetica", "normal")
-        doc.text("Kondisi Sangat Aman: Tidak ada stok barang yang terdeteksi menipis atau perlu restock.", 14, currentY + 8)
-        currentY += 20
+      if (chartTopAssetsElement) {
+        const topAssetsDataUrl = await getSvgDataUrl(chartTopAssetsElement)
+        if (topAssetsDataUrl) {
+           doc.addPage(); currentY = 20;
+           doc.setFontSize(12)
+           doc.setFont("helvetica", "bold")
+           doc.text("C. Tren Aset Paling Sering Dipinjam", 14, currentY)
+           const topAssetsWidth = 180
+           const topAssetsHeight = topAssetsWidth / topAssetsDataUrl.ratio
+           doc.addImage(topAssetsDataUrl.url, 'PNG', 14, currentY + 10, topAssetsWidth, topAssetsHeight)
+           currentY += topAssetsHeight + 15
+           
+           doc.setFontSize(9)
+           doc.setFont("helvetica", "italic")
+           doc.setTextColor(100)
+           const topAssetsDesc = "Grafik di atas menampilkan barang dengan rasio peminjaman tertinggi terhadap total stoknya selama periode terpilih, membantu mengidentifikasi aset yang paling diminati dan berpotensi butuh penambahan unit."
+           const splitTopAssetsDesc = doc.splitTextToSize(topAssetsDesc, 180)
+           doc.text(splitTopAssetsDesc, 14, currentY + 10)
+           currentY += (splitTopAssetsDesc.length * 5) + 15
+           doc.setTextColor(0)
+        }
       }
 
-      // Section D: Lampiran Data Mentah (Seperti yang sebelumnya)
+      // --- HALAMAN TABEL DATA ---
+      doc.addPage(); currentY = 20;
+
+      // Section D: Master Aset
       doc.setFontSize(12)
       doc.setFont("helvetica", "bold")
-      doc.text("D. Lampiran: Rekapitulasi Stok Aset (Master)", 14, currentY)
+      doc.text("D. Data Master Aset & Kondisi Stok", 14, currentY)
 
       const headAset = [['Kode', 'Nama Barang', 'Kategori', 'Stok', 'Tersedia', 'Dipinjam', 'Kondisi Stok']]
-      const bodyAset = result.data.masterAset.map((a: any) => [
+      const bodyAset = result.data.masterAset.map((a) => [
         a.Kode_Aset, a.Nama_Barang, a.Kategori, a.Total_Stok, a.Tersedia, a.Dipinjam, a.Kondisi_Stok
       ])
 
@@ -260,14 +394,26 @@ export default function AnalyticsContent() {
         styles: { fontSize: 9 },
       })
 
-      currentY = (doc as any).lastAutoTable.finalY + 15
+      currentY = (doc as any).lastAutoTable.finalY + 8
       
+      doc.setFontSize(9)
+      doc.setFont("helvetica", "italic")
+      doc.setTextColor(100)
+      const asetDesc = "Tabel ini menunjukkan rincian seluruh inventaris yang diawasi oleh sistem, mencakup pembagian status (tersedia vs. dipinjam) untuk evaluasi kecukupan fisik barang."
+      const splitAsetDesc = doc.splitTextToSize(asetDesc, 180)
+      doc.text(splitAsetDesc, 14, currentY)
+      currentY += (splitAsetDesc.length * 5) + 10
+      doc.setTextColor(0)
+
+      if (currentY > 230) { doc.addPage(); currentY = 20; }
+      
+      // Section E: Riwayat Transaksi
       doc.setFontSize(12)
       doc.setFont("helvetica", "bold")
-      doc.text("E. Lampiran: Aktivitas Transaksi Peminjaman", 14, currentY)
+      doc.text("E. Riwayat Transaksi Peminjaman", 14, currentY)
 
       const headTx = [['ID Tiket', 'Peminjam', 'Barang', 'Tgl Pinjam', 'Batas Kembali', 'Status Akhir', 'Alasan']]
-      const bodyTx = result.data.transaksi.map((t: any) => [
+      const bodyTx = result.data.transaksi.map((t) => [
         t.ID_Tiket, t.Nama_Peminjam, t.Nama_Barang, t.Tgl_Pinjam, t.Tgl_Kembali_Batas, t.Status_Akhir, t.Alasan_Pinjam
       ])
 
@@ -278,8 +424,106 @@ export default function AnalyticsContent() {
         theme: 'grid',
         headStyles: { fillColor: [41, 128, 185] },
         styles: { fontSize: 8 },
-        columnStyles: { 6: { cellWidth: 40 } } // Limit alasan width
+        columnStyles: { 6: { cellWidth: 40 } } 
       })
+
+      currentY = (doc as any).lastAutoTable.finalY + 8
+      
+      doc.setFontSize(9)
+      doc.setFont("helvetica", "italic")
+      doc.setTextColor(100)
+      const txDesc = "Perekaman 30 hari terakhir dari aktivitas keluar-masuk barang, mencakup informasi jadwal pengembalian untuk memonitor tingkat kepatuhan pengguna."
+      const splitTxDesc = doc.splitTextToSize(txDesc, 180)
+      doc.text(splitTxDesc, 14, currentY)
+      currentY += (splitTxDesc.length * 5) + 10
+      doc.setTextColor(0)
+
+      // --- HALAMAN ANALISIS KHUSUS ---
+      if (currentY > 180) { doc.addPage(); currentY = 20; }
+
+      // Section F: Top 5 Peminjam
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "bold")
+      doc.text("F. Top 5 Peminjam Paling Aktif", 14, currentY)
+      
+      const borrowerCounts: Record<string, number> = {}
+      result.data.transaksi.forEach((t) => {
+        const name = t.Nama_Peminjam
+        if (name) {
+          borrowerCounts[name] = (borrowerCounts[name] || 0) + 1
+        }
+      })
+      
+      const topBorrowers = Object.entries(borrowerCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5)
+
+      if (topBorrowers.length > 0) {
+        const headBorrower = [['Peringkat', 'Nama Peminjam', 'Total Transaksi']]
+        const bodyBorrower = topBorrowers.map((b, idx) => [idx + 1, b.name, b.count])
+        
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: headBorrower,
+          body: bodyBorrower,
+          theme: 'grid',
+          headStyles: { fillColor: [59, 130, 246] },
+          styles: { fontSize: 9 },
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 8
+      } else {
+        doc.setFontSize(10)
+        doc.setFont("helvetica", "normal")
+        doc.text("Belum ada data transaksi peminjaman.", 14, currentY + 8)
+        currentY += 20
+      }
+
+      doc.setFontSize(9)
+      doc.setFont("helvetica", "italic")
+      doc.setTextColor(100)
+      const borrowerDesc = "Tabel di atas menampilkan 5 individu dengan frekuensi peminjaman aset tertinggi selama periode terpilih. Data ini dapat digunakan untuk mengidentifikasi departemen atau personel yang paling bergantung pada inventaris perusahaan, sehingga alokasi aset ke depannya dapat lebih tepat sasaran."
+      const splitBorrowerDesc = doc.splitTextToSize(borrowerDesc, 180)
+      doc.text(splitBorrowerDesc, 14, currentY)
+      currentY += (splitBorrowerDesc.length * 5) + 15
+      doc.setTextColor(0)
+
+      if (currentY > 230) { doc.addPage(); currentY = 20; }
+
+      // Section G: Barang Kritis
+      doc.setFontSize(12)
+      doc.setFont("helvetica", "bold")
+      doc.text("G. Peringatan Dini Stok Kritis", 14, currentY)
+      
+      const barangKritis = result.data.masterAset.filter((a) => a.Tersedia <= 3)
+      if (barangKritis.length > 0) {
+        const headKritis = [['Kode', 'Nama Barang', 'Stok Total', 'Sisa Tersedia']]
+        const bodyKritis = barangKritis.map((a) => [a.Kode_Aset, a.Nama_Barang, a.Total_Stok, a.Tersedia])
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: headKritis,
+          body: bodyKritis,
+          theme: 'grid',
+          headStyles: { fillColor: [231, 76, 60] },
+          styles: { fontSize: 9 }
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 8
+        
+        doc.setFontSize(9)
+        doc.setFont("helvetica", "italic")
+        doc.setTextColor(100)
+        const kritisDesc = "Peringatan: Barang-barang di atas memiliki stok sisa 3 unit atau kurang. Direkomendasikan untuk segera melakukan restock agar operasional tidak terhambat."
+        const splitKritisDesc = doc.splitTextToSize(kritisDesc, 180)
+        doc.text(splitKritisDesc, 14, currentY)
+        currentY += (splitKritisDesc.length * 5) + 10
+        doc.setTextColor(0)
+
+      } else {
+        doc.setFontSize(10)
+        doc.setFont("helvetica", "normal")
+        doc.text("Kondisi Sangat Aman: Tidak ada stok barang yang terdeteksi menipis atau perlu restock.", 14, currentY + 8)
+        currentY += 20
+      }
 
       doc.save(`SIARTA_Laporan_Eksekutif_${new Date().toISOString().split('T')[0]}.pdf`)
     } catch (error) {
@@ -383,29 +627,16 @@ export default function AnalyticsContent() {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
         <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-3 sm:mb-4">Ringkasan Periode Ini</p>
         <div className="flex flex-col gap-2.5 sm:gap-3">
-          <SummaryItem 
-            color={summary.peminjamanTrend === 'Naik' ? 'bg-green-400' : summary.peminjamanTrend === 'Turun' ? 'bg-amber-400' : 'bg-blue-400'} 
-            textCls={summary.peminjamanTrend === 'Naik' ? 'text-green-700' : summary.peminjamanTrend === 'Turun' ? 'text-amber-700' : 'text-blue-700'} 
-            label="Peminjaman" 
-            text={<>{summary.peminjamanTrend} <strong>{summary.peminjamanValue}%</strong> dibandingkan bulan lalu.</>} 
-          />
-          <SummaryItem 
-            color={summary.stokKritisItems.length > 0 ? 'bg-red-400' : 'bg-green-400'}   
-            textCls={summary.stokKritisItems.length > 0 ? 'text-red-700' : 'text-green-700'}   
-            label="Stok Kritis" 
-            text={<>
-              {summary.stokKritisItems.length > 0 
-                ? <><strong>{summary.stokKritisItems.join(', ')}</strong> menipis (sisa $\le$ 3 unit) — pertimbangkan restock.</>
-                : <>Stok dalam keadaan aman, tidak ada barang menipis.</>
-              }
-            </>} 
-          />
-          <SummaryItem 
-            color={summary.onTimeRate >= 80 ? 'bg-blue-400' : 'bg-amber-400'}  
-            textCls={summary.onTimeRate >= 80 ? 'text-blue-700' : 'text-amber-700'}  
-            label="Pengembalian" 
-            text={<>Rasio on-time mencapai <strong>{summary.onTimeRate}%</strong> dari total tiket yang dikembalikan.</>} 
-          />
+          {summary?.critical && summary.critical.map((item: any, i: number) => (
+            <SummaryItem 
+              key={`crit-${i}`}
+              item={{ category: 'stokKritis', label: item.label, text: item.text }}
+            />
+          ))}
+          
+          {summary?.rotating && summary.rotating.length > 0 && (
+            <RotatingSummary items={summary.rotating} />
+          )}
         </div>
       </div>
 
@@ -449,7 +680,7 @@ export default function AnalyticsContent() {
         </div>
 
         {/* Donut Chart – Status (lebar 2/5) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 flex flex-col">
+        <div id="chart-status" className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 flex flex-col">
           <h2 className="text-sm sm:text-base font-extrabold text-gray-900 mb-0.5">Status Aset</h2>
           <p className="text-[11px] sm:text-xs text-gray-400 mb-4">Komposisi ketersediaan saat ini</p>
           <div className="flex-1 relative flex items-center justify-center">
@@ -458,8 +689,19 @@ export default function AnalyticsContent() {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie isAnimationActive={false} data={statusData} cx="50%" cy="50%" innerRadius={60} outerRadius={85} paddingAngle={4} dataKey="value">
-                    {statusData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
+                  <Pie 
+                    isAnimationActive={false} 
+                    data={statusData} 
+                    cx="50%" 
+                    cy="50%" 
+                    innerRadius={60} 
+                    outerRadius={85} 
+                    paddingAngle={4} 
+                    dataKey="value"
+                    labelLine={{ strokeWidth: 1 }}
+                    label={renderPieLabel}
+                  >
+                    {statusData.map((entry: any, i: number) => <Cell key={i} fill={entry.fill} />)}
                   </Pie>
                   <Tooltip contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: '12px' }} />
                 </PieChart>
@@ -478,7 +720,7 @@ export default function AnalyticsContent() {
             {statusData.map((d: any) => (
               <div key={d.name} className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="flex items-center gap-2 text-gray-600">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.fill }} />
                   {d.name}
                 </span>
                 <span className="font-semibold text-gray-800">{d.value} <span className="text-gray-400 font-normal text-[10px] sm:text-xs">({totalAssets > 0 ? Math.round(d.value/totalAssets*100) : 0}%)</span></span>
@@ -496,26 +738,47 @@ export default function AnalyticsContent() {
             <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">Berdasarkan total peminjaman sepanjang masa</p>
           </div>
         </div>
-        <div className="h-[200px] sm:h-[220px]">
+        <div className="h-[240px] sm:h-[280px]">
           {topAssetsData.length === 0 ? (
             <div className="w-full h-full flex items-center justify-center">
               <span className="text-gray-400 text-sm font-medium">Belum ada data peminjaman</span>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topAssetsData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#f0f0f0" />
-                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 11 }} allowDecimals={false} />
+              <BarChart data={topAssetsData} layout="vertical" margin={{ top: 0, right: 35, left: 0, bottom: 0 }}>
+                <CartesianGrid horizontal={false} vertical={true} stroke="#e5e7eb" />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} allowDecimals={false} domain={[0, 100]} />
                 <YAxis dataKey="name" type="category" width={110} axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} />
                 <Tooltip
                   cursor={{ fill: '#f8fafc' }}
                   contentStyle={{ borderRadius: '10px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: '12px' }}
                 />
-                <Bar isAnimationActive={false} dataKey="jumlah" name="Jumlah Pinjam" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={16} />
+                <Bar isAnimationActive={false} dataKey="jumlah" name="Rasio Pinjam (%)" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={16}>
+                  <LabelList dataKey="jumlah" position="right" fill="#6b7280" fontSize={11} fontWeight={600} formatter={(val: any) => `${val}%`} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
+
+        {/* Versi khusus untuk export PDF - disembunyikan dari user, tidak responsive */}
+        {topAssetsData.length > 0 && (
+          <div 
+            id="chart-top-assets-print" 
+            style={{ position: 'fixed', left: '-9999px', top: 0, width: '900px', height: '500px', background: '#fff', padding: '24px' }}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topAssetsData} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }}>
+                <CartesianGrid horizontal={false} vertical={true} stroke="#e5e7eb" />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} allowDecimals={false} domain={[0, 100]} />
+                <YAxis dataKey="name" type="category" width={110} axisLine={false} tickLine={false} tick={{ fill: '#4b5563', fontSize: 11 }} />
+                <Bar isAnimationActive={false} dataKey="jumlah" name="Rasio Pinjam (%)" fill="#3b82f6" radius={[0, 6, 6, 0]} barSize={24}>
+                  <LabelList dataKey="jumlah" position="right" fill="#6b7280" fontSize={11} fontWeight={600} formatter={(val: any) => `${val}%`} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
     </div>
@@ -525,13 +788,151 @@ export default function AnalyticsContent() {
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 
-function SummaryItem({ color, textCls, label, text }: { color: string; textCls: string; label: string; text: React.ReactNode }) {
+const insightStyles = (category: string, trend?: string) => {
+  switch (category) {
+    case 'stokKritis': return { color: 'bg-red-400', textCls: 'text-red-600', icon: AlertTriangle };
+    case 'peminjaman': return { 
+      color: trend === 'Naik' ? 'bg-green-400' : trend === 'Turun' ? 'bg-amber-400' : 'bg-blue-400', 
+      textCls: trend === 'Naik' ? 'text-green-600' : trend === 'Turun' ? 'text-amber-600' : 'text-blue-600',
+      icon: trend === 'Turun' ? TrendingDown : TrendingUp
+    };
+    case 'kategoriPopuler': return { color: 'bg-indigo-400', textCls: 'text-indigo-600', icon: Tag };
+    case 'durasiRata': return { color: 'bg-teal-400', textCls: 'text-teal-600', icon: Clock };
+    case 'hariTersibuk': return { color: 'bg-amber-400', textCls: 'text-amber-600', icon: CalendarDays };
+    case 'approvalRate': return { color: 'bg-slate-400', textCls: 'text-slate-600', icon: CheckCircle2 };
+    default: return { color: 'bg-blue-400', textCls: 'text-blue-600', icon: Activity };
+  }
+}
+
+function SummaryItem({ item }: { item: any }) {
+  const { category, trend, label, text } = item
+  const style = insightStyles(category || 'peminjaman', trend)
+  const Icon = style.icon
+  
   return (
     <div className="flex items-start gap-2.5 sm:gap-3">
-      <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${color}`} />
+      <span className={`mt-0.5 shrink-0 ${style.textCls}`}>
+        <Icon className="w-4 h-4" strokeWidth={2.5} />
+      </span>
       <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-        <span className={`font-bold ${textCls}`}>{label}:</span>{' '}{text}
+        <span className={`font-bold ${style.textCls}`}>{label}:</span>{' '}{text}
       </p>
     </div>
   )
+}
+
+function RotatingSummary({ items }: { items: any[] }) {
+  const [current, setCurrent] = useState(0)
+  const [outgoing, setOutgoing] = useState<number | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  
+  const goTo = (next: number) => {
+    if (next === current) return
+    setOutgoing(current)
+    setCurrent(next)
+  }
+  
+  useEffect(() => {
+    if (!items || items.length <= 1) return
+    if (isHovered) return // paused
+    
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) return
+  
+    let interval: ReturnType<typeof setInterval> | null = null
+    const start = () => {
+      if (interval) return
+      interval = setInterval(() => {
+        setOutgoing(current)
+        setCurrent(c => (c + 1) % items.length)
+      }, 5000)
+    }
+    const stop = () => { if (interval) clearInterval(interval); interval = null }
+  
+    const handleVisibility = () => document.hidden ? stop() : start()
+  
+    start()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [items, isHovered, current])
+
+  if (!items || items.length === 0) return null
+
+  const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="flex flex-col gap-2.5 sm:gap-3">
+        {items.map((item, i) => (
+          <SummaryItem key={i} item={item} />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div 
+      className="flex flex-col gap-1.5"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="relative h-[66px] sm:h-[48px]" aria-live="polite">
+        {outgoing !== null && (
+          <div
+            key={`out-${outgoing}`}
+            className="absolute inset-0"
+            style={{ animation: 'insight-out 350ms ease-in forwards' }}
+            onAnimationEnd={() => setOutgoing(null)}
+          >
+            <SummaryItem item={items[outgoing]} />
+          </div>
+        )}
+        <div 
+          key={`in-${current}`} 
+          className="absolute inset-0"
+          style={{ animation: 'insight-in 350ms ease-out forwards' }}
+        >
+          <SummaryItem item={items[current]} />
+        </div>
+      </div>
+      
+      {items.length > 1 && (
+        <div className="flex gap-1.5 mt-1 ml-6 sm:ml-7 relative z-10">
+          {items.map((item, i) => {
+            const style = insightStyles(item.category, item.trend)
+            return (
+              <button
+                key={i}
+                onClick={() => goTo(i)}
+                aria-label={`Go to slide ${i + 1}`}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === current ? style.color : 'bg-gray-200'}`}
+              />
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const renderPieLabel = (props: any) => {
+  const { x, y, cx, cy, fill, percent, textAnchor } = props;
+  if (percent === 0) return null; // Don't show 0% labels
+  
+  return (
+    <text 
+      x={x} 
+      y={y} 
+      fill={fill} 
+      textAnchor={textAnchor} 
+      dominantBaseline="central" 
+      fontSize={13}
+      fontWeight={500}
+    >
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
 }

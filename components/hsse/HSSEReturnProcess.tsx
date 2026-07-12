@@ -10,6 +10,7 @@ interface HSSEReturnProcessProps {
 }
 
 export default function HSSEReturnProcess({ tickets, onSuccess }: HSSEReturnProcessProps) {
+
   return (
     <div className="hsse-return-process">
       <ReturnProcess tickets={tickets} onSuccess={onSuccess} />

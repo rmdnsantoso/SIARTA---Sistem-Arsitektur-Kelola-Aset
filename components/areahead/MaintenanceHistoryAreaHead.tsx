@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
 import { getAllMaintenanceRecords } from '../../actions/core/maintenance'
+import { usePolling } from '../../hooks/usePolling'
 
 interface HistoryTicket {
   id: string
@@ -16,6 +17,19 @@ interface HistoryTicket {
   photos?: string[]
   timestamp?: string
   updatedAt?: string
+  resolverName?: string
+}
+
+function formatActorName(actor: string | undefined): string {
+  if (!actor) return '';
+  if (actor.match(/^.+\s\([^)]+\)$/)) return actor;
+  const parts = actor.split(':');
+  if (parts.length >= 2) {
+    const role = parts[0].trim();
+    const name = parts.slice(1).join(':').trim();
+    return `${name} (${role})`;
+  }
+  return actor;
 }
 
 export default function MaintenanceHistoryAreaHead() {
@@ -45,19 +59,14 @@ export default function MaintenanceHistoryAreaHead() {
           photos: r.photos?.map((p: any) => p.image) || [],
           timestamp: r.createdAt?.toString(),
           updatedAt: r.updatedAt?.toString(),
+          resolverName: (r as any).resolverName || undefined,
         }))
         setRecords(adapted)
       }
     }).finally(() => setLoading(false))
   }
 
-  useEffect(() => {
-    refreshData()
-    const interval = setInterval(() => {
-      refreshData()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  usePolling(refreshData, 5000)
 
   const historyData = records
 
@@ -393,7 +402,7 @@ export default function MaintenanceHistoryAreaHead() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1">Pelapor</p>
-                      <p className="text-sm font-bold text-gray-900">{selectedTicket.reporter}</p>
+                      <div className="text-sm font-semibold text-gray-900">{formatActorName(selectedTicket.reporter)}</div>
                     </div>
                   </div>
 
@@ -462,6 +471,11 @@ export default function MaintenanceHistoryAreaHead() {
                               } catch { return ''; }
                             })()}
                           </p>
+                          {selectedTicket.resolverName && (
+                            <p className="text-[11px] text-gray-500 line-clamp-1 mt-1">
+                              Diselesaikan oleh: <span className="font-medium text-gray-700">{formatActorName(selectedTicket.resolverName)}</span>
+                            </p>
+                          )}
                         </div>
                       </div>
                     )}

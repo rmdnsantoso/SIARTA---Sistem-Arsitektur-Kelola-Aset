@@ -33,6 +33,7 @@ function StatusBadge({ status }: { status: TicketStatus }) {
 }
 
 export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
+
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets)
   
   React.useEffect(() => {
@@ -227,12 +228,6 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
 
               <div className="flex gap-2 border-t border-gray-100 pt-3">
                 <button
-                  onClick={() => { setModal({ ticket, type: 'detail' }) }}
-                  className="flex-none px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors"
-                >
-                  Detail
-                </button>
-                <button
                   onClick={() => { setCatatan(''); setModal({ ticket, type: 'setujui' }) }}
                   className="flex-1 py-2 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700 transition-colors"
                 >
@@ -367,16 +362,16 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
             {/* Detail Modal */}
             {modal.type === 'detail' && (
               <>
-                <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50">
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-slate-50">
                   <div>
-                    <h3 className="text-lg font-extrabold text-gray-900">Detail Pengajuan</h3>
-                    <p className="text-sm text-gray-500">{modal.ticket.id}</p>
+                    <h3 className="text-base sm:text-lg font-extrabold text-gray-900">Detail Pengajuan</h3>
+                    <p className="text-xs sm:text-sm text-gray-500">{modal.ticket.id}</p>
                   </div>
                   <button onClick={() => setModal(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded-full transition-colors">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                   {[
                     { label: 'Pemohon', value: modal.ticket.peminjam },
                     { label: 'Aset', value: modal.ticket.alat },
@@ -390,9 +385,9 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
                     </div>
                   ))}
                 </div>
-                <div className="p-6 pt-0 flex gap-3">
-                  <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'setujui' }) }} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors">Setuju</button>
-                  <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'tolak' }) }} className="flex-1 py-3 bg-red-50 text-red-700 border border-red-200 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors">Tolak</button>
+                <div className="p-4 sm:p-6 pt-0 flex gap-3">
+                  <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'setujui' }) }} className="flex-1 py-2 sm:py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors">Setuju</button>
+                  <button onClick={() => { setCatatan(''); setModal({ ...modal, type: 'tolak' }) }} className="flex-1 py-2 sm:py-3 bg-red-50 text-red-700 border border-red-200 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors">Tolak</button>
                 </div>
               </>
             )}
@@ -400,18 +395,18 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
             {/* Setujui Modal */}
             {modal.type === 'setujui' && (
               <>
-                <div className="px-6 py-5 border-b border-gray-100 bg-emerald-50">
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-emerald-50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                       <svg className="w-5 h-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                     </div>
-                    <div>
-                      <h3 className="text-base font-extrabold text-gray-900">Konfirmasi Persetujuan</h3>
-                      <p className="text-sm text-gray-600">{modal.ticket.id} — {modal.ticket.alat}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-extrabold text-gray-900 truncate">Konfirmasi Persetujuan</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">{modal.ticket.id} — {modal.ticket.alat}</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-4">
                   <p className="text-sm text-gray-600">Anda akan memverifikasi tiket ini dan meneruskannya ke Area Head.</p>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5">Catatan Verifikasi <span className="text-gray-400 font-normal">(opsional)</span></label>
@@ -425,10 +420,10 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
                     />
                   </div>
                 </div>
-                <div className="px-6 pb-6 flex gap-3">
-                  <button onClick={() => setModal(null)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Batal</button>
-                  <button onClick={handleConfirm} disabled={loading} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50">
-                    {loading ? 'Memproses...' : 'Setujui & Teruskan'}
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex gap-3">
+                  <button onClick={() => setModal(null)} className="flex-1 py-2 sm:py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Batal</button>
+                  <button onClick={handleConfirm} disabled={loading} className="flex-1 py-2 sm:py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50">
+                    {loading ? 'Proses...' : 'Setujui'}
                   </button>
                 </div>
               </>
@@ -437,18 +432,18 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
             {/* Tolak Modal */}
             {modal.type === 'tolak' && (
               <>
-                <div className="px-6 py-5 border-b border-gray-100 bg-red-50">
+                <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-red-50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
                       <svg className="w-5 h-5 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                     </div>
-                    <div>
-                      <h3 className="text-base font-extrabold text-gray-900">Tolak Pengajuan</h3>
-                      <p className="text-sm text-gray-600">{modal.ticket.id} — {modal.ticket.alat}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base font-extrabold text-gray-900 truncate">Tolak Pengajuan</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 truncate">{modal.ticket.id} — {modal.ticket.alat}</p>
                     </div>
                   </div>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-4 sm:p-6 space-y-4">
                   <p className="text-sm text-gray-600">Tiket akan ditolak. Peminjam akan mendapat notifikasi.</p>
                   <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1.5">Alasan Penolakan <span className="text-red-500">*</span></label>
@@ -462,10 +457,10 @@ export default function HSSEBorrowingProcess({ tickets, onSuccess }: Props) {
                     />
                   </div>
                 </div>
-                <div className="px-6 pb-6 flex gap-3">
-                  <button onClick={() => setModal(null)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Batal</button>
-                  <button onClick={handleConfirm} disabled={loading || !catatan.trim()} className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors disabled:opacity-50">
-                    {loading ? 'Memproses...' : 'Tolak Pengajuan'}
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex gap-3">
+                  <button onClick={() => setModal(null)} className="flex-1 py-2 sm:py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors">Batal</button>
+                  <button onClick={handleConfirm} disabled={loading || !catatan.trim()} className="flex-1 py-2 sm:py-3 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors disabled:opacity-50">
+                    {loading ? 'Proses...' : 'Konfirmasi Tolak'}
                   </button>
                 </div>
               </>

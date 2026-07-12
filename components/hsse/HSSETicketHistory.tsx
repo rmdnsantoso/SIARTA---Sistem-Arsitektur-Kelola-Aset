@@ -9,6 +9,7 @@ interface HSSETicketHistoryProps {
 }
 
 export default function HSSETicketHistory({ tickets }: HSSETicketHistoryProps) {
+
   return (
     <div className="hsse-ticket-history">
       <TicketHistory tickets={tickets} />

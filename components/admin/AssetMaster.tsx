@@ -15,6 +15,7 @@ import {
   unarchiveAsset
 } from '../../actions/core/asset'
 import { QRCodeSVG } from 'qrcode.react'
+import { usePolling } from '../../hooks/usePolling'
 
 type UnitStatus = 'Tersedia' | 'Dipinjam' | 'Maintenance' | 'Rusak'
 type TrackingType = 'SERIALIZED' | 'NON_SERIALIZED'
@@ -126,43 +127,39 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
     }
   }
 
-  useEffect(() => {
-    async function fetchAssets() {
-      try {
-        const res = await getAllAssetsForAdmin()
-        if (res.success && res.data) {
-          const adapted: Asset[] = res.data.map((dbAsset: any) => {
-            return {
-              id: dbAsset.id,
-              assetCode: dbAsset.assetCode,
-              name: dbAsset.name,
-              category: dbAsset.category,
-              totalStock: dbAsset.computedTotalStock,
-              availableStock: dbAsset.computedAvailableStock,
-              trackingType: dbAsset.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
-              isActive: dbAsset.isActive,
-              imageUrl: dbAsset.spec || '',
-              units: (dbAsset.units || []).map((u: any) => ({
-                ...u,
-                history: (u.history || []).map((h: any) => ({
-                  date: h.timestamp,
-                  action: h.action,
-                  user: h.actor
-                }))
+  const fetchAssets = async () => {
+    try {
+      const res = await getAllAssetsForAdmin()
+      if (res.success && res.data) {
+        const adapted: Asset[] = res.data.map((dbAsset: any) => {
+          return {
+            id: dbAsset.id,
+            assetCode: dbAsset.assetCode,
+            name: dbAsset.name,
+            category: dbAsset.category,
+            totalStock: dbAsset.computedTotalStock,
+            availableStock: dbAsset.computedAvailableStock,
+            trackingType: dbAsset.isSerialized ? 'SERIALIZED' : 'NON_SERIALIZED',
+            isActive: dbAsset.isActive,
+            imageUrl: dbAsset.spec || '',
+            units: (dbAsset.units || []).map((u: any) => ({
+              ...u,
+              history: (u.history || []).map((h: any) => ({
+                date: h.timestamp,
+                action: h.action,
+                user: h.actor
               }))
-            }
-          })
-          setAssets(prev => JSON.stringify(prev) !== JSON.stringify(adapted) ? adapted : prev)
-        }
-      } catch (err) {
-        console.error('Gagal memuat master aset:', err)
+            }))
+          }
+        })
+        setAssets(prev => JSON.stringify(prev) !== JSON.stringify(adapted) ? adapted : prev)
       }
+    } catch (err) {
+      console.error('Gagal memuat master aset:', err)
     }
-    
-    fetchAssets()
-    const interval = setInterval(fetchAssets, 3000)
-    return () => clearInterval(interval)
-  }, [])
+  }
+
+  usePolling(fetchAssets, 10000)
 
   const handleAddAsset = async () => {
     if (!form.name || !form.totalStock) return

@@ -22,9 +22,14 @@ function toSessionRole(role: Role): SessionUser['role'] {
 
 export async function quickLoginAs(role: 'Admin' | 'Peminjam' | 'HSSE' | 'AreaHead') {
   try {
+    if (process.env.ALLOW_QUICK_LOGIN !== 'true') {
+      throw new Error('Fitur ini tidak tersedia.')
+    }
+
     const roleEnum = Role[role as keyof typeof Role]
     const user = await prisma.user.findFirst({
       where: { role: roleEnum, isActive: true },
+      orderBy: { createdAt: 'asc' },
       select: { id: true, name: true, email: true, role: true }
     })
 
@@ -65,28 +70,3 @@ export async function logoutUser() {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Buat session dari data user yang sudah divalidasi (dipakai saat skip face scan)
-// Dipanggil oleh FaceScanner ketika skipFaceCheck=true
-// ─────────────────────────────────────────────────────────────────────────────
-
-export async function createSessionFromUser(user: { id: string; name: string; email: string; role: string }) {
-  try {
-    const roleMap: Record<string, SessionUser['role']> = {
-      'Admin': 'Admin',
-      'HSSE': 'HSSE',
-      'AreaHead': 'AreaHead',
-      'Peminjam': 'Peminjam',
-      'Area Head': 'AreaHead',
-    }
-    await createSession({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: roleMap[user.role] || 'Peminjam'
-    })
-    return { success: true }
-  } catch (error: any) {
-    return { success: false, error: error.message }
-  }
-}

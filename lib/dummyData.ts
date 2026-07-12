@@ -45,9 +45,9 @@ export const initialTickets: Ticket[] = [
     ],
     trackingLogs: [
       { stage: 'Peminjam', status: 'Pengajuan dibuat oleh pekerja.', actor: 'Dewi Rahayu', timestamp: '14 Jun 2026, 08:30 WIB' },
-      { stage: 'Admin', status: 'Pengecekan stok dan alokasi fisik unit (SN-O2-001) selesai.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 09:15 WIB' },
-      { stage: 'HSSE', status: 'Disetujui. Alat sesuai standar K3 untuk area Control Room.', actor: 'Budi Santoso (HSSE)', timestamp: '14 Jun 2026, 11:00 WIB' },
-      { stage: 'Area Head', status: 'Disetujui untuk operasi lapangan.', actor: 'Pak Joko (Area Head)', timestamp: '14 Jun 2026, 14:20 WIB', notes: 'Harap dikembalikan tepat waktu' }
+      { stage: 'Admin', status: 'Pengecekan stok dan alokasi fisik unit (SN-O2-001) selesai.', actor: 'Admin: Siti Aminah', timestamp: '14 Jun 2026, 09:15 WIB' },
+      { stage: 'HSSE', status: 'Disetujui. Alat sesuai standar K3 untuk area Control Room.', actor: 'HSSE: Budi Santoso', timestamp: '14 Jun 2026, 11:00 WIB' },
+      { stage: 'Area Head', status: 'Disetujui untuk operasi lapangan.', actor: 'Area Head: Pak Joko', timestamp: '14 Jun 2026, 14:20 WIB', notes: 'Harap dikembalikan tepat waktu' }
     ]
   },
   {
@@ -61,7 +61,7 @@ export const initialTickets: Ticket[] = [
     ],
     trackingLogs: [
       { stage: 'Peminjam', status: 'Pengajuan dibuat oleh pekerja.', actor: 'Hendra Putra', timestamp: '17 Jun 2026, 10:10 WIB' },
-      { stage: 'Admin', status: 'Ditolak karena stok fisik tidak mencukupi (rusak/maintenance).', actor: 'Siti Aminah (Admin)', timestamp: '17 Jun 2026, 10:45 WIB', notes: '2 unit sedang kalibrasi' }
+      { stage: 'Admin', status: 'Ditolak karena stok fisik tidak mencukupi (rusak/maintenance).', actor: 'Admin: Siti Aminah', timestamp: '17 Jun 2026, 10:45 WIB', notes: '2 unit sedang kalibrasi' }
     ]
   },
   {
@@ -74,7 +74,7 @@ export const initialTickets: Ticket[] = [
       { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
     ],
     trackingLogs: [
-      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Siti Aminah (Admin)', timestamp: '10 Jun 2026, 09:00 WIB' }
+      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Admin: Siti Aminah', timestamp: '10 Jun 2026, 09:00 WIB' }
     ],
     isReportedDamaged: true,
     damageReport: {
@@ -93,7 +93,7 @@ export const initialTickets: Ticket[] = [
       { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
     ],
     trackingLogs: [
-      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Siti Aminah (Admin)', timestamp: '12 Jun 2026, 08:15 WIB' }
+      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam.', actor: 'Admin: Siti Aminah', timestamp: '12 Jun 2026, 08:15 WIB' }
     ]
   },
   {
@@ -177,7 +177,7 @@ export const initialTickets: Ticket[] = [
       { stage: 'HSSE', status: 'Disetujui' }, { stage: 'Area Head', status: 'Disetujui' }, { stage: 'Serah Terima', status: 'Disetujui' }
     ],
     trackingLogs: [
-      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam oleh Ahmad.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 09:30 WIB' }
+      { stage: 'Serah Terima', status: 'Barang telah diserahkan dan sedang dipinjam oleh Ahmad.', actor: 'Admin: Siti Aminah', timestamp: '14 Jun 2026, 09:30 WIB' }
     ]
   },
   {
@@ -191,9 +191,9 @@ export const initialTickets: Ticket[] = [
     ],
     trackingLogs: [
       { stage: 'Peminjam', status: 'Pengajuan pinjam dibuat.', actor: 'Ahmad', timestamp: '19 Jun 2026, 08:15 WIB' },
-      { stage: 'Admin', status: 'Stok tersedia, unit GD-MSA-004 dialokasikan.', actor: 'Siti Aminah (Admin)', timestamp: '19 Jun 2026, 09:00 WIB' },
-      { stage: 'HSSE', status: 'Telah lolos verifikasi keselamatan kerja.', actor: 'Hendra (HSSE)', timestamp: '19 Jun 2026, 11:20 WIB' },
-      { stage: 'Area Head', status: 'Disetujui untuk operasi wellpad.', actor: 'Pak Joko (Area Head)', timestamp: '19 Jun 2026, 14:00 WIB' }
+      { stage: 'Admin', status: 'Stok tersedia, unit GD-MSA-004 dialokasikan.', actor: 'Admin: Siti Aminah', timestamp: '19 Jun 2026, 09:00 WIB' },
+      { stage: 'HSSE', status: 'Telah lolos verifikasi keselamatan kerja.', actor: 'HSSE: Hendra', timestamp: '19 Jun 2026, 11:20 WIB' },
+      { stage: 'Area Head', status: 'Disetujui untuk operasi wellpad.', actor: 'Area Head: Pak Joko', timestamp: '19 Jun 2026, 14:00 WIB' }
     ]
   },
   {
@@ -220,7 +220,7 @@ export const initialTickets: Ticket[] = [
     ],
     trackingLogs: [
       { stage: 'Peminjam', status: 'Pengajuan pinjam dibuat.', actor: 'Ahmad', timestamp: '14 Jun 2026, 10:00 WIB' },
-      { stage: 'Admin', status: 'Ditolak karena seluruh unit Multimeter sedang dalam jadwal kalibrasi tahunan.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 11:30 WIB', notes: 'Bisa mengajukan kembali minggu depan' }
+      { stage: 'Admin', status: 'Ditolak karena seluruh unit Multimeter sedang dalam jadwal kalibrasi tahunan.', actor: 'Admin: Siti Aminah', timestamp: '14 Jun 2026, 11:30 WIB', notes: 'Bisa mengajukan kembali minggu depan' }
     ]
   },
   {
@@ -235,7 +235,7 @@ export const initialTickets: Ticket[] = [
     trackingLogs: [
       { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Ahmad', timestamp: '31 Mei 2026, 09:00 WIB' },
       { stage: 'Admin', status: 'Disetujui.', actor: 'Siti Aminah', timestamp: '31 Mei 2026, 10:00 WIB' },
-      { stage: 'Serah Terima', status: 'Aset dikembalikan dalam kondisi lengkap dan baik.', actor: 'Siti Aminah (Admin)', timestamp: '05 Jun 2026, 15:20 WIB', notes: 'Pengembalian tepat waktu' }
+      { stage: 'Serah Terima', status: 'Aset dikembalikan dalam kondisi lengkap dan baik.', actor: 'Admin: Siti Aminah', timestamp: '05 Jun 2026, 15:20 WIB', notes: 'Pengembalian tepat waktu' }
     ]
   }
 ]

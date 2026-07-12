@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import * as faceapi from 'face-api.js'
+import { ensureModelsLoaded, calculateEAR, checkBrightness } from '../../lib/face/utils'
 
 interface FaceCaptureProps {
   onCapture: (descriptor: number[]) => void
@@ -10,6 +11,7 @@ interface FaceCaptureProps {
 
 type CaptureStatus = 'loading_models' | 'ready' | 'detecting' | 'captured' | 'no_face' | 'error'
 
+// Helper EAR dan Pencahayaan sekarang menggunakan lib/face/utils.ts
 export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -21,6 +23,11 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
   const [errorMsg, setErrorMsg] = useState('')
   const [capturedDescriptor, setCapturedDescriptor] = useState<number[] | null>(null)
 
+  // Liveness & Light
+  const [hasBlinked, setHasBlinked] = useState(false)
+  const earHistory = useRef<number[]>([])
+  const [lightStatus, setLightStatus] = useState<'normal' | 'dark' | 'bright'>('normal')
+
   // Load models once
   useEffect(() => {
     let isMounted = true
@@ -28,10 +35,8 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
     const init = async () => {
       try {
         setStatus('loading_models')
-        const MODEL_URL = '/models'
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL)
-        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        const loaded = await ensureModelsLoaded()
+        if (!loaded) throw new Error('Models failed to load')
 
         if (!isMounted) return
 
@@ -66,24 +71,98 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
     }
 
     const startDetection = () => {
-      detectionInterval.current = setInterval(async () => {
-        if (!videoRef.current || videoRef.current.readyState < 2) return
-        const detection = await faceapi
-          .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
-          .withFaceLandmarks()
-          .withFaceDescriptor()
+      let lastBrightnessCheck = 0
+      let stopped = false
 
-        if (isMounted) {
-          setFaceDetected(!!detection)
+      const scheduleNext = (fn: () => void) => {
+        if (stopped || !isMounted || !videoRef.current) return
+        const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
+        if (supportsVFC) {
+          detectionInterval.current = (videoRef.current as any).requestVideoFrameCallback(fn)
+        } else {
+          detectionInterval.current = setTimeout(fn, 200)
         }
-      }, 500)
+      }
+
+      const tick = async () => {
+        if (stopped || !isMounted) return
+        if (!videoRef.current || videoRef.current.readyState < 2) {
+          if (!stopped && isMounted) scheduleNext(tick)
+          return
+        }
+        
+        // Cek brightness (di-throttle 500ms)
+        const now = Date.now()
+        if (now - lastBrightnessCheck > 500) {
+          if (canvasRef.current) {
+            const lStatus = checkBrightness(videoRef.current, canvasRef.current)
+            if (isMounted) setLightStatus(lStatus)
+          }
+          lastBrightnessCheck = now
+        }
+
+        let detection: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68> | undefined
+
+        try {
+          detection = await faceapi
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .withFaceLandmarks()
+        } catch {
+          if (!stopped && isMounted) scheduleNext(tick)
+          return
+        }
+
+        if (!isMounted || stopped) return
+
+        if (detection) {
+          setFaceDetected(true)
+          
+          // Liveness Detection (Blink Check) - Sliding Window Relative
+          const landmarks = detection.landmarks.positions
+          const leftEye = landmarks.slice(36, 42)
+          const rightEye = landmarks.slice(42, 48)
+          const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2
+
+          earHistory.current.push(avgEAR)
+          if (earHistory.current.length > 8) {
+            earHistory.current.shift() // Simpan max 8 frame terakhir (800ms)
+          }
+
+          if (earHistory.current.length >= 3) {
+            const maxEAR = Math.max(...earHistory.current)
+            const minEAR = Math.min(...earHistory.current)
+            const latestEAR = earHistory.current[earHistory.current.length - 1]
+
+            // Kedipan terdeteksi jika:
+            // 1. Ada rentang penurunan/penutupan mata minimal 0.05 di history
+            // 2. Mata saat ini sudah pulih (terbuka) minimal 0.03 dari titik paling tertutup
+            if (maxEAR - minEAR >= 0.05 && latestEAR - minEAR >= 0.03) {
+              setHasBlinked(true)
+            }
+          }
+
+        } else {
+          setFaceDetected(false)
+        }
+        
+        if (!stopped && isMounted) {
+          scheduleNext(tick)
+        }
+      } // end tick()
+
+      tick()
     }
 
     init()
 
     return () => {
       isMounted = false
-      if (detectionInterval.current) clearInterval(detectionInterval.current)
+      if (detectionInterval.current) {
+        if ('cancelVideoFrameCallback' in HTMLVideoElement.prototype && videoRef.current) {
+          try { (videoRef.current as any).cancelVideoFrameCallback(detectionInterval.current) } catch (e) {}
+        }
+        clearTimeout(detectionInterval.current as any)
+      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop())
         streamRef.current = null
@@ -100,7 +179,7 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
 
     // Ambil snapshot descriptor saat tombol diklik
     const detection = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
       .withFaceLandmarks()
       .withFaceDescriptor()
 
@@ -115,7 +194,7 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
     setStatus('captured')
 
     // Stop kamera setelah berhasil
-    if (detectionInterval.current) clearInterval(detectionInterval.current)
+    if (detectionInterval.current) clearTimeout(detectionInterval.current as any)
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop())
       streamRef.current = null
@@ -135,9 +214,17 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
       <div className="text-center">
         <h4 className="text-base font-extrabold text-gray-900">Rekam Data Wajah</h4>
         <p className="text-xs text-gray-500 mt-1">
-          Arahkan wajah pengguna ke kamera, lalu tekan "Rekam Wajah"
+          Arahkan wajah ke kamera dan berkedip untuk memverifikasi.
         </p>
       </div>
+
+      {/* Light Warning (Passive) */}
+      {lightStatus !== 'normal' && (status === 'ready' || status === 'detecting') && (
+        <div className={`px-3 py-1.5 rounded-lg text-[10px] font-bold w-full max-w-[260px] text-center shadow-sm animate-pulse
+          ${lightStatus === 'dark' ? 'bg-slate-800 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`}>
+          ⚠️ {lightStatus === 'dark' ? 'Cahaya agak gelap.' : 'Cahaya silau/backlight.'}
+        </div>
+      )}
 
       {/* Camera Box */}
       <div className="relative w-full max-w-[260px] aspect-[3/4] mx-auto rounded-2xl overflow-hidden bg-gray-900 shadow-xl ring-4 ring-gray-100">
@@ -172,14 +259,14 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
         {(status === 'ready' || status === 'detecting' || status === 'no_face') && (
           <div className="absolute inset-0 z-10">
             {/* Corner brackets */}
-            <div className={`absolute top-5 left-5 w-8 h-8 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${faceDetected ? 'border-green-400' : 'border-blue-400'}`} />
-            <div className={`absolute top-5 right-5 w-8 h-8 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${faceDetected ? 'border-green-400' : 'border-blue-400'}`} />
-            <div className={`absolute bottom-5 left-5 w-8 h-8 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${faceDetected ? 'border-green-400' : 'border-blue-400'}`} />
-            <div className={`absolute bottom-5 right-5 w-8 h-8 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${faceDetected ? 'border-green-400' : 'border-blue-400'}`} />
+            <div className={`absolute top-5 left-5 w-8 h-8 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${faceDetected ? (hasBlinked ? 'border-green-400' : 'border-yellow-400') : 'border-blue-400'}`} />
+            <div className={`absolute top-5 right-5 w-8 h-8 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${faceDetected ? (hasBlinked ? 'border-green-400' : 'border-yellow-400') : 'border-blue-400'}`} />
+            <div className={`absolute bottom-5 left-5 w-8 h-8 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${faceDetected ? (hasBlinked ? 'border-green-400' : 'border-yellow-400') : 'border-blue-400'}`} />
+            <div className={`absolute bottom-5 right-5 w-8 h-8 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${faceDetected ? (hasBlinked ? 'border-green-400' : 'border-yellow-400') : 'border-blue-400'}`} />
 
             {/* Face oval guide */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className={`w-[58%] h-[52%] border-2 rounded-[50%] transition-colors duration-500 ${faceDetected ? 'border-green-400 border-solid' : 'border-white/40 border-dashed'}`} />
+              <div className={`w-[58%] h-[52%] border-2 rounded-[50%] transition-colors duration-500 ${faceDetected ? (hasBlinked ? 'border-green-400 border-solid' : 'border-yellow-400 border-solid') : 'border-white/40 border-dashed'}`} />
             </div>
 
             {/* Status badge */}
@@ -195,9 +282,13 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
                 </span>
               ) : (
                 <span className={`text-[10px] font-bold px-3 py-1 rounded-full transition-all ${
-                  faceDetected ? 'bg-green-500/90 text-white' : 'bg-black/50 text-white/80'
+                  faceDetected 
+                    ? (hasBlinked ? 'bg-green-500/90 text-white' : 'bg-yellow-500/90 text-white') 
+                    : 'bg-black/50 text-white/80'
                 }`}>
-                  {faceDetected ? '✓ Wajah terdeteksi' : 'Posisikan wajah di sini'}
+                  {faceDetected 
+                    ? (hasBlinked ? 'Wajah asli terdeteksi' : 'Silahkan Berkedip Sekali') 
+                    : 'Posisikan wajah di sini'}
                 </span>
               )}
             </div>
@@ -219,7 +310,7 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
 
       {/* Action buttons */}
       {(status === 'ready' || status === 'detecting' || status === 'no_face') && (
-        <div className="flex gap-3 w-full">
+        <div className="flex gap-3 w-full max-w-[260px]">
           <button
             type="button"
             onClick={onCancel}
@@ -230,13 +321,13 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
           <button
             type="button"
             onClick={handleCapture}
-            disabled={!faceDetected || status === 'detecting'}
+            disabled={!faceDetected || !hasBlinked || status === 'detecting'}
             className="flex-1 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             {status === 'detecting' ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Merekam...
+                Merekam
               </>
             ) : (
               <>
@@ -244,7 +335,7 @@ export default function FaceCapture({ onCapture, onCancel }: FaceCaptureProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                Rekam Wajah
+                Rekam
               </>
             )}
           </button>

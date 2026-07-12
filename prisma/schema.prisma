@@ -115,6 +115,9 @@ model Ticket {
   updatedAt      DateTime     @updatedAt
 
   logs TrackingLog[]
+
+  @@index([peminjamId])
+  @@index([currentStage, overallStatus])
 }
 
 model TrackingLog {
@@ -131,8 +134,8 @@ model TrackingLog {
 
 model Notification {
   id          String   @id @default(uuid())
-  recipientId String?  // (Opsional) Jika ditujukan untuk satu user spesifik
-  targetRole  Role?    // (Opsional) Jika ditujukan untuk satu role (Admin, HSSE, etc.)
+  recipientId String? // (Opsional) Jika ditujukan untuk satu user spesifik
+  targetRole  Role? // (Opsional) Jika ditujukan untuk satu role (Admin, HSSE, etc.)
   title       String
   message     String
   type        String   @default("info") // info, success, warning, urgent
@@ -140,46 +143,71 @@ model Notification {
   link        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([recipientId, isRead])
+  @@index([targetRole, isRead])
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  action      String   // e.g. "CREATE_USER", "DELETE_ASSET"
+  entityType  String   // e.g. "User", "Asset"
+  entityId    String?  // ID dari objek yang diubah
+  details     String   // "Menambahkan pengguna baru: Budi"
+  actorId     String   // ID admin yang melakukan
+  actorName   String   // Nama admin yang melakukan
+  createdAt   DateTime @default(now())
 }
 
 // Riwayat pemeliharaan aset (selesai diperbaiki atau write-off)
 model MaintenanceRecord {
-  id           String   @id @default(uuid())
-  recordCode   String   @unique // e.g. ESC-001
+  id           String             @id @default(uuid())
+  recordCode   String             @unique // e.g. ESC-001
   issue        String // Deskripsi masalah / kerusakan umum
-  resolution   String   @default("Menunggu Tindakan") // Hasil akhir
-  status       String   @default("Menunggu Tindakan") // Menunggu Tindakan | Selesai Diperbaiki | Dimusnahkan
+  resolution   String             @default("Menunggu Tindakan") // Hasil akhir
+  status       String             @default("Menunggu Tindakan") // Menunggu Tindakan | Selesai Diperbaiki | Dimusnahkan
   reporterId   String
-  reporter     User     @relation("ReporterRecords", fields: [reporterId], references: [id])
+  reporter     User               @relation("ReporterRecords", fields: [reporterId], references: [id])
   reporterName String // Nama reporter (snapshot)
+  resolverId   String? // User ID penyelesai
+  resolverName String? // Nama penyelesai
   dateReported String // Tanggal laporan (format string)
   dateResolved String? // Tanggal selesai (opsional)
   photoUrl     String? // Foto bukti kerusakan (legacy)
   notes        String? // Catatan tambahan
   items        MaintenanceItem[] // Daftar aset yang rusak
   photos       MaintenancePhoto[] // Kumpulan foto kerusakan
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model MaintenancePhoto {
-  id        String   @id @default(uuid())
+  id        String            @id @default(uuid())
   recordId  String
   record    MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
   image     String
-  createdAt DateTime @default(now())
+  createdAt DateTime          @default(now())
 }
 
 model MaintenanceItem {
-  id           String   @id @default(uuid())
+  id           String            @id @default(uuid())
   recordId     String
   record       MaintenanceRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
   assetId      String
   assetName    String
   assetCode    String
-  isSerialized Boolean  @default(false)
-  qty          Int      @default(1) // Jika non-serialized
-  serialNumber String?  // Kumpulan S/N jika serialized (disimpan dengan koma) atau satuan S/N
-  issue        String?  // Deskripsi masalah spesifik per barang/SN
-  createdAt    DateTime @default(now())
+  isSerialized Boolean           @default(false)
+  qty          Int               @default(1) // Jika non-serialized
+  serialNumber String? // Kumpulan S/N jika serialized (disimpan dengan koma) atau satuan S/N
+  issue        String? // Deskripsi masalah spesifik per barang/SN
+  createdAt    DateTime          @default(now())
 }

@@ -10,6 +10,7 @@ import HSSEAssetMaintenance from '../../components/hsse/HSSEAssetMaintenance'
 import HSSETicketHistory from '../../components/hsse/HSSETicketHistory'
 import HSSEMaintenanceHistory from '../../components/hsse/HSSEMaintenanceHistory'
 import UserManagement from '../../components/admin/UserManagement'
+import { usePolling } from '../../hooks/usePolling'
 import { getTicketsForHSSE } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
@@ -39,13 +40,7 @@ export default function HSSEDashboard() {
     }
   }
 
-  useEffect(() => {
-    refreshData()
-    const interval = setInterval(() => {
-      refreshData()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  usePolling(refreshData, 15000)
 
   const hssePendingCount = tickets.filter(
     (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'HSSE'
@@ -91,7 +86,7 @@ export default function HSSEDashboard() {
           {activeNav === 'Pemeliharaan Aset' && <HSSEAssetMaintenance />}
           {activeNav === 'Riwayat Peminjaman' && <HSSETicketHistory tickets={tickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <HSSEMaintenanceHistory />}
-          {activeNav === 'Kelola Pengguna' && <UserManagement currentUserId={currentUser?.id} />}
+          {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} currentUserId={currentUser?.id} />}
         </div>
       </div>
     </div>

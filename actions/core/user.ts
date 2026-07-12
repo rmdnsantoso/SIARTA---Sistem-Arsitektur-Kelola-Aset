@@ -6,54 +6,64 @@ import { Role } from '../../app/generated/prisma'
 import bcrypt from 'bcryptjs'
 import { createSession, getCurrentUser } from '../../lib/session'
 import { headers } from 'next/headers'
+import crypto from 'crypto'
+import { createActivityLog } from './log'
 
 // ─────────────────────────────────────────
-// In-memory brute-force / rate limiter
-// Max 5 gagal per email per 15 menit
+// Database-backed brute-force / rate limiter
+// Max 5 gagal per key per 15 menit
 // ─────────────────────────────────────────
-const loginAttempts = new Map<string, { count: number; resetAt: number }>()
 const MAX_ATTEMPTS = 5
 const WINDOW_MS = 15 * 60 * 1000 // 15 menit
 
-function checkRateLimit(key: string): { allowed: boolean; remaining: number; retryAfterMs: number } {
-  const now = Date.now()
-  const entry = loginAttempts.get(key)
-
-  if (!entry || now > entry.resetAt) {
-    loginAttempts.set(key, { count: 1, resetAt: now + WINDOW_MS })
+async function checkRateLimit(key: string): Promise<{ allowed: boolean; remaining: number; retryAfterMs: number }> {
+  const now = new Date()
+  const nowMs = now.getTime()
+  
+  let entry = await prisma.loginAttempt.findUnique({ where: { key } })
+  
+  if (!entry || nowMs > entry.resetAt.getTime()) {
+    entry = await prisma.loginAttempt.upsert({
+      where: { key },
+      update: { count: 1, resetAt: new Date(nowMs + WINDOW_MS) },
+      create: { key, count: 1, resetAt: new Date(nowMs + WINDOW_MS) }
+    })
     return { allowed: true, remaining: MAX_ATTEMPTS - 1, retryAfterMs: 0 }
   }
-
+  
   if (entry.count >= MAX_ATTEMPTS) {
-    return { allowed: false, remaining: 0, retryAfterMs: entry.resetAt - now }
+    return { allowed: false, remaining: 0, retryAfterMs: entry.resetAt.getTime() - nowMs }
   }
-
-  entry.count += 1
+  
+  entry = await prisma.loginAttempt.update({
+    where: { key },
+    data: { count: entry.count + 1 }
+  })
+  
   return { allowed: true, remaining: MAX_ATTEMPTS - entry.count, retryAfterMs: 0 }
 }
 
-function resetRateLimit(key: string) {
-  loginAttempts.delete(key)
+async function resetRateLimit(key: string) {
+  try {
+    await prisma.loginAttempt.delete({ where: { key } })
+  } catch (e) {
+    // Abaikan error jika data tidak ditemukan (sudah terhapus)
+  }
 }
 
 // ─────────────────────────────────────────
-// Helper: Generate password acak 10 karakter
+// Helper: Generate password acak kriptografis 12 karakter
 // ─────────────────────────────────────────
 function generateRandomPassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
-  let result = ''
-  for (let i = 0; i < 10; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
+  return crypto.randomBytes(6).toString('hex')
 }
 
 // ─────────────────────────────────────────
-// Ambil semua pengguna (Admin & HSSE)
+// Ambil semua pengguna (Admin, HSSE, Area Head)
 // ─────────────────────────────────────────
 export async function getAllUsers() {
   try {
-    await requireRole([Role.Admin, Role.HSSE])
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'asc' },
       select: {
@@ -116,6 +126,8 @@ export async function createUser(input: {
       }
     })
 
+    await createActivityLog('CREATE_USER', 'User', `Menambahkan pengguna baru: ${user.role}: ${user.name}`, user.id)
+
     return {
       success: true,
       data: {
@@ -162,6 +174,7 @@ export async function updateUser(id: string, input: {
     }
 
     const user = await prisma.user.update({ where: { id }, data: input })
+    await createActivityLog('UPDATE_USER', 'User', `Memperbarui data pengguna: ${user.name}`, user.id)
     return { success: true, data: JSON.parse(JSON.stringify(user)) }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -190,6 +203,11 @@ export async function deleteUser(id: string) {
     if (activeTickets > 0) {
       throw new Error('Tidak bisa hapus pengguna yang masih memiliki tiket aktif.')
     }
+    const userToDelete = await prisma.user.findUnique({ where: { id } })
+    if (userToDelete) {
+      await createActivityLog('DELETE_USER', 'User', `Menghapus akun pengguna: ${userToDelete.name}`, id)
+    }
+    
     await prisma.user.delete({ where: { id } })
     return { success: true }
   } catch (error: any) {
@@ -260,6 +278,12 @@ export async function changeUserPassword(userId: string, oldPassword: string, ne
     const isMatch = await bcrypt.compare(oldPassword, user.passwordHash)
     if (!isMatch) throw new Error('Password lama salah.')
 
+    // Validasi kekuatan password
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+    if (!passwordRegex.test(newPassword)) {
+      throw new Error('Password baru harus minimal 8 karakter, mengandung setidaknya satu huruf besar, satu huruf kecil, dan satu angka.')
+    }
+
     const newHash = await bcrypt.hash(newPassword, 12)
     await prisma.user.update({
       where: { id: userId },
@@ -295,7 +319,7 @@ export async function loginWithCredentials(email: string, password: string) {
     const cleanEmail = email.toLowerCase().trim()
 
     // ── Rate limiting per email ───────────────────────────────────────────────
-    const rl = checkRateLimit(`email:${cleanEmail}`)
+    const rl = await checkRateLimit(`email:${cleanEmail}`)
     if (!rl.allowed) {
       const menit = Math.ceil(rl.retryAfterMs / 60000)
       throw new Error(`Terlalu banyak percobaan login. Coba lagi dalam ${menit} menit.`)
@@ -318,11 +342,22 @@ export async function loginWithCredentials(email: string, password: string) {
     if (!isMatch) throw new Error('Email atau password salah.')
 
     // ── Login sukses — reset rate limit ──────────────────────────────────────
-    resetRateLimit(`email:${cleanEmail}`)
+    await resetRateLimit(`email:${cleanEmail}`)
 
-    // Session dibuat di FaceScanner setelah 2FA wajah berhasil, bukan di sini
+    let sessionCreated = false
+    if (!user.faceRegistered) {
+      await createSession({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as any,
+      })
+      sessionCreated = true
+    }
+
     return {
       success: true,
+      sessionCreated,
       user: {
         id: user.id,
         name: user.name,
@@ -337,88 +372,133 @@ export async function loginWithCredentials(email: string, password: string) {
 }
 
 // ─────────────────────────────────────────
+// Generate liveness challenge acak (Blink atau Turn Head)
+// ─────────────────────────────────────────
+export async function generateLivenessChallenge(sessionId: string) {
+  try {
+    const type = Math.random() > 0.5 ? 'BLINK' : 'TURN_HEAD'
+    const expiresAt = Date.now() + 15 * 1000 // 15 detik
+
+    const livenessChallenges = (globalThis as any).livenessChallenges = (globalThis as any).livenessChallenges || new Map<string, { type: string, expiresAt: number }>()
+    
+    livenessChallenges.set(sessionId, { type, expiresAt })
+
+    // Bersihkan challenge yang sudah expired dari memory
+    for (const [key, val] of livenessChallenges.entries()) {
+      if ((val as any).expiresAt < Date.now()) {
+        livenessChallenges.delete(key)
+      }
+    }
+
+    return { success: true, challenge: type }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// ─────────────────────────────────────────
 // Verifikasi wajah saat login
 // Jika userId diberikan, hanya cocokkan ke user tersebut (targeted match)
 // Jika tidak, cari ke seluruh user aktif (fallback mode)
 // ─────────────────────────────────────────
-export async function verifyFaceLogin(descriptor: number[], userId?: string) {
+export async function verifyFaceLogin(
+  descriptor: number[], 
+  userId: string, 
+  sessionId?: string, 
+  livenessData?: { earHistory?: number[], headTurnHistory?: ('left'|'right'|'center')[] }
+) {
   try {
-    const THRESHOLD = 0.55
+    if (!userId) return { success: false, error: 'Akses ditolak: User ID diperlukan.' }
+    if (!descriptor || descriptor.length !== 128) return { success: false, error: 'Data wajah dari perangkat tidak valid atau korup.' }
 
-    if (userId) {
-      // ── Targeted: hanya cocokkan wajah user yg sudah login via kredensial ──
-      const user = await prisma.user.findUnique({
-        where: { id: userId, isActive: true, faceRegistered: true },
-        select: { id: true, name: true, email: true, role: true, faceDescriptor: true }
-      })
-
-      if (!user || !user.faceDescriptor) {
-        return { success: false, error: 'Data wajah belum direkam untuk akun ini.' }
-      }
-
-      const stored: number[] = JSON.parse(user.faceDescriptor)
-      let sum = 0
-      for (let i = 0; i < descriptor.length; i++) {
-        const diff = descriptor[i] - (stored[i] ?? 0)
-        sum += diff * diff
-      }
-      const distance = Math.sqrt(sum)
-
-      if (distance < THRESHOLD) {
-        // ── Buat session setelah wajah berhasil diverifikasi (targeted) ──
-        await createSession({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role as any,
-        })
-        return {
-          success: true,
-          user: { id: user.id, name: user.name, email: user.email, role: user.role }
-        }
-      }
-      return { success: false, error: 'Wajah tidak cocok dengan akun ini. Coba lagi.' }
+    // ── Validasi Liveness (Server-Side) ──
+    if (!sessionId || !livenessData) {
+      return { success: false, error: 'Data liveness tidak lengkap.' }
     }
 
-    // ── Global search: mode fallback (quick login testing) ──
-    const users = await prisma.user.findMany({
-      where: { isActive: true, faceRegistered: true, faceDescriptor: { not: null } },
+    const livenessChallenges = (globalThis as any).livenessChallenges
+    if (!livenessChallenges) return { success: false, error: 'Sistem liveness belum diinisialisasi.' }
+
+    const storedChallenge = livenessChallenges.get(sessionId)
+    if (!storedChallenge) {
+      return { success: false, error: 'Sesi tantangan tidak valid atau sudah kedaluwarsa. Silakan coba lagi.' }
+    }
+
+    livenessChallenges.delete(sessionId) // One-time use
+
+    if (storedChallenge.expiresAt < Date.now()) {
+      return { success: false, error: 'Waktu verifikasi habis. Coba lagi.' }
+    }
+
+    if (storedChallenge.type === 'BLINK') {
+      const { earHistory } = livenessData
+      if (!earHistory || earHistory.length < 3) return { success: false, error: 'Data kedipan tidak memadai.' }
+      
+      const maxEAR = Math.max(...earHistory)
+      const minEAR = Math.min(...earHistory)
+      const latestEAR = earHistory[earHistory.length - 1]
+      
+      if (maxEAR - minEAR < 0.05 || latestEAR - minEAR < 0.03) {
+        return { success: false, error: 'Kedipan wajah gagal divalidasi oleh server.' }
+      }
+    } else if (storedChallenge.type === 'TURN_HEAD') {
+      const { headTurnHistory } = livenessData
+      if (!headTurnHistory || headTurnHistory.length < 2) return { success: false, error: 'Data gerakan kepala tidak memadai.' }
+      
+      const hasTurned = headTurnHistory.includes('left') || headTurnHistory.includes('right')
+      if (!hasTurned) {
+        return { success: false, error: 'Gerakan menoleh gagal divalidasi oleh server.' }
+      }
+    }
+
+    // ── Rate Limiting Check ──
+    const rateLimit = await checkRateLimit(`face:${userId}`)
+    if (!rateLimit.allowed) {
+      return { success: false, error: `Terlalu banyak percobaan gagal. Silakan coba lagi setelah ${Math.ceil(rateLimit.retryAfterMs / 1000 / 60)} menit.` }
+    }
+
+    const THRESHOLD = 0.55
+
+    // ── Targeted: hanya cocokkan wajah user yg sudah login via kredensial ──
+    const user = await prisma.user.findUnique({
+      where: { id: userId, isActive: true, faceRegistered: true },
       select: { id: true, name: true, email: true, role: true, faceDescriptor: true }
     })
 
-    let bestMatch: { userId: string; name: string; email: string; role: Role; distance: number } | null = null
-
-    for (const user of users) {
-      if (!user.faceDescriptor) continue
-      const stored: number[] = JSON.parse(user.faceDescriptor)
-      let sum = 0
-      for (let i = 0; i < descriptor.length; i++) {
-        const diff = descriptor[i] - (stored[i] ?? 0)
-        sum += diff * diff
-      }
-      const distance = Math.sqrt(sum)
-      if (distance < THRESHOLD) {
-        if (!bestMatch || distance < bestMatch.distance) {
-          bestMatch = { userId: user.id, name: user.name, email: user.email, role: user.role, distance }
-        }
-      }
+    if (!user || !user.faceDescriptor) {
+      return { success: false, error: 'Data wajah belum direkam untuk akun ini.' }
     }
 
-    if (bestMatch) {
-      // ── Buat session setelah wajah berhasil diverifikasi (global match) ──
+    const stored: number[] = JSON.parse(user.faceDescriptor)
+    if (!stored || stored.length !== 128) {
+      return { success: false, error: 'Data wajah di server tidak valid (panjang array berbeda). Silakan hubungi Admin untuk registrasi ulang wajah.' }
+    }
+
+    let sum = 0
+    for (let i = 0; i < 128; i++) {
+      const diff = descriptor[i] - stored[i]
+      sum += diff * diff
+    }
+    const distance = Math.sqrt(sum)
+
+    if (distance < THRESHOLD) {
+      // ── Buat session setelah wajah berhasil diverifikasi ──
       await createSession({
-        id: bestMatch.userId,
-        name: bestMatch.name,
-        email: bestMatch.email,
-        role: bestMatch.role as any,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as any,
       })
+      // Reset rate limit on success
+      await resetRateLimit(`face:${userId}`)
+      
       return {
         success: true,
-        user: { id: bestMatch.userId, name: bestMatch.name, email: bestMatch.email, role: bestMatch.role }
+        user: { id: user.id, name: user.name, email: user.email, role: user.role }
       }
     }
 
-    return { success: false, error: 'Wajah tidak dikenali dalam sistem.' }
+    return { success: false, error: 'Wajah tidak cocok dengan akun ini. Coba lagi.' }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

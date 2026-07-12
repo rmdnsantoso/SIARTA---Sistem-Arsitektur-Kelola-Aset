@@ -34,7 +34,7 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string, allo
     // Kirim notif ke HSSE
     await createNotification(
       'Verifikasi Diperlukan',
-      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) memerlukan verifikasi HSSE sebelum dipinjamkan.`,
+      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) telah diverifikasi oleh ${user.name} (Admin) dan memerlukan verifikasi HSSE.`,
       'urgent',
       'HSSE'
     )
@@ -72,7 +72,7 @@ export async function approveTicketByHSSE(ticketId: string, notes?: string) {
     // Kirim notif ke Area Head
     await createNotification(
       'Menunggu Approval Akhir',
-      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) telah diverifikasi HSSE dan menunggu persetujuan Anda.`,
+      `Tiket ${ticket.ticketCode} (Peminjam: ${ticket.peminjam.name}) telah diverifikasi oleh ${user.name} (HSSE) dan menunggu persetujuan Anda.`,
       'urgent',
       'AreaHead'
     )
@@ -116,7 +116,7 @@ export async function rejectTicketByHSSE(ticketId: string, rejectReason: string)
 
     await createNotification(
       'Pengajuan Ditolak oleh HSSE',
-      `Tiket ${ticket.ticketCode} ditolak oleh HSSE. Alasan: ${rejectReason}`,
+      `Tiket ${ticket.ticketCode} ditolak oleh ${user.name} (HSSE). Alasan: ${rejectReason}`,
       'urgent',
       'Semua',
       ticket.peminjamId
@@ -145,7 +145,7 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
         logs: {
           create: {
             stage: 'Admin',
-            status: 'Serah terima aset selesai. Aset dibawa ke lapangan.',
+            status: 'Serah terima aset selesai.',
             actor: `${user.name} (Admin)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
           }
@@ -185,7 +185,7 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
 
     await createNotification(
       'Aset Diserahkan',
-      `Serah terima aset untuk tiket ${ticket.ticketCode} selesai. Aset aktif dipinjam.`,
+      `Serah terima aset untuk tiket ${ticket.ticketCode} selesai diproses oleh ${user.name} (Admin). Aset aktif dipinjam.`,
       'success',
       'Semua',
       ticket.peminjamId
@@ -279,7 +279,7 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
           issue: maintenanceNotes || 'Dilaporkan rusak saat pengembalian',
           status: 'Menunggu Tindakan',
           reporterId: user.id,
-          reporterName: `${user.name} (Admin)`,
+          reporterName: `Admin: ${user.name}`,
           dateReported: today,
           items: {
             create: [{
@@ -295,7 +295,7 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
 
       await createNotification(
         'Inspeksi HSSE / Maintenance Diperlukan',
-        `Aset ${ticket.asset.name} (${ticket.asset.assetCode}) dikembalikan dan dimasukkan ke status Maintenance.`,
+        `Aset ${ticket.asset.name} (${ticket.asset.assetCode}) dikembalikan melalui Admin: ${user.name} dan dimasukkan ke status Maintenance.`,
         'warning',
         'HSSE'
       )
@@ -303,7 +303,7 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
 
     await createNotification(
       'Aset Dikembalikan',
-      `Pengembalian aset tiket ${ticket.ticketCode} selesai. Tidak ada masalah.`,
+      `Pengembalian aset tiket ${ticket.ticketCode} selesai diverifikasi oleh ${user.name} (Admin). Tidak ada masalah.`,
       'success',
       'Semua',
       ticket.peminjamId
@@ -378,7 +378,7 @@ export async function rejectTicketByAdmin(ticketId: string, rejectReason: string
 
     await createNotification(
       'Tiket Ditolak Admin',
-      `Tiket ${ticket.ticketCode} ditolak. Alasan: ${rejectReason}`,
+      `Tiket ${ticket.ticketCode} ditolak oleh ${user.name} (Admin). Alasan: ${rejectReason}`,
       'urgent',
       'Semua',
       ticket.peminjamId

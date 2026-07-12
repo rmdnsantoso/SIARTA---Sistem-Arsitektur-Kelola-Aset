@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import FaceScanner from './FaceScanner'
 import toast from 'react-hot-toast'
 import { loginWithCredentials } from '../../actions/core/user'
 import { quickLoginAs } from '../../actions/core/auth'
+import { ensureModelsLoaded } from '../../lib/face/utils'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -17,12 +18,27 @@ export default function LoginForm() {
   const [loginStep, setLoginStep] = useState<'credentials' | 'face_scan'>('credentials')
   const [authenticatedUser, setAuthenticatedUser] = useState<{ id: string; name: string; email: string; role: string; faceRegistered?: boolean } | null>(null)
 
+  // Preload AI Models quietly in the background
+  useEffect(() => {
+    ensureModelsLoaded().catch(() => {})
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     try {
       const res = await loginWithCredentials(email, password)
       if (res.success && res.user) {
+        if (res.sessionCreated) {
+          toast.success('Login berhasil.')
+          const role = res.user.role.toLowerCase()
+          if (role === 'admin') router.push('/admin')
+          else if (role === 'areahead' || role === 'area head') router.push('/areahead')
+          else if (role === 'hsse') router.push('/hsse')
+          else router.push('/peminjam')
+          return
+        }
+
         setAuthenticatedUser({
           id: res.user.id,
           name: res.user.name,

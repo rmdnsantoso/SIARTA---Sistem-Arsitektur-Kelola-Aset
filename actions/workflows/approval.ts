@@ -33,7 +33,7 @@ export async function approveTicketByAreaHead(ticketId: string, notes?: string) 
 
     await createNotification(
       'Pengajuan Disetujui!',
-      `Tiket ${ticket.ticketCode} (${ticket.asset.name}) telah disetujui Area Head. Ambil di Gudang Utama.`,
+      `Tiket ${ticket.ticketCode} (${ticket.asset.name}) telah disetujui oleh ${user.name} (Area Head). Ambil di Gudang Utama.`,
       'success',
       'Semua',
       ticket.peminjamId
@@ -79,7 +79,7 @@ export async function rejectTicketByAreaHead(ticketId: string, rejectReason: str
 
     await createNotification(
       'Pengajuan Ditolak',
-      `Tiket ${ticket.ticketCode} ditolak oleh Area Head. Alasan: ${rejectReason}`,
+      `Tiket ${ticket.ticketCode} ditolak oleh ${user.name} (Area Head). Alasan: ${rejectReason}`,
       'urgent',
       'Semua',
       ticket.peminjamId

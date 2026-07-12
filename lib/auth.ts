@@ -13,7 +13,7 @@ export async function requireRole(allowedRoles: Role[]) {
   // Jika tidak ada session → unauthorized
   if (!user) {
     // Fallback sementara untuk development: jika env dev, izinkan tanpa session
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.ALLOW_DEV_BYPASS === 'true') {
       return {
         id: 'dev-fallback',
         name: 'Dev User',

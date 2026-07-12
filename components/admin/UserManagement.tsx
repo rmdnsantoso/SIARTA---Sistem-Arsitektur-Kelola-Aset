@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import StatCard from '../shared/StatCard'
 import { getAllUsers, createUser, updateUser, deleteUser, resetUserPassword, saveFaceDescriptor } from '../../actions/core/user'
 import FaceCapture from '../auth/FaceCapture'
+import { usePolling } from '../../hooks/usePolling'
 
 type User = {
   id: string
@@ -52,35 +53,35 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
     role: 'Peminjam'
   })
 
-  useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const res = await getAllUsers()
-        if (res.success && res.data) {
-          const adapted: User[] = res.data.map((dbUser: any) => {
-            const roleDisplay = dbUser.role === 'AreaHead' ? 'Area Head' : dbUser.role;
-            return {
-              id: dbUser.id,
-              nip: dbUser.nip || '—',
-              name: dbUser.name,
-              email: dbUser.email,
-              wa: dbUser.wa || '—',
-              jabatan: dbUser.jabatan || roleDisplay,
-              office: dbUser.office || '—',
-              regional: dbUser.regional || '—',
-              role: roleDisplay,
-              status: dbUser.isActive ? 'Aktif' : 'Nonaktif',
-              faceRegistered: dbUser.faceRegistered,
-            }
-          })
-          setUsers(adapted)
-        }
-      } catch (err) {
-        console.error('Gagal memuat daftar user:', err)
+  const fetchUsers = async () => {
+    try {
+      const res = await getAllUsers()
+      if (res.success && res.data) {
+        const adapted: User[] = res.data.map((dbUser: any) => {
+          const roleDisplay = dbUser.role === 'AreaHead' ? 'Area Head' : dbUser.role;
+          return {
+            id: dbUser.id,
+            nip: dbUser.nip || '—',
+            name: dbUser.name,
+            email: dbUser.email,
+            wa: dbUser.wa || '—',
+            jabatan: dbUser.jabatan || roleDisplay,
+            office: dbUser.office || '—',
+            regional: dbUser.regional || '—',
+            role: roleDisplay,
+            status: dbUser.isActive ? 'Aktif' : 'Nonaktif',
+            faceRegistered: dbUser.faceRegistered,
+          }
+        })
+        setUsers(adapted)
       }
+    } catch (err) {
+      console.warn('Gagal memuat daftar user (polling):', err)
     }
-    fetchUsers()
-  }, [])
+  }
+
+  // Polling data pengguna setiap 15 detik (menggunakan cara yang sudah didiskusikan)
+  usePolling(fetchUsers, 15000)
 
   // ── Step 1: Submit data → create user di DB
   const handleAddUser = async () => {
@@ -498,13 +499,13 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden transform transition-transform">
             
             {/* Header */}
-            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex items-start justify-between bg-slate-50/50 shrink-0">
-              <div className="flex items-center gap-4 sm:gap-5">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 border-2 border-white shadow-md flex items-center justify-center text-blue-700 font-extrabold text-xl sm:text-2xl shrink-0">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-start justify-between bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 border-2 border-white shadow-md flex items-center justify-center text-blue-700 font-extrabold text-lg sm:text-2xl shrink-0">
                   {selectedUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight truncate">{selectedUser.name}</h3>
+                  <h3 className="text-lg sm:text-2xl font-extrabold text-gray-900 tracking-tight truncate">{selectedUser.name}</h3>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-sm font-mono text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200 shadow-sm">{selectedUser.nip}</span>
                     <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-widest border shadow-sm ${selectedUser.status === 'Aktif' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
@@ -519,9 +520,9 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-8 space-y-6 sm:space-y-8">
+            <div className="flex-1 overflow-y-auto overscroll-y-contain p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Data Form/View */}
-              <div className="space-y-4 sm:space-y-5 bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm">
+              <div className="space-y-3 sm:space-y-5 bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm">
                 <h4 className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                   Informasi Pengguna

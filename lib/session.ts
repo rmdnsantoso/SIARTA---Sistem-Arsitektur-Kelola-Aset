@@ -17,8 +17,13 @@ export interface AppSessionData {
 
 // ─── Konfigurasi session ──────────────────────────────────────────────────────
 
+const sessionPassword = process.env.SESSION_SECRET
+if (!sessionPassword) {
+  throw new Error('SESSION_SECRET wajib di-set di environment variables.')
+}
+
 export const SESSION_OPTIONS: SessionOptions = {
-  password: process.env.SESSION_SECRET || 'siarta-secret-key-min-32-chars-long!!',
+  password: sessionPassword,
   cookieName: 'siarta_session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

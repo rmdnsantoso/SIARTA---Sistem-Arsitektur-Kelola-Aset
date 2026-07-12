@@ -22,6 +22,27 @@ function mapCurrentStage(dbStage: string): string {
   return dbStage
 }
 
+function formatActorName(actor: string, stage: string): string {
+  if (!actor) return actor;
+  // 1. Jika sudah dalam format "Nama (Role)", kembalikan apa adanya
+  if (actor.match(/^.+\s\([^)]+\)$/)) return actor;
+
+  // 2. Jika dalam format "Role: Nama", ubah menjadi "Nama (Role)"
+  const parts = actor.split(':');
+  if (parts.length >= 2) {
+    const role = parts[0].trim();
+    const name = parts.slice(1).join(':').trim();
+    return `${name} (${role})`;
+  }
+
+  // 3. Jika hanya nama, gunakan stage sebagai fallback role (kecuali stage bukan role)
+  let roleFromStage = stage;
+  if (stage === 'Serah Terima') roleFromStage = 'Admin';
+  if (stage.startsWith('Menunggu')) roleFromStage = 'Sistem';
+  
+  return `${actor.trim()} (${roleFromStage})`;
+}
+
 function deriveFlow(currentStage: string, overallStatus: string): ApprovalFlow[] {
   const stages = ['Peminjam', 'Admin', 'HSSE', 'Area Head', 'Serah Terima'] as const
 
@@ -47,6 +68,8 @@ function deriveFlow(currentStage: string, overallStatus: string): ApprovalFlow[]
     } else if (i === reachedIndex) {
       if (overallStatus === 'Ditolak') {
         status = 'Ditolak'
+      } else if (currentStage === 'Menunggu Pengambilan di Gudang' && stage === 'Serah Terima') {
+        status = 'Menunggu'
       } else if (overallStatus === 'Disetujui' || overallStatus === 'Dipinjam' || overallStatus === 'Dikembalikan') {
         status = 'Disetujui'
       } else {
@@ -66,7 +89,8 @@ export function adaptTicket(t: TicketWithRelations): Ticket {
     dbId: t.id,
     assetId: t.assetId,
     peminjam: t.peminjam.name,
-    jabatan: t.peminjam.role,           // Gunakan role sebagai jabatan
+    nip: t.peminjam.nip || undefined,
+    jabatan: t.peminjam.jabatan || t.peminjam.role,
     alat: t.asset.name,
     assetCode: t.asset.assetCode,
     jumlah: t.jumlah,
@@ -82,7 +106,7 @@ export function adaptTicket(t: TicketWithRelations): Ticket {
     trackingLogs: t.logs.map(l => ({
       stage: l.stage,
       status: l.status,
-      actor: l.actor,
+      actor: formatActorName(l.actor, l.stage),
       timestamp: l.timestamp,
       notes: l.notes ?? undefined,
     })),
