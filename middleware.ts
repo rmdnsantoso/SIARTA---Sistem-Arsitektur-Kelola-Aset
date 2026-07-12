@@ -47,7 +47,10 @@ export async function middleware(request: NextRequest) {
   try {
     // Dinamis import untuk kompatibilitas Edge Runtime
     const { unsealData } = await import('iron-session')
-    const sessionPassword = process.env.SESSION_SECRET || 'siarta-inventaris-secret-key-2025-very-long-and-secure'
+    const sessionPassword = process.env.SESSION_SECRET
+    if (!sessionPassword) {
+      throw new Error('SESSION_SECRET wajib di-set di environment variables.')
+    }
     
     const session = await unsealData<{ user?: { role: string } }>(cookieValue, {
       password: sessionPassword,

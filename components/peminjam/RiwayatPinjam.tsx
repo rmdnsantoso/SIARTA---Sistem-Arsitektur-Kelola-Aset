@@ -30,6 +30,7 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
 }
 
 export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
+
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
   
@@ -38,11 +39,12 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
   const itemsPerPage = 5
   
   // Modal State for details
-  const [modalTicket, setModalTicket] = useState<Ticket | null>(null)
+  const [modalTicketId, setModalTicketId] = useState<string | null>(null)
+  const modalTicket = modalTicketId ? tickets.find(t => t.id === modalTicketId) || null : null
   
   // Filter completed/rejected tickets for Ahmad
   const historyStatuses = ['Selesai', 'Dikembalikan', 'Ditolak']
-  const myHistoryTickets = tickets.filter(t => t.peminjam === 'Ahmad' && historyStatuses.includes(t.overallStatus))
+  const myHistoryTickets = tickets.filter(t => historyStatuses.includes(t.overallStatus))
   const filteredTickets = myHistoryTickets.filter(t => {
     const matchesSearch = 
       t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -144,7 +146,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
 
               <div className="pt-2 border-t border-gray-100">
                 <button 
-                  onClick={() => setModalTicket(ticket)}
+                  onClick={() => setModalTicketId(ticket.id)}
                   className="w-full py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -221,7 +223,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                   {/* Detail */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button 
-                      onClick={() => setModalTicket(ticket)}
+                      onClick={() => setModalTicketId(ticket.id)}
                       className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
                       title="Lihat Histori Lengkap"
                     >
@@ -339,7 +341,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
 
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex shrink-0">
               <button
-                onClick={() => setModalTicket(null)}
+                onClick={() => setModalTicketId(null)}
                 className="w-full py-2 sm:py-2.5 bg-gray-900 text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-gray-800 transition-colors shadow-sm"
               >
                 Tutup Histori

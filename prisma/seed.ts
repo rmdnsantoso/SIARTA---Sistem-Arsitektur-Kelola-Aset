@@ -241,8 +241,8 @@ async function main() {
       currentStage: 'Menunggu Verifikasi HSSE',
       logs: {
         create: [
-          { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Budi Santoso (Peminjam)', timestamp: '15 Jun 2026, 08:00 WIB' },
-          { stage: 'Admin', status: 'Verifikasi stok fisik OK. Meneruskan ke HSSE untuk inspeksi K3.', actor: 'Siti Aminah (Admin)', timestamp: '15 Jun 2026, 09:00 WIB' },
+          { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Peminjam: Budi Santoso', timestamp: '15 Jun 2026, 08:00 WIB' },
+          { stage: 'Admin', status: 'Verifikasi stok fisik OK. Meneruskan ke HSSE untuk inspeksi K3.', actor: 'Admin: Siti Aminah', timestamp: '15 Jun 2026, 09:00 WIB' },
         ]
       }
     }
@@ -263,7 +263,7 @@ async function main() {
       currentStage: 'Menunggu Persetujuan Admin',
       logs: {
         create: [
-          { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Rina Kusuma (Peminjam)', timestamp: '15 Jun 2026, 10:00 WIB' },
+          { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Peminjam: Rina Kusuma', timestamp: '15 Jun 2026, 10:00 WIB' },
         ]
       }
     }
@@ -283,7 +283,7 @@ async function main() {
       currentStage: 'Menunggu Persetujuan Admin',
       logs: {
         create: [
-          { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Agus Wirawan (Peminjam)', timestamp: '16 Jun 2026, 13:00 WIB' },
+          { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Peminjam: Agus Wirawan', timestamp: '16 Jun 2026, 13:00 WIB' },
         ]
       }
     }
@@ -304,8 +304,8 @@ async function main() {
       logs: {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Dewi Rahayu', timestamp: '14 Jun 2026, 08:30 WIB' },
-          { stage: 'Admin', status: 'Stok tersedia, unit SN-O2-001 dialokasikan.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 09:15 WIB' },
-          { stage: 'Area Head', status: 'Disetujui untuk operasi lapangan.', actor: 'Pak Joko (Area Head)', timestamp: '14 Jun 2026, 14:20 WIB', notes: 'Harap dikembalikan tepat waktu' }
+          { stage: 'Admin', status: 'Stok tersedia, unit SN-O2-001 dialokasikan.', actor: 'Admin: Siti Aminah', timestamp: '14 Jun 2026, 09:15 WIB' },
+          { stage: 'Area Head', status: 'Disetujui untuk operasi lapangan.', actor: 'Area Head: Pak Joko', timestamp: '14 Jun 2026, 14:20 WIB', notes: 'Harap dikembalikan tepat waktu' }
         ]
       }
     }
@@ -326,7 +326,7 @@ async function main() {
       logs: {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Hendra Putra', timestamp: '17 Jun 2026, 10:10 WIB' },
-          { stage: 'Admin', status: 'Ditolak: stok tidak mencukupi (2 unit sedang maintenance).', actor: 'Siti Aminah (Admin)', timestamp: '17 Jun 2026, 10:45 WIB', notes: '2 unit sedang maintenance' }
+          { stage: 'Admin', status: 'Ditolak: stok tidak mencukupi (2 unit sedang maintenance).', actor: 'Admin: Siti Aminah', timestamp: '17 Jun 2026, 10:45 WIB', notes: '2 unit sedang maintenance' }
         ]
       }
     }
@@ -349,9 +349,9 @@ async function main() {
       logs: {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Ahmad', timestamp: '13 Jun 2026, 08:00 WIB' },
-          { stage: 'Admin', status: 'Disetujui. Unit HLM-PRO-05 dialokasikan.', actor: 'Siti Aminah (Admin)', timestamp: '13 Jun 2026, 09:00 WIB' },
-          { stage: 'Area Head', status: 'Disetujui.', actor: 'Pak Joko (Area Head)', timestamp: '13 Jun 2026, 11:00 WIB' },
-          { stage: 'Admin', status: 'Barang diserahkan ke Ahmad.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 09:30 WIB' }
+          { stage: 'Admin', status: 'Disetujui. Unit HLM-PRO-05 dialokasikan.', actor: 'Admin: Siti Aminah', timestamp: '13 Jun 2026, 09:00 WIB' },
+          { stage: 'Area Head', status: 'Disetujui.', actor: 'Area Head: Pak Joko', timestamp: '13 Jun 2026, 11:00 WIB' },
+          { stage: 'Admin', status: 'Barang diserahkan ke Ahmad.', actor: 'Admin: Siti Aminah', timestamp: '14 Jun 2026, 09:30 WIB' }
         ]
       }
     }
@@ -372,8 +372,8 @@ async function main() {
       logs: {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan pinjam dibuat.', actor: 'Ahmad', timestamp: '19 Jun 2026, 08:15 WIB' },
-          { stage: 'Admin', status: 'Stok tersedia, unit GD-MSA-004 dialokasikan.', actor: 'Siti Aminah (Admin)', timestamp: '19 Jun 2026, 09:00 WIB' },
-          { stage: 'Area Head', status: 'Disetujui untuk operasi wellpad.', actor: 'Pak Joko (Area Head)', timestamp: '19 Jun 2026, 14:00 WIB' }
+          { stage: 'Admin', status: 'Stok tersedia, unit GD-MSA-004 dialokasikan.', actor: 'Admin: Siti Aminah', timestamp: '19 Jun 2026, 09:00 WIB' },
+          { stage: 'Area Head', status: 'Disetujui untuk operasi wellpad.', actor: 'Area Head: Pak Joko', timestamp: '19 Jun 2026, 14:00 WIB' }
         ]
       }
     }
@@ -414,7 +414,7 @@ async function main() {
       logs: {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan pinjam dibuat.', actor: 'Ahmad', timestamp: '14 Jun 2026, 10:00 WIB' },
-          { stage: 'Admin', status: 'Ditolak: seluruh unit Multimeter sedang dalam jadwal maintenance.', actor: 'Siti Aminah (Admin)', timestamp: '14 Jun 2026, 11:30 WIB', notes: 'Bisa mengajukan kembali minggu depan' }
+          { stage: 'Admin', status: 'Ditolak: seluruh unit Multimeter sedang dalam jadwal maintenance.', actor: 'Admin: Siti Aminah', timestamp: '14 Jun 2026, 11:30 WIB', notes: 'Bisa mengajukan kembali minggu depan' }
         ]
       }
     }
@@ -436,7 +436,7 @@ async function main() {
         create: [
           { stage: 'Peminjam', status: 'Pengajuan dibuat.', actor: 'Ahmad', timestamp: '31 Mei 2026, 09:00 WIB' },
           { stage: 'Admin', status: 'Disetujui.', actor: 'Siti Aminah', timestamp: '31 Mei 2026, 10:00 WIB' },
-          { stage: 'Admin', status: 'Aset dikembalikan dalam kondisi lengkap dan baik.', actor: 'Siti Aminah (Admin)', timestamp: '05 Jun 2026, 15:20 WIB', notes: 'Pengembalian tepat waktu' }
+          { stage: 'Admin', status: 'Aset dikembalikan dalam kondisi lengkap dan baik.', actor: 'Admin: Siti Aminah', timestamp: '05 Jun 2026, 15:20 WIB', notes: 'Pengembalian tepat waktu' }
         ]
       }
     }

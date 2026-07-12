@@ -48,8 +48,8 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
           <h2 className="text-base sm:text-lg font-semibold text-gray-900">Daftar Pengajuan Aktif</h2>
           <p className="text-sm text-gray-500">Menampilkan pengajuan yang memerlukan peninjauan.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
             <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input 
               type="text" 
@@ -73,21 +73,21 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
           const isActionable = ticket.overallStatus === 'Menunggu' && ticket.currentStage === 'Area Head'
 
           return (
-            <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
-              <div className="flex justify-between items-start gap-3 sm:gap-4">
+            <div key={ticket.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 space-y-3">
+              <div className="flex justify-between items-start gap-3">
                 <div className="min-w-0">
-                  <h3 className="font-extrabold text-gray-900 text-sm sm:text-base leading-tight">{ticket.alat}</h3>
-                  <div className="text-xs sm:text-sm font-medium text-blue-600 mt-0.5 sm:mt-1">{ticket.id}</div>
+                  <h3 className="font-extrabold text-gray-900 text-sm leading-tight">{ticket.alat}</h3>
+                  <div className="text-xs font-medium text-blue-600 mt-0.5">{ticket.id}</div>
                 </div>
                 <div className="text-right shrink-0">
                   <span className={`inline-flex items-center text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md border whitespace-nowrap ${ticket.jumlah > ticket.stokTersedia ? 'bg-red-50 text-red-700 border-red-100' : 'bg-blue-50 text-blue-700 border-blue-100'}`}>
                     {ticket.jumlah} unit
                   </span>
-                  <div className="text-[9px] sm:text-[10px] font-medium text-gray-500 mt-0.5 sm:mt-1">Stok: {ticket.stokTersedia}</div>
+                  <div className="text-[10px] font-medium text-gray-500 mt-1">Stok: {ticket.stokTersedia}</div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg sm:rounded-xl">
+              <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded-xl">
                 <div>
                   <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Pemohon</p>
                   <p className="font-bold text-gray-900 text-xs sm:text-sm">{ticket.peminjam}</p>
@@ -102,16 +102,16 @@ export default function TicketTable({ tickets, handleAction }: TicketTableProps)
 
               {/* Actions */}
               {isActionable && (
-                <div className="flex gap-2 sm:gap-2 mt-1 sm:mt-1 border-t border-gray-100 pt-3">
+                <div className="flex gap-2 mt-1 border-t border-gray-100 pt-3">
                   <button
                     onClick={() => handleAction(ticket, 'Setujui')}
-                    className="flex-1 py-1.5 sm:py-2.5 bg-blue-600 text-white rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-blue-700 transition-colors"
+                    className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
                   >
                     Setujui
                   </button>
                   <button
                     onClick={() => handleAction(ticket, 'Tolak')}
-                    className="flex-1 py-1.5 sm:py-2.5 bg-red-50 text-red-700 border border-red-200 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:bg-red-100 transition-colors"
+                    className="flex-1 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
                   >
                     Tolak
                   </button>

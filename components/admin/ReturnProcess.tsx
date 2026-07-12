@@ -7,6 +7,7 @@ import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
 import { verifyAssetReturnHandover } from '../../actions/workflows/verifikasi'
+import { isOverdue } from '../../lib/dateUtils'
 
 interface Props {
   tickets?: Ticket[]
@@ -202,7 +203,7 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
   // Calculate stats based on current active list
   const stats = [
     { label: 'Sedang Dipinjam', value: localTickets.length, iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', colorTheme: 'blue' as const },
-    { label: 'Lewat Jatuh Tempo', value: 0, iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'red' as const },
+    { label: 'Lewat Jatuh Tempo', value: localTickets.filter(t => isOverdue(t.tanggalKembali)).length, iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'red' as const },
   ]
 
   return (
@@ -285,8 +286,13 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
                   </div>
                   <div>
                     <p className="text-gray-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider mb-0.5">Tenggat Waktu</p>
-                    <p className="font-bold text-red-600 text-xs sm:text-sm">{ticket.tanggalKembali}</p>
-                    <p className="text-[9px] sm:text-[10px] font-medium text-gray-500">Harus Kembali</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className={`font-bold text-xs sm:text-sm ${isOverdue(ticket.tanggalKembali) ? 'text-red-600' : 'text-gray-900'}`}>{ticket.tanggalKembali}</p>
+                      {isOverdue(ticket.tanggalKembali) && (
+                        <span className="bg-red-100 text-red-700 text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Terlambat</span>
+                      )}
+                    </div>
+                    <p className="text-[9px] sm:text-[10px] font-medium text-gray-500 mt-0.5">Harus Kembali</p>
                   </div>
                 </div>
 
@@ -373,7 +379,12 @@ export default function ReturnProcess({ tickets = initialTickets, onSuccess }: P
 
                     {/* Tenggat Waktu */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <p className="text-sm font-medium text-gray-900">{ticket.tanggalKembali}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={`text-sm font-medium ${isOverdue(ticket.tanggalKembali) ? 'text-red-600' : 'text-gray-900'}`}>{ticket.tanggalKembali}</p>
+                        {isOverdue(ticket.tanggalKembali) && (
+                          <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Terlambat</span>
+                        )}
+                      </div>
                       <p className="text-[10px] uppercase text-gray-500 mt-1">Harus Kembali</p>
                     </td>
 

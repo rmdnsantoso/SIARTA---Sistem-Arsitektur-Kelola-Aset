@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import * as faceapi from 'face-api.js'
-import { verifyFaceLogin } from '../../actions/core/user'
-import { createSessionFromUser } from '../../actions/core/auth'
+import { verifyFaceLogin, generateLivenessChallenge } from '../../actions/core/user'
+import { ensureModelsLoaded, calculateEAR, checkBrightness, getHeadTurnDirection } from '../../lib/face/utils'
 
 interface FaceScannerProps {
   onSuccess: (user?: { name: string; email: string; role: string }) => void
@@ -16,9 +16,7 @@ interface FaceScannerProps {
 type ScanStatus = 'loading_models' | 'scanning' | 'verifying' | 'success' | 'failed' | 'error'
 
 // ─── Module-level guards ─────────────────────────────────────────────────────
-// Simpan stream di module level agar pasti bisa di-kill walau refs sudah hilang
 let _activeStream: MediaStream | null = null
-let modelsLoaded = false
 
 function killAllTracks() {
   if (_activeStream) {
@@ -39,6 +37,7 @@ export default function FaceScanner({
   skipFaceUser,
 }: FaceScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const onSuccessRef = useRef(onSuccess)
   useEffect(() => { onSuccessRef.current = onSuccess }, [onSuccess])
@@ -49,69 +48,220 @@ export default function FaceScanner({
   const [failMessage, setFailMessage] = useState('')
   const [retryCount, setRetryCount] = useState(0)
 
+  // Liveness & Light states
+  const [challenge, setChallenge] = useState<'BLINK' | 'TURN_HEAD' | null>(null)
+  const challengeRef = useRef<'BLINK' | 'TURN_HEAD' | null>(null)
+  const sessionIdRef = useRef<string>('')
+
+  const [hasBlinked, setHasBlinked] = useState(false)
+  const hasBlinkedRef = useRef(false)
+  const earHistory = useRef<number[]>([])
+
+  const [hasTurned, setHasTurned] = useState(false)
+  const hasTurnedRef = useRef(false)
+  const headTurnHistory = useRef<('left'|'right'|'center')[]>([])
+
+  const [lightStatus, setLightStatus] = useState<'normal' | 'dark' | 'bright'>('normal')
+
   // ─── Stop everything ──────────────────────────────────────────────────────
   const stopAll = useCallback(() => {
     if (intervalRef.current) {
-      clearInterval(intervalRef.current)
+      if ('cancelVideoFrameCallback' in HTMLVideoElement.prototype && videoRef.current) {
+        try { (videoRef.current as any).cancelVideoFrameCallback(intervalRef.current) } catch (e) {}
+      }
+      clearTimeout(intervalRef.current as any)
       intervalRef.current = null
     }
-    // Hentikan via module-level reference (lebih andal daripada ref saja)
     killAllTracks()
-    // Lepas srcObject dari elemen video
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
   }, [])
 
-  // ─── Detection loop (tidak dibuat dengan useCallback agar tidak stale) ───
+  // ─── Detection loop ───────────────────────────────────────────────────────
   const startLoop = useCallback(
-    (uid: string | undefined, cancelled: { value: boolean }) => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+    async (uid: string | undefined, cancelled: { value: boolean }) => {
+      if (intervalRef.current) {
+        if ('cancelVideoFrameCallback' in HTMLVideoElement.prototype && videoRef.current) {
+          try { (videoRef.current as any).cancelVideoFrameCallback(intervalRef.current) } catch (e) {}
+        }
+        clearTimeout(intervalRef.current as any)
+      }
+      
+      // Fetch challenge
+      const sid = crypto.randomUUID()
+      sessionIdRef.current = sid
+      const res = await generateLivenessChallenge(sid)
+      if (cancelled.value) return
+      if (res.success && res.challenge) {
+        setChallenge(res.challenge as any)
+        challengeRef.current = res.challenge as any
+      } else {
+        setError('Gagal mendapatkan challenge keamanan.')
+        setScanStatus('error')
+        return
+      }
 
-      intervalRef.current = setInterval(async () => {
-        if (cancelled.value) return
-        if (!videoRef.current || videoRef.current.readyState < 2) return
+      // Reset liveness state saat restart loop
+      setHasBlinked(false)
+      hasBlinkedRef.current = false
+      earHistory.current = []
 
-        let det: faceapi.WithFaceDescriptor<faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68>> | undefined
+      setHasTurned(false)
+      hasTurnedRef.current = false
+      headTurnHistory.current = []
 
-        try {
-          det = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ scoreThreshold: 0.5 }))
-            .withFaceLandmarks()
-            .withFaceDescriptor()
-        } catch {
+      let stopped = false
+      let lastBrightnessCheck = 0
+
+      const scheduleNext = (fn: () => void) => {
+        if (stopped || cancelled.value || !videoRef.current) return
+        const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
+        if (supportsVFC) {
+          intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
+        } else {
+          intervalRef.current = setTimeout(fn, 200)
+        }
+      }
+
+      const tick = async () => {
+        if (stopped || cancelled.value) return
+        if (!videoRef.current || videoRef.current.readyState < 2) {
+          if (!stopped && !cancelled.value) scheduleNext(tick)
           return
         }
 
-        if (cancelled.value) return
+        // Cek brightness secara pasif (di-throttle 500ms)
+        const now = Date.now()
+        if (now - lastBrightnessCheck > 500) {
+          if (canvasRef.current) {
+            const lStatus = checkBrightness(videoRef.current, canvasRef.current)
+            setLightStatus(lStatus)
+          }
+          lastBrightnessCheck = now
+        }
+
+        let det: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68> | undefined
+
+        try {
+          det = await faceapi
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .withFaceLandmarks()
+        } catch {
+          if (!stopped && !cancelled.value) scheduleNext(tick)
+          return
+        }
+
+        if (stopped || cancelled.value) return
 
         setFaceDetected(!!det)
 
-        if (!det) return
+        if (!det) {
+          if (!stopped && !cancelled.value) scheduleNext(tick)
+          return
+        }
 
-        // Hentikan loop, mulai verifikasi
+        // --- Active Liveness Detection ---
+        const landmarks = det.landmarks.positions
+        const currentChallenge = challengeRef.current
+
+        if (currentChallenge === 'BLINK') {
+          const leftEye = landmarks.slice(36, 42)
+          const rightEye = landmarks.slice(42, 48)
+          const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2
+
+          earHistory.current.push(avgEAR)
+          if (earHistory.current.length > 8) {
+            earHistory.current.shift()
+          }
+
+          if (earHistory.current.length >= 3) {
+            const maxEAR = Math.max(...earHistory.current)
+            const minEAR = Math.min(...earHistory.current)
+            const latestEAR = earHistory.current[earHistory.current.length - 1]
+
+            if (maxEAR - minEAR >= 0.05 && latestEAR - minEAR >= 0.03) {
+              if (!hasBlinkedRef.current) {
+                hasBlinkedRef.current = true
+                setHasBlinked(true)
+              }
+            }
+          }
+
+          // Jangan kirim verifikasi ke server sampai user terbukti berkedip
+          if (!hasBlinkedRef.current) {
+            if (!stopped && !cancelled.value) scheduleNext(tick)
+            return
+          }
+        } else if (currentChallenge === 'TURN_HEAD') {
+          const direction = getHeadTurnDirection(landmarks)
+          headTurnHistory.current.push(direction)
+          if (headTurnHistory.current.length > 10) headTurnHistory.current.shift()
+
+          if (direction === 'left' || direction === 'right') {
+            if (!hasTurnedRef.current) {
+              hasTurnedRef.current = true
+              setHasTurned(true)
+            }
+          }
+
+          if (!hasTurnedRef.current) {
+            if (!stopped && !cancelled.value) scheduleNext(tick)
+            return
+          }
+        } else {
+          // Masih menunggu challenge
+          if (!stopped && !cancelled.value) scheduleNext(tick)
+          return
+        }
+
+        // --- MULAI VERIFIKASI ---
+        stopped = true
         if (intervalRef.current) {
-          clearInterval(intervalRef.current)
+          clearTimeout(intervalRef.current as any)
           intervalRef.current = null
         }
         setScanStatus('verifying')
 
-        const descriptor = Array.from(det.descriptor)
-        const result = await verifyFaceLogin(descriptor, uid)
+        // Ekstrak descriptor hanya saat kedipan sudah divalidasi
+        try {
+          const fullDet = await faceapi
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .withFaceLandmarks()
+            .withFaceDescriptor()
 
-        if (cancelled.value) return
-
-        if (result.success && result.user) {
-          setScanStatus('success')
-          stopAll()                          // ← kamera mati sekarang
-          setTimeout(() => {
-            if (!cancelled.value) onSuccessRef.current(result.user as any)
-          }, 700)
-        } else {
+          if (!fullDet) throw new Error('Wajah menghilang.')
+          const descriptor = Array.from(fullDet.descriptor)
+          
+          verifyFaceLogin(descriptor, uid || '', sessionIdRef.current, {
+            earHistory: earHistory.current,
+            headTurnHistory: headTurnHistory.current
+          }).then((result) => {
+            if (cancelled.value) return
+            if (result.success && result.user) {
+              setScanStatus('success')
+              stopAll()
+              setTimeout(() => {
+                if (!cancelled.value) onSuccessRef.current(result.user as any)
+              }, 700)
+            } else {
+              setScanStatus('failed')
+              setFailMessage(result.error || 'Wajah tidak dikenali. Coba lagi.')
+              setRetryCount(c => c + 1)
+              // Restart setelah 2.5 detik
+              setTimeout(() => {
+                if (cancelled.value) return
+                setFaceDetected(false)
+                setFailMessage('')
+                setScanStatus('scanning')
+                startLoop(uid, cancelled)
+              }, 2500)
+            }
+          })
+        } catch (err: any) {
+          if (cancelled.value) return
           setScanStatus('failed')
-          setFailMessage(result.error || 'Wajah tidak dikenali. Coba lagi.')
-          setRetryCount(c => c + 1)
-          // Restart setelah 2.5 detik
+          setFailMessage(err.message || 'Gagal mengekstrak profil wajah.')
           setTimeout(() => {
             if (cancelled.value) return
             setFaceDetected(false)
@@ -120,27 +270,23 @@ export default function FaceScanner({
             startLoop(uid, cancelled)
           }, 2500)
         }
-      }, 700)
+      } // end tick()
+
+      tick() // mulai loop
     },
     [stopAll],
   )
 
-  // ─── Effect utama — dependency array kosong, gunakan `cancelled` lokal ───
+  // ─── Effect utama ─────────────────────────────────────────────────────────
   useEffect(() => {
-    // `cancelled` adalah variabel LOKAL per-invocation, bukan ref.
-    // React Strict Mode menjalankan effect dua kali (mount→cleanup→mount).
-    // Karena `cancelled` lokal, invokasi pertama punya `cancelled` berbeda
-    // dengan invokasi kedua, sehingga stream pertama pasti di-kill saat cleanup.
     const cancelled = { value: false }
 
     const init = async () => {
       try {
-        // ── Bypass: user belum punya wajah ──────────────────────────────────
         if (skipFaceCheck) {
           setScanStatus('success')
-          setTimeout(async () => {
+          setTimeout(() => {
             if (cancelled.value) return
-            if (skipFaceUser) await createSessionFromUser(skipFaceUser)
             onSuccessRef.current(
               skipFaceUser
                 ? { name: skipFaceUser.name, email: skipFaceUser.email, role: skipFaceUser.role }
@@ -150,32 +296,26 @@ export default function FaceScanner({
           return
         }
 
-        // ── Load model (sekali saja di module level) ─────────────────────────
         setScanStatus('loading_models')
-        if (!modelsLoaded) {
-          await Promise.all([
-            faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-            faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-            faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-          ])
-          modelsLoaded = true
+        const loaded = await ensureModelsLoaded()
+        if (!loaded) {
+          setScanStatus('error')
+          setError('Gagal memuat model pendeteksi wajah.')
+          return
         }
 
         if (cancelled.value) return
 
-        // ── Buka kamera ─────────────────────────────────────────────────────
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
           audio: false,
         })
 
-        // Cek lagi setelah await — mungkin sudah di-cancel (Strict Mode unmount)
         if (cancelled.value) {
           stream.getTracks().forEach(t => t.stop())
           return
         }
 
-        // Simpan di module-level agar cleanup dijamin bisa stop-nya
         _activeStream = stream
 
         if (videoRef.current) {
@@ -204,9 +344,7 @@ export default function FaceScanner({
     init()
 
     return () => {
-      // Tandai invokasi ini sebagai cancelled — mencegah async callbacks berjalan
       cancelled.value = true
-      // Hentikan interval dan stream secara paksa
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
         intervalRef.current = null
@@ -216,8 +354,7 @@ export default function FaceScanner({
         videoRef.current.srcObject = null
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // intentionally empty — semua state external disimpan di ref atau module-level
+  }, []) 
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5">
@@ -226,7 +363,9 @@ export default function FaceScanner({
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Verifikasi Wajah</h2>
         <p className="mt-1.5 text-sm text-gray-500">
           {scanStatus === 'loading_models' && 'Memuat sistem pengenalan wajah...'}
-          {scanStatus === 'scanning' && 'Arahkan wajah Anda ke kamera untuk masuk'}
+          {scanStatus === 'scanning' && challenge === 'BLINK' && 'Arahkan wajah ke kamera dan BERKEDIP'}
+          {scanStatus === 'scanning' && challenge === 'TURN_HEAD' && 'Arahkan wajah ke kamera dan TENGOK KIRI/KANAN'}
+          {scanStatus === 'scanning' && !challenge && 'Menyiapkan verifikasi...'}
           {scanStatus === 'verifying' && 'Memverifikasi identitas Anda...'}
           {scanStatus === 'success' && 'Identitas berhasil diverifikasi!'}
           {scanStatus === 'failed' && 'Wajah tidak dikenali, coba lagi'}
@@ -234,9 +373,16 @@ export default function FaceScanner({
         </p>
       </div>
 
+      {/* Light Warning (Passive) */}
+      {lightStatus !== 'normal' && (scanStatus === 'scanning' || scanStatus === 'verifying') && (
+        <div className={`px-4 py-2 rounded-xl text-xs font-bold w-full max-w-[280px] text-center shadow-md animate-pulse
+          ${lightStatus === 'dark' ? 'bg-slate-800 text-yellow-400' : 'bg-yellow-100 text-yellow-700'}`}>
+          {lightStatus === 'dark' ? 'Pencahayaan redup/gelap.' : 'Pencahayaan silau/backlight.'}
+        </div>
+      )}
+
       {/* Camera Box */}
       <div className="relative w-full max-w-[280px] aspect-[3/4] mx-auto rounded-3xl overflow-hidden bg-gray-900 shadow-2xl ring-4 ring-gray-100">
-        {/* Loading */}
         {scanStatus === 'loading_models' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-900 z-20">
             <div className="w-9 h-9 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -244,7 +390,6 @@ export default function FaceScanner({
           </div>
         )}
 
-        {/* Error */}
         {scanStatus === 'error' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-gray-50 z-20">
             <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -254,7 +399,6 @@ export default function FaceScanner({
           </div>
         )}
 
-        {/* Video */}
         <video
           ref={videoRef}
           autoPlay
@@ -264,18 +408,34 @@ export default function FaceScanner({
             scanStatus === 'loading_models' || scanStatus === 'error' ? 'opacity-0' : 'opacity-100'
           } ${scanStatus === 'success' ? 'opacity-50' : ''}`}
         />
+        <canvas ref={canvasRef} className="hidden" />
 
         {/* Scanning overlay */}
         {(scanStatus === 'scanning' || scanStatus === 'verifying' || scanStatus === 'failed') && (
           <div className="absolute inset-0 z-10">
-            <div className={`absolute top-6 left-6 w-10 h-10 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? 'border-green-400' : 'border-blue-500'}`} />
-            <div className={`absolute top-6 right-6 w-10 h-10 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? 'border-green-400' : 'border-blue-500'}`} />
-            <div className={`absolute bottom-6 left-6 w-10 h-10 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? 'border-green-400' : 'border-blue-500'}`} />
-            <div className={`absolute bottom-6 right-6 w-10 h-10 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? 'border-green-400' : 'border-blue-500'}`} />
+            <div className={`absolute top-6 left-6 w-10 h-10 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute top-6 right-6 w-10 h-10 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute bottom-6 left-6 w-10 h-10 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute bottom-6 right-6 w-10 h-10 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
 
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className={`w-[60%] h-[55%] border-2 rounded-[50%] transition-colors duration-500 ${scanStatus === 'failed' ? 'border-red-400 border-solid' : faceDetected ? 'border-green-400 border-solid' : 'border-white/30 border-dashed'}`} />
+              <div className={`w-[60%] h-[55%] border-2 rounded-[50%] transition-colors duration-500 ${scanStatus === 'failed' ? 'border-red-400 border-solid' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400 border-solid' : 'border-yellow-400 border-solid') : 'border-white/30 border-dashed'}`} />
             </div>
+
+            {/* Instruction Badge */}
+            {scanStatus === 'scanning' && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+                <span className={`text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg transition-all ${
+                  faceDetected 
+                    ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900') 
+                    : 'bg-black/60 text-white/90'
+                }`}>
+                  {faceDetected 
+                    ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'Memverifikasi...' : (challenge === 'BLINK' ? 'Silakan Berkedip' : 'Tengok ke Kiri/Kanan')) 
+                    : 'Posisikan wajah Anda'}
+                </span>
+              </div>
+            )}
 
             {scanStatus === 'verifying' && (
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-blue-400 shadow-[0_0_15px_4px_rgba(59,130,246,0.6)]"

@@ -36,7 +36,7 @@ const initialAssets: Asset[] = [
 ]
 const TRACKING_FILTERS = ['Semua', 'SERIALIZED', 'NON_SERIALIZED']
 interface KatalogAlatProps {
-  onAddTicket: (newTicketData: Omit<Ticket, 'id'>) => void
+  onAddTicket: (newTicketData: Omit<Ticket, 'id'>) => Promise<boolean> | void
   assets?: Asset[]
 }
 export default function KatalogAlat({ onAddTicket, assets: propAssets }: KatalogAlatProps) {
@@ -44,7 +44,8 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
   const [filterTracking, setFilterTracking] = useState('Semua')
   const [search, setSearch] = useState('')
   // Borrow Modal State
-  const [borrowAsset, setBorrowAsset] = useState<Asset | null>(null)
+  const [borrowAssetId, setBorrowAssetId] = useState<string | null>(null)
+  const borrowAsset = assets.find(a => a.id === borrowAssetId) || null
   const [borrowDuration, setBorrowDuration] = useState(1)
   const [borrowQty, setBorrowQty] = useState(1)
   const [alasan, setAlasan] = useState('')
@@ -68,7 +69,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
     }
   }
 
-  const handleBorrowSubmit = (e: React.FormEvent) => {
+  const handleBorrowSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!borrowAsset) return
 
@@ -80,7 +81,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
       const timePart = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       return `${datePart}, ${timePart} WIB`
     }
-    onAddTicket({
+    const success = await onAddTicket({
       peminjam: 'Ahmad',
       nip: '19940102009',
       jabatan: 'Operasional',
@@ -109,13 +110,15 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
         }
       ]
     })
-    toast.success(`Pengajuan peminjaman untuk ${borrowQty} unit ${borrowAsset.name} berhasil dibuat!`)
     
-    // Reset Form
-    setBorrowAsset(null)
-    setBorrowDuration(1)
-    setBorrowQty(1)
-    setAlasan('')
+    if (success) {
+      toast.success(`Pengajuan peminjaman untuk ${borrowQty} unit ${borrowAsset.name} berhasil dibuat!`)
+      // Reset Form
+      setBorrowAssetId(null)
+      setBorrowDuration(1)
+      setBorrowQty(1)
+      setAlasan('')
+    }
   }
   const filtered = assets.filter(a => {
     const searchTarget = `${a.name} ${a.assetCode || ''} ${a.id}`.toLowerCase()
@@ -220,7 +223,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => {
-                        setBorrowAsset(a)
+                        setBorrowAssetId(a.id)
                         setBorrowQty(1)
                       }}
                       disabled={a.availableStock === 0}
@@ -360,7 +363,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
               <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex gap-2 sm:gap-3 shrink-0">
                 <button 
                   type="button"
-                  onClick={() => setBorrowAsset(null)}
+                  onClick={() => setBorrowAssetId(null)}
                   className="flex-1 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors shadow-2xs"
                 >
                   Batal

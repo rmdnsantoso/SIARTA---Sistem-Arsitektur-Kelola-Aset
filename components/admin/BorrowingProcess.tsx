@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState } from 'react'
 import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
@@ -20,6 +19,7 @@ type ModalState = {
 }
 
 export default function BorrowingProcess({ tickets = initialTickets, onSuccess }: Props) {
+
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets)
   
   React.useEffect(() => {

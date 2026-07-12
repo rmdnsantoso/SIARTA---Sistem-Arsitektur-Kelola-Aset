@@ -112,7 +112,7 @@ export async function createMaintenanceRecord(input: {
         issue: input.issue,
         status: 'Menunggu Tindakan',
         reporterId: user.id,
-        reporterName: `${user.name} (${user.role})`,
+        reporterName: `${user.role}: ${user.name}`,
         dateReported: today,
         photoUrl: input.photoUrl,
         items: {
@@ -205,6 +205,8 @@ export async function resolveMaintenanceRecord(
         status: resolution,
         resolution,
         dateResolved: today,
+        resolverId: user.id,
+        resolverName: `${user.name} (${user.role})`,
         notes
       },
       include: { items: true }
@@ -213,8 +215,8 @@ export async function resolveMaintenanceRecord(
     await createNotification(
       resolution === 'Selesai Diperbaiki' ? 'Aset Kembali Tersedia' : 'Aset Dimusnahkan (Write-off)',
       resolution === 'Selesai Diperbaiki'
-        ? `Laporan ${record.recordCode} selesai diperbaiki dan aset kembali ke stok.`
-        : `Aset pada laporan ${record.recordCode} telah dimusnahkan dan dihapus dari inventaris aktif.`,
+        ? `Laporan ${record.recordCode} diselesaikan oleh ${user.name} (${user.role}) dan aset kembali ke stok.`
+        : `Aset pada laporan ${record.recordCode} telah dimusnahkan oleh ${user.name} (${user.role}) dan dihapus dari inventaris aktif.`,
       resolution === 'Selesai Diperbaiki' ? 'success' : 'warning',
       'Semua'
     )

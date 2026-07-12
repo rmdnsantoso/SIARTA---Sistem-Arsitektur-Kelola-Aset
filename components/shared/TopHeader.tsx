@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../actions/core/notification'
+import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, deleteAllNotifications } from '../../actions/core/notification'
+import { usePolling } from '../../hooks/usePolling'
 
 interface TopHeaderProps {
   sidebarOpen: boolean
@@ -34,18 +35,18 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
 
   const fetchNotifications = async () => {
     if (!roleName) return
-    const res = await getUserNotifications(userId || '', roleName)
-    if (res.success && res.data) {
-      setDbNotifs(res.data)
+    try {
+      const res = await getUserNotifications(userId || '', roleName)
+      if (res.success && res.data) {
+        setDbNotifs(res.data)
+      }
+    } catch (err) {
+      console.warn('Silent fail fetching notifications', err)
     }
   }
 
-  useEffect(() => {
-    fetchNotifications()
-    // Polling interval setiap 5 detik agar terasa real-time
-    const interval = setInterval(fetchNotifications, 5000)
-    return () => clearInterval(interval)
-  }, [userId, roleName])
+  // Polling interval menggunakan custom hook (15 detik)
+  usePolling(fetchNotifications, 15000, [userId, roleName])
 
   // Hitung jumlah yang belum dibaca dari dbNotifs
   const unreadCount = dbNotifs.filter(n => !n.isRead).length
@@ -60,6 +61,19 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
     if (!userId || !roleName) return
     setDbNotifs(dbNotifs.map(n => ({ ...n, isRead: true })))
     await markAllNotificationsAsRead(userId, roleName)
+  }
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    // Optimistic UI update
+    setDbNotifs(dbNotifs.filter(n => n.id !== id))
+    await deleteNotification(id)
+  }
+
+  const handleDeleteAll = async () => {
+    if (!userId) return
+    setDbNotifs([])
+    await deleteAllNotifications(userId)
   }
 
   return (
@@ -163,7 +177,18 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1.5 mb-1">
                             <p className={`text-[11px] sm:text-xs font-bold truncate ${!n.isRead ? 'text-gray-900' : 'text-gray-600'}`}>{n.title}</p>
-                            <span className="text-[9px] sm:text-[10px] font-semibold text-gray-400 shrink-0">{formatTime(n.createdAt)}</span>
+                            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                              <span className="text-[9px] sm:text-[10px] font-semibold text-gray-400">{formatTime(n.createdAt)}</span>
+                              <button 
+                                onClick={(e) => handleDelete(e, n.id)} 
+                                className="text-gray-400 hover:text-red-500 p-0.5 rounded transition-colors" 
+                                title="Hapus Notifikasi"
+                              >
+                                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           <p className="text-[10px] sm:text-xs text-gray-500 leading-relaxed line-clamp-2">{n.message}</p>
                           {!n.isRead && (
@@ -177,12 +202,12 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
 
                 {/* Footer */}
                 {dbNotifs.length > 0 && (
-                  <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-gray-100 text-center">
+                  <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-gray-100 flex justify-center">
                     <button 
-                      onClick={markAllAsRead}
-                      className="text-[11px] sm:text-xs font-bold text-slate-600 hover:text-blue-600 transition-colors"
+                      onClick={handleDeleteAll}
+                      className="text-[11px] sm:text-xs font-bold text-red-500 hover:text-red-600 transition-colors w-full text-center py-1"
                     >
-                      Tandai Semua Sudah Dibaca
+                      Hapus Semua Notifikasi
                     </button>
                   </div>
                 )}

@@ -2,7 +2,8 @@
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { AssetStatus, Role } from '../../app/generated/prisma'
+import { Prisma, AssetStatus, Role } from '../../app/generated/prisma'
+import { createActivityLog } from './log'
 
 // ============================================================
 // READ
@@ -26,8 +27,8 @@ export async function getAvailableAssets() {
       if (a.isSerialized) {
         // Serialized: total adalah yang belum dimusnahkan
         computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
-        // Tersedia adalah yang statusnya beneran 'Tersedia'
-        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0;
+        // Tersedia: ambil dari a.quantity karena peminjaman sudah mengurangi a.quantity
+        computedAvailable = a.quantity;
       } else {
         // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
         const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
@@ -134,6 +135,9 @@ export async function createAsset(input: {
       },
       include: { units: { include: { history: true } } }
     })
+    
+    await createActivityLog('CREATE_ASSET', 'Asset', `Menambahkan aset baru: ${asset.name} (${asset.assetCode})`, asset.id)
+    
     return { success: true, data: asset }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -156,6 +160,7 @@ export async function updateAsset(id: string, input: {
   try {
     await requireRole([Role.Admin])
     const asset = await prisma.asset.update({ where: { id }, data: input })
+    await createActivityLog('UPDATE_ASSET', 'Asset', `Memperbarui data aset: ${asset.name} (${asset.assetCode})`, asset.id)
     return { success: true, data: asset }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -202,6 +207,7 @@ export async function deleteAsset(id: string) {
     // Hapus tiket terkait terlebih dahulu (cascade)
     await prisma.ticket.deleteMany({ where: { assetId: id } })
     await prisma.asset.delete({ where: { id } })
+    await createActivityLog('DELETE_ASSET', 'Asset', `Menghapus aset: ${asset.name} (${asset.assetCode})`, id)
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -290,7 +296,7 @@ export async function addPhysicalUnits(assetId: string, count: number, startIdx:
         data: {
           unitId: u.id,
           action: 'Unit Ditambahkan',
-          actor: `${user.name} (Admin)`,
+          actor: `Admin: ${user.name}`,
           timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
         }
       })

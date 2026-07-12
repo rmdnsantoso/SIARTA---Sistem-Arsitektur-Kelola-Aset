@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { createMaintenanceRecord, resolveMaintenanceRecord, getActiveMaintenanceRecords } from '../../actions/core/maintenance'
 import { getAllAssetsForAdmin } from '../../actions/core/asset'
 import InlineQRScanner from '../shared/InlineQRScanner'
+import { usePolling } from '../../hooks/usePolling'
 
 type EscalationStatus = 'Menunggu Tindakan' | 'Selesai' | 'Dimusnahkan'
 
@@ -98,11 +99,7 @@ export default function AssetMaintenance() {
     }).finally(() => setLoading(false))
   }
 
-  useEffect(() => {
-    refreshData()
-    const interval = setInterval(refreshData, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  usePolling(refreshData, 10000)
 
   const handleAction = async (newStatus: EscalationStatus | 'Selesai') => {
     if (!selectedTicket) return

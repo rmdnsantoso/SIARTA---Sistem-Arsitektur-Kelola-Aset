@@ -22,15 +22,15 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-sm transition-opacity">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm transition-opacity">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in duration-200">
         
         {/* HEADER */}
-        <div className={`px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between ${
+        <div className={`px-4 sm:px-6 py-4 flex items-center justify-between ${
           isApprove ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'
         }`}>
           <div>
-            <h3 className="text-lg sm:text-xl font-extrabold">
+            <h3 className="text-base sm:text-lg font-extrabold">
               {isApprove ? 'Konfirmasi Persetujuan' : 'Konfirmasi Penolakan'}
             </h3>
             <p className="text-xs sm:text-sm opacity-90 mt-1">
@@ -40,7 +40,7 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
         </div>
 
         {/* BODY */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 sm:space-y-4">
           <div className="bg-gray-50 p-3 sm:p-4 rounded-xl border border-gray-100">
             <div className="text-sm font-bold text-gray-900">{ticket.alat}</div>
             <div className="text-xs text-gray-500 mt-1">Pemohon: <strong className="text-gray-900">{ticket.peminjam}</strong></div>
@@ -73,7 +73,7 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
         </div>
 
         {/* FOOTER */}
-        <div className="p-4 sm:p-6 bg-gray-50 border-t border-gray-100 flex flex-col-reverse sm:flex-row justify-end gap-3 rounded-b-2xl">
+        <div className="p-4 sm:p-6 flex flex-col-reverse sm:flex-row justify-end gap-3">
           <button 
             onClick={onCancel} 
             className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl text-sm font-bold border-2 border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-100 transition-colors w-full sm:w-auto"
@@ -87,11 +87,11 @@ export default function ConfirmModal({ ticket, action, onConfirm, onCancel }: Co
               !isApprove && !catatan.trim() 
                 ? 'bg-gray-300 cursor-not-allowed shadow-none' 
                 : isApprove 
-                  ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-md hover:-translate-y-0.5' 
-                  : 'bg-red-600 hover:bg-red-700 hover:shadow-md hover:-translate-y-0.5'
+                  ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-md' 
+                  : 'bg-red-600 hover:bg-red-700 hover:shadow-md'
             }`}
           >
-            {isApprove ? 'Konfirmasi Setujui' : 'Konfirmasi Tolak'}
+            {isApprove ? 'Setujui' : 'Konfirmasi Tolak'}
           </button>
         </div>
       </div>

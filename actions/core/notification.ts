@@ -2,26 +2,45 @@
 
 import { prisma } from '../../lib/prisma'
 import { Role } from '../../app/generated/prisma'
+import { getCurrentUser } from '../../lib/session'
 
-// Ambil notifikasi berdasarkan userId atau role
+// ─── Wrapper Fungsi untuk Mobile (Otomatis deteksi dari Session) ───
+export async function getMyNotifications() {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  return getUserNotifications(user.id, user.role)
+}
+
+export async function markMyNotificationAsRead(notificationId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  return markNotificationAsRead(notificationId)
+}
+
+export async function markAllMyNotificationsAsRead() {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  return markAllNotificationsAsRead(user.id, user.role)
+}
+
+export async function deleteMyNotification(notificationId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  return deleteNotification(notificationId)
+}
+
+export async function deleteAllMyNotifications() {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  return deleteAllNotifications(user.id)
+}
+
+// Ambil notifikasi berdasarkan userId
 export async function getUserNotifications(userId: string, role: string) {
   try {
-    // Convert role string ke enum (hapus spasi jika ada, e.g. "Area Head" -> "AreaHead")
-    const cleanedRole = role.replace(/\s+/g, '')
-    const roleEnum = cleanedRole as Role
-    
     const notifications = await prisma.notification.findMany({
-      where: {
-        OR: [
-          { recipientId: userId },
-          { targetRole: roleEnum },
-          // Opsional: Untuk Area Head yang mungkin butuh notifikasi global tapi role-nya bukan Admin
-          // Tapi karena schema targetRole nullable, bisa juga dicek targetRole: null jika ada
-        ]
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
+      where: { recipientId: userId },
+      orderBy: { createdAt: 'desc' },
       take: 50 // Limit 50 terbaru
     })
 
@@ -48,21 +67,38 @@ export async function markNotificationAsRead(notificationId: string) {
 // Menandai semua notifikasi milik user sebagai sudah dibaca
 export async function markAllNotificationsAsRead(userId: string, role: string) {
   try {
-    const cleanedRole = role.replace(/\s+/g, '')
-    const roleEnum = cleanedRole as Role
     await prisma.notification.updateMany({
       where: {
         isRead: false,
-        OR: [
-          { recipientId: userId },
-          { targetRole: roleEnum }
-        ]
+        recipientId: userId
       },
       data: { isRead: true }
     })
     return { success: true }
   } catch (error: any) {
     return { success: false, error: 'Gagal menandai semua dibaca' }
+  }
+}
+
+export async function deleteNotification(notificationId: string) {
+  try {
+    await prisma.notification.delete({
+      where: { id: notificationId }
+    })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: 'Gagal menghapus notifikasi' }
+  }
+}
+
+export async function deleteAllNotifications(userId: string) {
+  try {
+    await prisma.notification.deleteMany({
+      where: { recipientId: userId }
+    })
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: 'Gagal menghapus semua notifikasi' }
   }
 }
 
@@ -75,19 +111,40 @@ export async function createNotification(
   link?: string
 ) {
   try {
-    const cleanedTargetRole = targetRole.replace(/\s+/g, '')
-    const roleEnum = targetRole !== 'Semua' ? (cleanedTargetRole as Role) : null
-    const notif = await prisma.notification.create({
-      data: {
+    if (recipientId) {
+      // ── Target Individu Spesifik ──
+      const notif = await prisma.notification.create({
+        data: { title, message, type, recipientId, link }
+      })
+      return { success: true, data: notif }
+    } else {
+      // ── Target Role / Semua Pengguna (Broadcast Individual) ──
+      const cleanedTargetRole = targetRole.replace(/\s+/g, '')
+      const roleEnum = targetRole !== 'Semua' ? (cleanedTargetRole as Role) : null
+      
+      const whereClause = roleEnum ? { role: roleEnum, isActive: true } : { isActive: true }
+      const users = await prisma.user.findMany({
+        where: whereClause,
+        select: { id: true }
+      })
+      
+      if (users.length === 0) return { success: true, data: [] }
+      
+      const dataToInsert = users.map(u => ({
         title,
         message,
         type,
-        recipientId,
-        targetRole: roleEnum,
+        recipientId: u.id,
+        targetRole: roleEnum, // Opsional untuk metadata
         link
-      }
-    })
-    return { success: true, data: notif }
+      }))
+      
+      const result = await prisma.notification.createMany({
+        data: dataToInsert
+      })
+      
+      return { success: true, data: result }
+    }
   } catch (error: any) {
     console.error('Error creating notification:', error)
     return { success: false, error: 'Gagal membuat notifikasi' }

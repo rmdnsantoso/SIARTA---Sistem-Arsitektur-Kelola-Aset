@@ -3,6 +3,8 @@ import React, { useState } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
 import { cancelBorrowTicket } from '../../actions/workflows/peminjaman'
+import { isOverdue } from '../../lib/dateUtils'
+
 interface Props {
   tickets: Ticket[]
   onUpdateTickets: React.Dispatch<React.SetStateAction<Ticket[]>>
@@ -150,8 +152,11 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
       Periode Pinjam
     </p>
     <p className="font-bold text-gray-900">
-      {ticket.tanggalPinjam} <span className="text-gray-400">s/d</span> {ticket.tanggalKembali}
+      {ticket.tanggalPinjam} <span className="text-gray-400">s/d</span> <span className={`${ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) ? 'text-red-600' : 'text-gray-900'}`}>{ticket.tanggalKembali}</span>
     </p>
+    {ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) && (
+      <span className="bg-red-100 text-red-700 text-[8px] sm:text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider mt-1 inline-block">Terlambat</span>
+    )}
   </div>
 </div>
 
@@ -212,7 +217,12 @@ export default function TiketSaya({ tickets, onUpdateTickets }: Props) {
                   {/* Periode */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     <p>{ticket.tanggalPinjam}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">s/d {ticket.tanggalKembali}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className={`text-xs ${ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) ? 'text-red-600 font-bold' : 'text-gray-400'}`}>s/d {ticket.tanggalKembali}</p>
+                      {ticket.overallStatus === 'Dipinjam' && isOverdue(ticket.tanggalKembali) && (
+                        <span className="bg-red-100 text-red-700 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Terlambat</span>
+                      )}
+                    </div>
                   </td>
                   {/* Alokasi Unit */}
                   <td className="px-6 py-4">

@@ -1,137 +1,71 @@
 'use client'
 
-import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
+import { getMyNotifications, markMyNotificationAsRead, markAllMyNotificationsAsRead, deleteMyNotification, deleteAllMyNotifications } from '../../actions/core/notification'
+import { usePolling } from '../../hooks/usePolling'
 
-// Data notifikasi gabungan super lengkap untuk semua role
-const initialNotifications = [
-  {
-    id: 1,
-    title: 'Pembaruan Sistem SIARTA v2.4',
-    desc: 'Fitur pelacakan Non-Serialized dengan QR Master berhasil diluncurkan.',
-    time: '10 mnt lalu',
-    unread: true,
-    type: 'info',
-    targetRole: 'Semua'
-  },
-  {
-    id: 2,
-    title: 'Verifikasi Pengembalian Selesai',
-    desc: 'Budi telah mengembalikan 2 unit Gas Detector (AST-001) dalam kondisi baik.',
-    time: '1 jam lalu',
-    unread: true,
-    type: 'success',
-    targetRole: 'Admin'
-  },
-  {
-    id: 3,
-    title: 'Peringatan Stok Kritis!',
-    desc: 'Stok APAR di Gudang Timur tersisa 3 unit. Segera ajukan pengadaan baru.',
-    time: '2 jam lalu',
-    unread: true,
-    type: 'urgent',
-    targetRole: 'Admin'
-  },
-  {
-    id: 4,
-    title: 'Menunggu Persetujuan Area Head',
-    desc: 'Pengajuan pinjaman 15 unit Safety Harness untuk Proyek BUMN menunggu approval akhir Anda.',
-    time: '15 mnt lalu',
-    unread: true,
-    type: 'urgent',
-    targetRole: 'Area Head'
-  },
-  {
-    id: 5,
-    title: 'Laporan Pemanfaatan Aset Bulanan',
-    desc: 'Tingkat utilisasi alat berat bulan ini mencapai 88%. Efisiensi operasional meningkat.',
-    time: '1 jam lalu',
-    unread: false,
-    type: 'success',
-    targetRole: 'Area Head'
-  },
-  {
-    id: 6,
-    title: 'Inspeksi Keselamatan Terjadwal',
-    desc: 'Ada 5 unit APAR dan Gas Detector yang membutuhkan verifikasi kelayakan keselamatan kerja minggu ini.',
-    time: '20 mnt lalu',
-    unread: true,
-    type: 'urgent',
-    targetRole: 'HSSE'
-  },
-  {
-    id: 7,
-    title: 'Laporan Audit Investigasi HSSE',
-    desc: 'Dokumen panduan standar inspeksi alat berat terbaru telah ditambahkan ke pustaka sistem.',
-    time: '2 jam lalu',
-    unread: false,
-    type: 'info',
-    targetRole: 'HSSE'
-  },
-  {
-    id: 8,
-    title: 'Pengajuan Pinjam Disetujui',
-    desc: 'Tiket pinjaman TIK-102 (Helm Safety) telah disetujui. Ambil di Gudang Utama.',
-    time: '30 mnt lalu',
-    unread: true,
-    type: 'success',
-    targetRole: 'Peminjam'
-  },
-  {
-    id: 9,
-    title: 'Peringatan Masa Aktif Pinjaman',
-    desc: 'Tiket pinjaman TIK-101 (Gas Detector) akan jatuh tempo besok. Harap kembalikan tepat waktu.',
-    time: '1 jam lalu',
-    unread: true,
-    type: 'warning',
-    targetRole: 'Peminjam'
-  },
-  {
-    id: 10,
-    title: 'Jadwal Pemeliharaan Berkala',
-    desc: '5 unit Bor Listrik memasuki siklus inspeksi kelistrikan wajib bulan ini.',
-    time: '3 jam lalu',
-    unread: false,
-    type: 'warning',
-    targetRole: 'Semua'
-  },
-]
+// Format waktu sederhana
+const formatTime = (dateString: string) => {
+  const d = new Date(dateString)
+  const diff = Math.floor((Date.now() - d.getTime()) / 60000)
+  if (diff < 1) return 'Baru saja'
+  if (diff < 60) return `${diff} mnt lalu`
+  if (diff < 1440) return `${Math.floor(diff/60)} jam lalu`
+  return `${Math.floor(diff/1440)} hari lalu`
+}
 
 function NotifikasiContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const currentRole = searchParams.get('role') || 'Semua'
   
-  const [notifications, setNotifications] = useState(initialNotifications)
-  const [activeTab, setActiveTab] = useState('Semua Notifikasi') // Tab filter status, BUKAN role orang lain
+  const [dbNotifs, setDbNotifs] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState('Semua Notifikasi')
 
-  // 1. ISOLASI ROLE: Pengguna HANYA bisa melihat notifikasi untuk role-nya sendiri + universal ('Semua')
-  const roleIsolatedNotifs = notifications.filter(n => n.targetRole === 'Semua' || n.targetRole.toLowerCase() === currentRole.toLowerCase())
+  const fetchNotifications = async () => {
+    try {
+      const res = await getMyNotifications()
+      if (res.success && 'data' in res && res.data) {
+        setDbNotifs(res.data)
+      }
+    } catch (err) {
+      console.warn('Silent fail fetching notifications', err)
+    }
+  }
+
+  usePolling(fetchNotifications, 15000)
 
   // 2. FILTER TAB STATUS (Semua, Belum Dibaca, Penting)
-  const filteredNotifs = roleIsolatedNotifs.filter(n => {
-    if (activeTab === 'Belum Dibaca') return n.unread
+  const filteredNotifs = dbNotifs.filter(n => {
+    if (activeTab === 'Belum Dibaca') return !n.isRead
     if (activeTab === 'Penting') return n.type === 'urgent' || n.type === 'warning'
     return true
   })
 
-  const unreadCount = roleIsolatedNotifs.filter(n => n.unread).length
+  const unreadCount = dbNotifs.filter(n => !n.isRead).length
 
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(n => n.id === id ? { ...n, unread: false } : n))
+  const markAsRead = async (id: string) => {
+    setDbNotifs(dbNotifs.map(n => n.id === id ? { ...n, isRead: true } : n))
+    await markMyNotificationAsRead(id)
   }
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => (n.targetRole === 'Semua' || n.targetRole.toLowerCase() === currentRole.toLowerCase()) ? { ...n, unread: false } : n))
+  const markAllAsRead = async () => {
+    setDbNotifs(dbNotifs.map(n => ({ ...n, isRead: true })))
+    await markAllMyNotificationsAsRead()
   }
 
-  const clearNotifications = () => {
-    setNotifications(notifications.filter(n => !(n.targetRole === 'Semua' || n.targetRole.toLowerCase() === currentRole.toLowerCase())))
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    setDbNotifs(dbNotifs.filter(n => n.id !== id))
+    await deleteMyNotification(id)
+  }
+
+  const handleDeleteAll = async () => {
+    setDbNotifs([])
+    await deleteAllMyNotifications()
   }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-12 animate-in fade-in duration-200">
-      {/* Header Eksklusif Mobile */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <button
@@ -160,7 +94,6 @@ function NotifikasiContent() {
         )}
       </header>
 
-      {/* Tab Filter Status (Bukan Filter Role) */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 sticky top-[65px] z-40 shadow-sm overflow-x-auto scrollbar-none">
         <div className="flex items-center gap-2 min-w-max">
           {['Semua Notifikasi', 'Belum Dibaca', 'Penting'].map(tab => (
@@ -179,7 +112,6 @@ function NotifikasiContent() {
         </div>
       </div>
 
-      {/* Konten Daftar Notifikasi */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-4">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-100">
           {filteredNotifs.length === 0 ? (
@@ -198,10 +130,9 @@ function NotifikasiContent() {
                 key={n.id}
                 onClick={() => markAsRead(n.id)}
                 className={`p-4 sm:p-5 transition-all cursor-pointer hover:bg-slate-50 flex items-start gap-3.5 ${
-                  n.unread ? 'bg-blue-50/20 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'
+                  !n.isRead ? 'bg-blue-50/20 border-l-4 border-l-blue-600' : 'border-l-4 border-l-transparent'
                 }`}
               >
-                {/* Icon Badge */}
                 <div
                   className={`p-2.5 rounded-2xl shrink-0 mt-0.5 ${
                     n.type === 'urgent'
@@ -235,17 +166,27 @@ function NotifikasiContent() {
                   )}
                 </div>
 
-                {/* Konten */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2 mb-1">
-                    <p className={`text-xs sm:text-sm font-bold truncate ${n.unread ? 'text-gray-900' : 'text-gray-700'}`}>
+                    <p className={`text-xs sm:text-sm font-bold truncate ${!n.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
                       {n.title}
                     </p>
-                    <span className="text-[10px] sm:text-xs font-semibold text-gray-400 shrink-0">{n.time}</span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[10px] sm:text-xs font-semibold text-gray-400">{formatTime(n.createdAt)}</span>
+                      <button 
+                        onClick={(e) => handleDelete(e, n.id)} 
+                        className="text-gray-400 hover:text-red-500 p-1 rounded transition-colors" 
+                        title="Hapus Notifikasi"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 leading-relaxed">{n.desc}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">{n.message}</p>
                   
-                  {n.unread && (
+                  {!n.isRead && (
                     <div className="mt-2 flex items-center gap-2">
                       <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600">
                         <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span> Baru
@@ -256,18 +197,18 @@ function NotifikasiContent() {
               </div>
             ))
           )}
-
-          {filteredNotifs.length > 0 && (
-            <div className="p-4 bg-slate-50 border-t border-gray-100 text-center">
-              <button
-                onClick={clearNotifications}
-                className="text-xs font-bold text-red-600 hover:text-red-700 transition-colors px-4 py-2 hover:bg-red-50 rounded-xl"
-              >
-                Bersihkan Semua Notifikasi
-              </button>
-            </div>
-          )}
         </div>
+
+        {dbNotifs.length > 0 && (
+          <div className="mt-6 flex justify-center">
+            <button 
+              onClick={handleDeleteAll}
+              className="text-xs sm:text-sm font-bold text-red-500 hover:text-red-600 transition-colors w-full bg-white border border-gray-200 shadow-sm rounded-xl py-3 text-center active:bg-red-50"
+            >
+              Hapus Semua Notifikasi
+            </button>
+          </div>
+        )}
       </main>
     </div>
   )

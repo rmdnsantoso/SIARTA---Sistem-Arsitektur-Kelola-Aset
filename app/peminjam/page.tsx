@@ -7,6 +7,7 @@ import TopHeader from '../../components/shared/TopHeader'
 import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
+import { usePolling } from '../../hooks/usePolling'
 
 import { getTicketsByUser } from '../../actions/core/ticket'
 import { getAvailableAssets } from '../../actions/core/asset'
@@ -61,13 +62,7 @@ export default function PeminjamDashboard() {
     }
   }
 
-  useEffect(() => {
-    refreshData()
-    const interval = setInterval(() => {
-      refreshData()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  usePolling(refreshData, 30000)
 
   const handleAddTicket = async (newTicketData: any) => {
     try {
@@ -81,23 +76,45 @@ export default function PeminjamDashboard() {
           notes: newTicketData.alasan
         })
         if (!res.success) {
-          console.error('Gagal membuat tiket di database:', res.error)
-          toast.error(`Gagal mengajukan pinjaman: ${res.error}`)
-          return
+          if (res.trueStock !== undefined) {
+            // Jika gagal karena stok out of sync, langsung koreksi stok lokal
+            setAssets(prev => prev.map(a => a.id === newTicketData.assetId ? {
+              ...a,
+              availableStock: res.trueStock
+            } : a))
+            toast.error(res.error)
+          } else {
+            console.error('Gagal membuat tiket di database:', res.error)
+            toast.error(`Gagal mengajukan pinjaman: ${res.error}`)
+          }
+          return false
         } else {
-          // Refresh tiket dari database
-          await refreshData()
-          return
+          // Update aset lokal secara spesifik tanpa re-fetch seluruh katalog (Targeted Update)
+          if (res.updatedAsset) {
+            setAssets(prev => prev.map(a => a.id === res.updatedAsset.id ? {
+              ...a,
+              totalStock: a.totalStock, // totalStock remains unchanged when booking
+              availableStock: res.updatedAsset.quantity
+            } : a))
+          }
+          // Fetch hanya data tiket terbaru (lebih ringan dari refreshData penuh)
+          if (currentUser?.id) {
+            const dbTickets = await getTicketsByUser(currentUser.id)
+            setTickets(adaptTickets(dbTickets))
+          }
+          return true
         }
       }
     } catch (err) {
       console.error(err)
+      return false
     }
 
     // Fallback UI update jika aset dummy / tanpa DB
     const newId = `TK-${String(tickets.length + 1).padStart(3, '0')}`
     const newTicket = { id: newId, ...newTicketData }
     setTickets((prev: any) => [newTicket, ...prev])
+    return true
   }
 
   if (loading) {

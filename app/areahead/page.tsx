@@ -13,6 +13,7 @@ import AssetMaster from '../../components/admin/AssetMaster'
 import UserManagement from '../../components/admin/UserManagement'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistoryAreaHead from '../../components/areahead/MaintenanceHistoryAreaHead'
+import { usePolling } from '../../hooks/usePolling'
 import { getTicketsForAreaHead } from '../../actions/core/ticket'
 import { approveTicketByAreaHead, rejectTicketByAreaHead } from '../../actions/workflows/approval'
 import { getLoggedInUser } from '../../actions/core/session'
@@ -43,13 +44,7 @@ export default function ApprovalDashboard() {
     }
   }
 
-  useEffect(() => {
-    refreshData()
-    const interval = setInterval(() => {
-      refreshData()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  usePolling(refreshData, 15000)
 
   const handleAction = (ticket: Ticket, action: 'Setujui' | 'Tolak') => {
     if (ticket.overallStatus !== 'Menunggu' || ticket.currentStage !== 'Area Head') return
@@ -137,7 +132,7 @@ export default function ApprovalDashboard() {
           
           {activeNav === 'Verifikasi Pinjam' && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 mb-6 shrink-0">
                 {stats.map((card) => (
                   <StatCard key={card.label} {...card} />
                 ))}

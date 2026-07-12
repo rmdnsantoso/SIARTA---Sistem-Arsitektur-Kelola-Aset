@@ -11,6 +11,7 @@ import AssetMaintenance from '../../components/admin/AssetMaintenance'
 import ReturnProcess from '../../components/admin/ReturnProcess'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
+import { usePolling } from '../../hooks/usePolling'
 import { getAllTickets } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
@@ -40,13 +41,7 @@ export default function AdminDashboard() {
     }
   }
 
-  useEffect(() => {
-    refreshData()
-    const interval = setInterval(() => {
-      refreshData()
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+  usePolling(refreshData, 30000)
 
   const adminPendingCount = tickets.filter(
     (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin'
