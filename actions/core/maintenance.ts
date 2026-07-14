@@ -2,7 +2,7 @@
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role, AssetStatus } from '../../app/generated/prisma'
+import { Role, AssetStatus, Prisma } from '../../app/generated/prisma'
 import { createNotification } from './notification'
 
 // ─── READ ─────────────────────────────────────────────────────────────────────
@@ -32,13 +32,62 @@ export async function getActiveMaintenanceRecords() {
   }
 }
 
-export async function getMaintenanceHistory() {
+function getDateFilter(startDate?: string, endDate?: string) {
+  const defaultStart = new Date()
+  defaultStart.setMonth(defaultStart.getMonth() - 6)
+
+  return {
+    createdAt: {
+      gte: startDate ? new Date(startDate) : defaultStart,
+      ...(endDate ? { lte: new Date(endDate) } : {})
+    }
+  }
+}
+
+export async function getMaintenanceHistory(page = 1, pageSize = 20, statusFilter?: string, searchQuery?: string, startDate?: string, endDate?: string) {
   try {
-    const records = await prisma.maintenanceRecord.findMany({
-      include: { reporter: true, items: true, photos: true },
-      orderBy: { updatedAt: 'desc' }
-    })
-    return { success: true, data: records }
+    const user = await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
+    
+    const where: Prisma.MaintenanceRecordWhereInput = {
+      ...getDateFilter(startDate, endDate),
+      ...(statusFilter && statusFilter !== 'Semua' ? { status: statusFilter } : {}),
+      ...(searchQuery ? {
+        OR: [
+          { recordCode: { contains: searchQuery, mode: 'insensitive' } },
+          { reporterName: { contains: searchQuery, mode: 'insensitive' } },
+          { items: { some: { assetName: { contains: searchQuery, mode: 'insensitive' } } } }
+        ]
+      } : {})
+    }
+
+    // Role specific logic
+    if (user.role === Role.Peminjam) {
+      where.reporterId = user.id
+    }
+
+    const [data, total, groups] = await Promise.all([
+      prisma.maintenanceRecord.findMany({
+        where,
+        include: { reporter: true, items: true, photos: true },
+        orderBy: { updatedAt: 'desc' },
+        take: pageSize,
+        skip: (page - 1) * pageSize
+      }),
+      prisma.maintenanceRecord.count({ where }),
+      prisma.maintenanceRecord.groupBy({
+        by: ['status'],
+        _count: true,
+        where
+      })
+    ])
+
+    const stats = {
+      totalSedangDiperbaiki: groups.find(g => g.status === 'Menunggu Tindakan')?._count || 0,
+      totalSelesai: groups.find(g => g.status === 'Selesai Diperbaiki')?._count || 0,
+      totalDimusnahkan: groups.find(g => g.status === 'Dimusnahkan')?._count || 0
+    }
+
+    return { success: true, data, total, totalPages: Math.ceil(total / pageSize), stats }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

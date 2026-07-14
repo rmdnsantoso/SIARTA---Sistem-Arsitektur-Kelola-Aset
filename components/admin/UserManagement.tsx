@@ -307,7 +307,9 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col">
         <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 bg-white z-10 shrink-0">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-gray-900">Manajemen Pengguna</h2>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">
+              Manajemen Pengguna {isViewOnly && <span className="text-gray-500 font-normal text-sm ml-1">(View Only)</span>}
+            </h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">Kelola data seluruh admin, Area Head, HSSE, dan peminjam dalam sistem.</p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">

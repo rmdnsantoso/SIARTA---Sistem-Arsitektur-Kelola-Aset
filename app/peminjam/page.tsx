@@ -9,7 +9,7 @@ import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
 import { usePolling } from '../../hooks/usePolling'
 
-import { getTicketsByUser } from '../../actions/core/ticket'
+import { getActiveTicketsByUser } from '../../actions/core/ticket'
 import { getAvailableAssets } from '../../actions/core/asset'
 import { createBorrowTicket } from '../../actions/workflows/peminjaman'
 import { getLoggedInUser } from '../../actions/core/session'
@@ -40,7 +40,7 @@ export default function PeminjamDashboard() {
 
       // Ambil tiket berdasarkan userId dari session
       if (userId) {
-        const dbTickets = await getTicketsByUser(userId)
+        const dbTickets = await getActiveTicketsByUser(userId)
         setTickets(adaptTickets(dbTickets))
       }
 
@@ -99,7 +99,7 @@ export default function PeminjamDashboard() {
           }
           // Fetch hanya data tiket terbaru (lebih ringan dari refreshData penuh)
           if (currentUser?.id) {
-            const dbTickets = await getTicketsByUser(currentUser.id)
+            const dbTickets = await getActiveTicketsByUser(currentUser.id)
             setTickets(adaptTickets(dbTickets))
           }
           return true
@@ -158,7 +158,7 @@ export default function PeminjamDashboard() {
           
           {activeNav === 'Katalog Alat' && <KatalogAlat onAddTicket={handleAddTicket} assets={assets} />}
           {activeNav === 'Tiket Saya' && <TiketSaya tickets={tickets} onUpdateTickets={setTickets} />}
-          {activeNav === 'Riwayat Pinjam' && <RiwayatPinjam tickets={tickets} />}
+          {activeNav === 'Riwayat Pinjam' && <RiwayatPinjam />}
         </div>
       </div>
     </div>
