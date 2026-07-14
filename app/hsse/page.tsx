@@ -26,10 +26,10 @@ export default function HSSEDashboard() {
   const refreshData = async () => {
     try {
       const [dbTickets, sessionRes] = await Promise.all([
-        getTicketsForHSSE(),
+        getTicketsForHSSE(1, 100),
         getLoggedInUser()
       ])
-      setTickets(adaptTickets(dbTickets))
+      setTickets(adaptTickets(dbTickets.data))
       if (sessionRes.success && sessionRes.user) {
         setCurrentUser({ id: sessionRes.user.id, name: sessionRes.user.name, role: sessionRes.user.role })
       }

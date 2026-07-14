@@ -118,6 +118,7 @@ model Ticket {
 
   @@index([peminjamId])
   @@index([currentStage, overallStatus])
+  @@index([createdAt])
 }
 
 model TrackingLog {
@@ -188,6 +189,8 @@ model MaintenanceRecord {
   photos       MaintenancePhoto[] // Kumpulan foto kerusakan
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
+
+  @@index([updatedAt])
 }
 
 model MaintenancePhoto {
@@ -210,4 +213,11 @@ model MaintenanceItem {
   serialNumber String? // Kumpulan S/N jika serialized (disimpan dengan koma) atau satuan S/N
   issue        String? // Deskripsi masalah spesifik per barang/SN
   createdAt    DateTime          @default(now())
+}
+
+model LivenessChallenge {
+  id        String   @id // sessionId
+  sequence  String   // JSON string array e.g. "['BLINK', 'TURN_HEAD']"
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

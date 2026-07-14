@@ -95,7 +95,7 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
         {userName && (
           <div className="hidden md:block text-right mr-2 sm:mr-4 border-r border-gray-200 pr-4">
             <p className="text-sm font-extrabold text-gray-900">Selamat datang, {userName}</p>
-            {roleName && <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">{roleName}</p>}
+            {roleName && <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">{roleName === 'AreaHead' ? 'Area Head' : roleName}</p>}
           </div>
         )}
 

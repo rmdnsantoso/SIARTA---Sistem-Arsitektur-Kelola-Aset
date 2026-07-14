@@ -376,21 +376,23 @@ export async function loginWithCredentials(email: string, password: string) {
 // ─────────────────────────────────────────
 export async function generateLivenessChallenge(sessionId: string) {
   try {
-    const type = Math.random() > 0.5 ? 'BLINK' : 'TURN_HEAD'
-    const expiresAt = Date.now() + 15 * 1000 // 15 detik
+    const sequence = ['BLINK', 'TURN_HEAD'].sort(() => Math.random() - 0.5)
+    const expiresAt = new Date(Date.now() + 30 * 1000) // 30 detik untuk 2 gerakan
 
-    const livenessChallenges = (globalThis as any).livenessChallenges = (globalThis as any).livenessChallenges || new Map<string, { type: string, expiresAt: number }>()
-    
-    livenessChallenges.set(sessionId, { type, expiresAt })
+    await prisma.livenessChallenge.upsert({
+      where: { id: sessionId },
+      update: { sequence: JSON.stringify(sequence), expiresAt },
+      create: { id: sessionId, sequence: JSON.stringify(sequence), expiresAt }
+    })
 
-    // Bersihkan challenge yang sudah expired dari memory
-    for (const [key, val] of livenessChallenges.entries()) {
-      if ((val as any).expiresAt < Date.now()) {
-        livenessChallenges.delete(key)
-      }
+    // Bersihkan data expired secara acak 10% dari waktu
+    if (Math.random() < 0.1) {
+      prisma.livenessChallenge.deleteMany({
+        where: { expiresAt: { lt: new Date() } }
+      }).catch(() => {})
     }
 
-    return { success: true, challenge: type }
+    return { success: true, challenge: sequence }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -411,50 +413,58 @@ export async function verifyFaceLogin(
     if (!userId) return { success: false, error: 'Akses ditolak: User ID diperlukan.' }
     if (!descriptor || descriptor.length !== 128) return { success: false, error: 'Data wajah dari perangkat tidak valid atau korup.' }
 
+    // ── Rate Limiting Check ──
+    const rateLimit = await checkRateLimit(`face:${userId}`)
+    if (!rateLimit.allowed) {
+      return { success: false, error: `Terlalu banyak percobaan gagal. Silakan coba lagi setelah ${Math.ceil(rateLimit.retryAfterMs / 1000 / 60)} menit.` }
+    }
+
     // ── Validasi Liveness (Server-Side) ──
     if (!sessionId || !livenessData) {
       return { success: false, error: 'Data liveness tidak lengkap.' }
     }
 
-    const livenessChallenges = (globalThis as any).livenessChallenges
-    if (!livenessChallenges) return { success: false, error: 'Sistem liveness belum diinisialisasi.' }
+    const storedChallenge = await prisma.livenessChallenge.findUnique({
+      where: { id: sessionId }
+    })
 
-    const storedChallenge = livenessChallenges.get(sessionId)
     if (!storedChallenge) {
       return { success: false, error: 'Sesi tantangan tidak valid atau sudah kedaluwarsa. Silakan coba lagi.' }
     }
 
-    livenessChallenges.delete(sessionId) // One-time use
+    await prisma.livenessChallenge.delete({ where: { id: sessionId } }).catch(() => {})
 
-    if (storedChallenge.expiresAt < Date.now()) {
+    if (storedChallenge.expiresAt.getTime() < Date.now()) {
       return { success: false, error: 'Waktu verifikasi habis. Coba lagi.' }
     }
 
-    if (storedChallenge.type === 'BLINK') {
-      const { earHistory } = livenessData
-      if (!earHistory || earHistory.length < 3) return { success: false, error: 'Data kedipan tidak memadai.' }
-      
-      const maxEAR = Math.max(...earHistory)
-      const minEAR = Math.min(...earHistory)
-      const latestEAR = earHistory[earHistory.length - 1]
-      
-      if (maxEAR - minEAR < 0.05 || latestEAR - minEAR < 0.03) {
-        return { success: false, error: 'Kedipan wajah gagal divalidasi oleh server.' }
-      }
-    } else if (storedChallenge.type === 'TURN_HEAD') {
-      const { headTurnHistory } = livenessData
-      if (!headTurnHistory || headTurnHistory.length < 2) return { success: false, error: 'Data gerakan kepala tidak memadai.' }
-      
-      const hasTurned = headTurnHistory.includes('left') || headTurnHistory.includes('right')
-      if (!hasTurned) {
-        return { success: false, error: 'Gerakan menoleh gagal divalidasi oleh server.' }
-      }
-    }
+    const sequence: string[] = JSON.parse(storedChallenge.sequence)
 
-    // ── Rate Limiting Check ──
-    const rateLimit = await checkRateLimit(`face:${userId}`)
-    if (!rateLimit.allowed) {
-      return { success: false, error: `Terlalu banyak percobaan gagal. Silakan coba lagi setelah ${Math.ceil(rateLimit.retryAfterMs / 1000 / 60)} menit.` }
+    for (const challengeType of sequence) {
+      if (challengeType === 'BLINK') {
+        const { earHistory } = livenessData
+        if (!earHistory || earHistory.length < 3) return { success: false, error: 'Data kedipan tidak memadai.' }
+        
+        const maxEAR = Math.max(...earHistory)
+        const minEAR = Math.min(...earHistory)
+        const latestEAR = earHistory[earHistory.length - 1]
+        
+        if (maxEAR - minEAR < 0.05 || latestEAR - minEAR < 0.03) {
+          return { success: false, error: 'Kedipan wajah gagal divalidasi oleh server.' }
+        }
+      } else if (challengeType === 'TURN_HEAD') {
+        const { headTurnHistory } = livenessData
+        if (!headTurnHistory || headTurnHistory.length < 4) return { success: false, error: 'Data gerakan kepala tidak memadai.' }
+        
+        const turnIdx = headTurnHistory.findIndex((d, i) => 
+          d !== 'center' && headTurnHistory.slice(i, i + 3).every(x => x === d)
+        )
+        const returnedToCenter = turnIdx >= 0 && headTurnHistory.slice(turnIdx + 3).some(d => d === 'center')
+        
+        if (turnIdx < 0 || !returnedToCenter) {
+          return { success: false, error: 'Gerakan menoleh gagal divalidasi oleh server (harus menoleh lalu kembali menatap layar).' }
+        }
+      }
     }
 
     const THRESHOLD = 0.55

@@ -35,8 +35,12 @@ function formatActorName(actor: string | undefined): string {
 export default function MaintenanceHistory() {
   const [records, setRecords] = useState<HistoryTicket[]>([])
   const [loading, setLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [serverStats, setServerStats] = useState({ totalSedangDiperbaiki: 0, totalSelesai: 0, totalDimusnahkan: 0 })
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedTicket, setSelectedTicket] = useState<HistoryTicket | null>(null)
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null)
   const [zoomScale, setZoomScale] = useState(1)
@@ -44,8 +48,15 @@ export default function MaintenanceHistory() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
 
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [searchQuery])
+
   const refreshData = () => {
-    getMaintenanceHistory().then(res => {
+    getMaintenanceHistory(currentPage, itemsPerPage, filterStatus, debouncedSearch).then(res => {
       if (res.success && res.data) {
         const adapted: HistoryTicket[] = res.data.map(r => ({
           id: r.recordCode,
@@ -56,30 +67,27 @@ export default function MaintenanceHistory() {
           notes: r.issue,
           reporter: r.reporterName,
           photoUrl: r.photoUrl ?? undefined,
-          photos: r.photos?.map((p: any) => p.image) || [],
+          photos: (r as any).photos?.map((p: any) => p.image) || [],
           timestamp: r.createdAt?.toString(),
           updatedAt: r.updatedAt?.toString(),
           resolverName: (r as any).resolverName || undefined,
         }))
         setRecords(adapted)
+        setTotalPages(res.totalPages || 1)
+        setTotalRecords(res.total || 0)
+        if (res.stats) {
+          setServerStats(res.stats)
+        }
       }
     }).finally(() => setLoading(false))
   }
 
+  React.useEffect(() => {
+    setLoading(true)
+    refreshData()
+  }, [currentPage, debouncedSearch, filterStatus])
+
   usePolling(refreshData, 10000)
-
-  const historyData = records
-
-  const filteredData = historyData.filter(item => {
-    const matchesSearch = item.items.some(i => i.assetName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                          item.id.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    if (filterStatus === 'Semua') return matchesSearch
-    return item.status === filterStatus && matchesSearch
-  })
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   return (
     <div className="space-y-4 sm:space-y-6 font-sans relative animate-fade-in">
@@ -87,25 +95,25 @@ export default function MaintenanceHistory() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-6">
         <StatCard 
           label="Total Riwayat Tercatat" 
-          value={historyData.length} 
+          value={totalRecords} 
           iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
           colorTheme="default"
         />
         <StatCard 
           label="Sedang Diperbaiki" 
-          value={historyData.filter(d => d.status === 'Sedang Diperbaiki').length} 
+          value={serverStats.totalSedangDiperbaiki} 
           iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
           colorTheme="amber"
         />
         <StatCard 
           label="Selesai Diperbaiki" 
-          value={historyData.filter(d => d.status === 'Selesai Diperbaiki').length} 
+          value={serverStats.totalSelesai} 
           iconPath="M5 13l4 4L19 7" 
           colorTheme="green"
         />
         <StatCard 
           label="Aset Dimusnahkan" 
-          value={historyData.filter(d => d.status === 'Dimusnahkan').length} 
+          value={serverStats.totalDimusnahkan} 
           iconPath="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
           colorTheme="red"
         />
@@ -154,7 +162,12 @@ export default function MaintenanceHistory() {
         </div>
 
         <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
-          {paginatedData.map((item) => (
+          {loading ? (
+            <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+              <p className="text-gray-500 font-medium">Memuat data...</p>
+            </div>
+          ) : records.map((item) => (
             <div key={item.id} className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
               <div className="flex justify-between items-start gap-3">
                 <div className="min-w-0">
@@ -203,17 +216,12 @@ export default function MaintenanceHistory() {
               </div>
             </div>
           ))}
-          {loading ? (
-            <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-3"></div>
-              <p className="text-gray-500 font-medium">Memuat data...</p>
-            </div>
-          ) : paginatedData.length === 0 ? (
+          {!loading && records.length === 0 && (
             <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               <p className="text-gray-500 font-medium">Tidak ada riwayat yang ditemukan.</p>
             </div>
-          ) : null}
+          )}
         </div>
 
         <div className="hidden lg:block overflow-x-auto">
@@ -238,14 +246,13 @@ export default function MaintenanceHistory() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : records.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-400 font-medium">
                     Tidak ada riwayat yang ditemukan.
                   </td>
                 </tr>
-              ) : null}
-              {paginatedData.map((item) => (
+              ) : records.map((item) => (
                 <tr key={item.id} className="group hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500 font-medium">
                     {item.id}
@@ -294,7 +301,7 @@ export default function MaintenanceHistory() {
         {totalPages > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
             <span className="text-sm text-gray-500 font-medium">
-              Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> dari <span className="font-bold text-gray-900">{filteredData.length}</span> hasil
+              Menampilkan <span className="font-bold text-gray-900">{totalRecords > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, totalRecords)}</span> dari <span className="font-bold text-gray-900">{totalRecords}</span> hasil
             </span>
             <div className="flex items-center gap-2">
               <button 
@@ -323,7 +330,7 @@ export default function MaintenanceHistory() {
 
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || filteredData.length === 0}
+                disabled={currentPage === totalPages || totalRecords === 0}
                 className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Selanjutnya

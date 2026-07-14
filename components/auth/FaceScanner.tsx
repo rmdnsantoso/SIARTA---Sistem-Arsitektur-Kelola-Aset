@@ -49,8 +49,10 @@ export default function FaceScanner({
   const [retryCount, setRetryCount] = useState(0)
 
   // Liveness & Light states
-  const [challenge, setChallenge] = useState<'BLINK' | 'TURN_HEAD' | null>(null)
-  const challengeRef = useRef<'BLINK' | 'TURN_HEAD' | null>(null)
+  const [challengeSequence, setChallengeSequence] = useState<('BLINK' | 'TURN_HEAD')[]>([])
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const challengeSequenceRef = useRef<('BLINK' | 'TURN_HEAD')[]>([])
+  const currentStepIndexRef = useRef(0)
   const sessionIdRef = useRef<string>('')
 
   const [hasBlinked, setHasBlinked] = useState(false)
@@ -93,9 +95,11 @@ export default function FaceScanner({
       sessionIdRef.current = sid
       const res = await generateLivenessChallenge(sid)
       if (cancelled.value) return
-      if (res.success && res.challenge) {
-        setChallenge(res.challenge as any)
-        challengeRef.current = res.challenge as any
+      if (res.success && res.challenge && Array.isArray(res.challenge)) {
+        setChallengeSequence(res.challenge as any)
+        challengeSequenceRef.current = res.challenge as any
+        setCurrentStepIndex(0)
+        currentStepIndexRef.current = 0
       } else {
         setError('Gagal mendapatkan challenge keamanan.')
         setScanStatus('error')
@@ -154,6 +158,8 @@ export default function FaceScanner({
 
         if (stopped || cancelled.value) return
 
+        if (stopped || cancelled.value) return
+
         setFaceDetected(!!det)
 
         if (!det) {
@@ -163,7 +169,9 @@ export default function FaceScanner({
 
         // --- Active Liveness Detection ---
         const landmarks = det.landmarks.positions
-        const currentChallenge = challengeRef.current
+        const currentChallenge = challengeSequenceRef.current[currentStepIndexRef.current]
+
+        let challengeCompleted = false
 
         if (currentChallenge === 'BLINK') {
           const leftEye = landmarks.slice(36, 42)
@@ -188,29 +196,38 @@ export default function FaceScanner({
             }
           }
 
-          // Jangan kirim verifikasi ke server sampai user terbukti berkedip
-          if (!hasBlinkedRef.current) {
-            if (!stopped && !cancelled.value) scheduleNext(tick)
-            return
-          }
+          challengeCompleted = hasBlinkedRef.current
         } else if (currentChallenge === 'TURN_HEAD') {
           const direction = getHeadTurnDirection(landmarks)
           headTurnHistory.current.push(direction)
-          if (headTurnHistory.current.length > 10) headTurnHistory.current.shift()
+          if (headTurnHistory.current.length > 30) headTurnHistory.current.shift()
 
-          if (direction === 'left' || direction === 'right') {
+          const turnIdx = headTurnHistory.current.findIndex((d, i) => 
+            d !== 'center' && headTurnHistory.current.slice(i, i + 3).every(x => x === d)
+          )
+          const returnedToCenter = turnIdx >= 0 && headTurnHistory.current.slice(turnIdx + 3).some(d => d === 'center')
+
+          if (turnIdx >= 0 && returnedToCenter) {
             if (!hasTurnedRef.current) {
               hasTurnedRef.current = true
               setHasTurned(true)
             }
           }
 
-          if (!hasTurnedRef.current) {
+          challengeCompleted = hasTurnedRef.current
+        }
+
+        if (challengeCompleted) {
+          if (currentStepIndexRef.current < challengeSequenceRef.current.length - 1) {
+            // Lanjut ke tantangan berikutnya
+            currentStepIndexRef.current += 1
+            setCurrentStepIndex(currentStepIndexRef.current)
             if (!stopped && !cancelled.value) scheduleNext(tick)
             return
           }
+          // Jika sudah di step terakhir dan completed, lanjut ke --- MULAI VERIFIKASI ---
         } else {
-          // Masih menunggu challenge
+          // Masih menunggu penyelesaian challenge
           if (!stopped && !cancelled.value) scheduleNext(tick)
           return
         }
@@ -356,6 +373,10 @@ export default function FaceScanner({
     }
   }, []) 
 
+  const currentChallenge = challengeSequence[currentStepIndex]
+  const currentChallengeCompleted = currentChallenge === 'BLINK' ? hasBlinked : hasTurned
+  const currentChallengeText = currentChallenge === 'BLINK' ? 'KEDIPKAN MATA ANDA' : 'TENGOK KIRI/KANAN'
+
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5">
       {/* Header */}
@@ -363,9 +384,8 @@ export default function FaceScanner({
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Verifikasi Wajah</h2>
         <p className="mt-1.5 text-sm text-gray-500">
           {scanStatus === 'loading_models' && 'Memuat sistem pengenalan wajah...'}
-          {scanStatus === 'scanning' && challenge === 'BLINK' && 'Arahkan wajah ke kamera dan BERKEDIP'}
-          {scanStatus === 'scanning' && challenge === 'TURN_HEAD' && 'Arahkan wajah ke kamera dan TENGOK KIRI/KANAN'}
-          {scanStatus === 'scanning' && !challenge && 'Menyiapkan verifikasi...'}
+          {scanStatus === 'scanning' && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
+          {scanStatus === 'scanning' && !currentChallenge && 'Menyiapkan verifikasi...'}
           {scanStatus === 'verifying' && 'Memverifikasi identitas Anda...'}
           {scanStatus === 'success' && 'Identitas berhasil diverifikasi!'}
           {scanStatus === 'failed' && 'Wajah tidak dikenali, coba lagi'}
@@ -413,13 +433,13 @@ export default function FaceScanner({
         {/* Scanning overlay */}
         {(scanStatus === 'scanning' || scanStatus === 'verifying' || scanStatus === 'failed') && (
           <div className="absolute inset-0 z-10">
-            <div className={`absolute top-6 left-6 w-10 h-10 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
-            <div className={`absolute top-6 right-6 w-10 h-10 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
-            <div className={`absolute bottom-6 left-6 w-10 h-10 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
-            <div className={`absolute bottom-6 right-6 w-10 h-10 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute top-6 left-6 w-10 h-10 border-t-4 border-l-4 rounded-tl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? (currentChallengeCompleted ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute top-6 right-6 w-10 h-10 border-t-4 border-r-4 rounded-tr-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? (currentChallengeCompleted ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute bottom-6 left-6 w-10 h-10 border-b-4 border-l-4 rounded-bl-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? (currentChallengeCompleted ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
+            <div className={`absolute bottom-6 right-6 w-10 h-10 border-b-4 border-r-4 rounded-br-xl transition-colors duration-300 ${scanStatus === 'failed' ? 'border-red-500' : faceDetected ? (currentChallengeCompleted ? 'border-green-400' : 'border-yellow-400') : 'border-blue-500'}`} />
 
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className={`w-[60%] h-[55%] border-2 rounded-[50%] transition-colors duration-500 ${scanStatus === 'failed' ? 'border-red-400 border-solid' : faceDetected ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'border-green-400 border-solid' : 'border-yellow-400 border-solid') : 'border-white/30 border-dashed'}`} />
+              <div className={`w-[60%] h-[55%] border-2 rounded-[50%] transition-colors duration-500 ${scanStatus === 'failed' ? 'border-red-400 border-solid' : faceDetected ? (currentChallengeCompleted ? 'border-green-400 border-solid' : 'border-yellow-400 border-solid') : 'border-white/30 border-dashed'}`} />
             </div>
 
             {/* Instruction Badge */}
@@ -427,11 +447,11 @@ export default function FaceScanner({
               <div className="absolute bottom-6 left-0 right-0 flex justify-center">
                 <span className={`text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg transition-all ${
                   faceDetected 
-                    ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900') 
+                    ? (currentChallengeCompleted ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900') 
                     : 'bg-black/60 text-white/90'
                 }`}>
                   {faceDetected 
-                    ? ((challenge === 'BLINK' ? hasBlinked : hasTurned) ? 'Memverifikasi...' : (challenge === 'BLINK' ? 'Silakan Berkedip' : 'Tengok ke Kiri/Kanan')) 
+                    ? (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : 'Tengok ke Kiri/Kanan')) 
                     : 'Posisikan wajah Anda'}
                 </span>
               </div>

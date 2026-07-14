@@ -1,12 +1,13 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 
-interface Props {
-  tickets?: Ticket[]
-}
+import { usePolling } from '../../hooks/usePolling'
+import { getHistoryTicketsByUser } from '../../actions/core/ticket'
+import { getLoggedInUser } from '../../actions/core/session'
+import { adaptTickets } from '../../types/db'
 
 function StatusBadge({ status, stage }: { status: TicketStatus, stage: string }) {
   const map: Record<TicketStatus, string> = {
@@ -29,35 +30,59 @@ function StatusBadge({ status, stage }: { status: TicketStatus, stage: string })
   )
 }
 
-export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
+export default function RiwayatPinjam() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
   
-  // Pagination State
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalHistory, setTotalHistory] = useState(0)
+  const [totalSelesai, setTotalSelesai] = useState(0)
+  const [totalDitolak, setTotalDitolak] = useState(0)
+  
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [searchQuery])
   
+  const fetchData = async () => {
+    try {
+      const sessionRes = await getLoggedInUser()
+      const userId = sessionRes.user?.id
+      if (!userId) return
+      
+      const res = await getHistoryTicketsByUser(userId, currentPage, itemsPerPage, undefined, undefined, debouncedSearch, filterStatus)
+      if (res.data) {
+        setTickets(adaptTickets(res.data))
+        setTotalPages(res.totalPages)
+        setTotalHistory(res.total)
+        setTotalSelesai(res.totalSelesai || 0)
+        setTotalDitolak(res.totalDitolak || 0)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [currentPage, debouncedSearch, filterStatus])
+
+  usePolling(fetchData, 120000)
+
   // Modal State for details
   const [modalTicketId, setModalTicketId] = useState<string | null>(null)
   const modalTicket = modalTicketId ? tickets.find(t => t.id === modalTicketId) || null : null
-  
-  // Filter completed/rejected tickets for Ahmad
-  const historyStatuses = ['Selesai', 'Dikembalikan', 'Ditolak']
-  const myHistoryTickets = tickets.filter(t => historyStatuses.includes(t.overallStatus))
-  const filteredTickets = myHistoryTickets.filter(t => {
-    const matchesSearch = 
-      t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      t.alat.toLowerCase().includes(searchQuery.toLowerCase())
-      
-    if (filterStatus === 'Semua') return matchesSearch
-    return t.overallStatus === filterStatus && matchesSearch
-  })
-
-  // Calculate metrics
-  const totalSelesai = myHistoryTickets.filter(t => t.overallStatus === 'Selesai' || t.overallStatus === 'Dikembalikan').length
-  const totalDitolak = myHistoryTickets.filter(t => t.overallStatus === 'Ditolak').length
-  const totalHistory = myHistoryTickets.length
 
   const stats = [
     { label: 'Total Riwayat', value: totalHistory, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' as const },
@@ -115,7 +140,9 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
         </div>
 
         <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
-          {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
+          {loading ? (
+            <div className="py-10 text-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+          ) : tickets.map((ticket) => (
             <div key={ticket.id} className="bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
               <div className="flex justify-between items-start gap-3">
                 <div className="min-w-0">
@@ -158,7 +185,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
               </div>
             </div>
           ))}
-          {filteredTickets.length === 0 && (
+          {!loading && tickets.length === 0 && (
             <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
               <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               <p className="text-gray-500 font-medium text-sm">Tidak ada riwayat peminjaman yang ditemukan.</p>
@@ -178,7 +205,9 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
+              {loading ? (
+                <tr><td colSpan={6} className="py-10 text-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div></td></tr>
+              ) : tickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
                   {/* ID Pengajuan */}
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -235,7 +264,7 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
                   </td>
                 </tr>
               ))}
-              {filteredTickets.length === 0 && (
+              {!loading && tickets.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     Tidak ada riwayat peminjaman yang ditemukan.
@@ -247,38 +276,40 @@ export default function RiwayatPinjam({ tickets = initialTickets }: Props) {
         </div>
 
         {/* Pagination Footer */}
-        {Math.ceil(filteredTickets.length / itemsPerPage) > 0 && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between shrink-0 gap-3 rounded-b-lg">
+        {totalPages > 0 && (
+          <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
-              Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> riwayat
+              Menampilkan <span className="font-bold text-gray-900">{tickets.length}</span> dari <span className="font-bold text-gray-900">{totalHistory}</span> riwayat
             </span>
-            <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center">
-              <button 
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            <div className="flex gap-1 sm:gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 justify-center sm:justify-end">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1 || loading}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 Sebelumnya
               </button>
               
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                {Array.from({ length: Math.ceil(filteredTickets.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }).map((_, i) => (
                   <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-7 sm:w-8 h-7 sm:h-8 flex items-center justify-center rounded-lg text-xs sm:text-sm font-bold transition-all ${
-                      currentPage === page 
+                    key={i}
+                    onClick={() => setCurrentPage(i + 1)}
+                    disabled={loading}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      currentPage === i + 1 
                         ? 'bg-blue-600 text-white shadow-md' 
-                        : 'text-gray-500 hover:bg-gray-200 bg-transparent'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    {page}
+                    {i + 1}
                   </button>
                 ))}
               </div>
-              <button 
-                onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredTickets.length / itemsPerPage), p + 1))}
-                disabled={currentPage === Math.ceil(filteredTickets.length / itemsPerPage) || filteredTickets.length === 0}
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || loading || tickets.length === 0}
                 className="px-2.5 sm:px-3 py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Selanjutnya

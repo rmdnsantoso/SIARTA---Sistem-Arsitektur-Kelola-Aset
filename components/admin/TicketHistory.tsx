@@ -6,6 +6,7 @@ import StatCard from '../shared/StatCard'
 
 interface Props {
   tickets?: Ticket[]
+  fetchAction?: any
 }
 
 function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus, stage: string, align?: 'start' | 'end' }) {
@@ -34,48 +35,59 @@ import { adaptTickets } from '../../types/db'
 import { usePolling } from '../../hooks/usePolling'
 import { isOverdue } from '../../lib/dateUtils'
 
-export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
-  const [tickets, setTickets] = useState<Ticket[]>(initialTickets)
+export default function TicketHistory({ tickets: initialTickets = [], fetchAction = getAllTickets }: Props) {
+  const [tickets, setTickets] = useState<Ticket[]>([])
+  const [loading, setLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [serverStats, setServerStats] = useState({ totalMenunggu: 0, totalDisetujui: 0, totalDitolak: 0, totalSelesai: 0, totalDipinjam: 0 })
+  
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('Semua')
 
-  // Pagination State
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [searchQuery])
+
+  const refreshData = async () => {
+    try {
+      const res = await fetchAction(currentPage, itemsPerPage, undefined, undefined, debouncedSearch, filterStatus)
+      if (res.data) {
+        setTickets(adaptTickets(res.data))
+        setTotalPages(res.totalPages)
+        setTotalRecords(res.total)
+        setServerStats(res.stats || { totalMenunggu: 0, totalDisetujui: 0, totalDitolak: 0, totalSelesai: 0, totalDipinjam: 0 })
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  React.useEffect(() => {
+    setLoading(true)
+    refreshData()
+  }, [currentPage, debouncedSearch, filterStatus])
+
+  usePolling(refreshData, 10000)
 
   // Modal State for details
   const [modalTicketId, setModalTicketId] = useState<string | null>(null)
   const modalTicket = modalTicketId ? tickets.find(t => t.id === modalTicketId) || null : null
 
-  const refreshData = () => {
-    getAllTickets().then(res => {
-      setTickets(adaptTickets(res))
-    }).catch(err => console.error('Gagal memuat riwayat:', err))
-  }
-
-  usePolling(refreshData, 10000)
-
-  const filteredTickets = tickets.filter(t => {
-    const matchesSearch = 
-      t.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      t.peminjam.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      t.alat.toLowerCase().includes(searchQuery.toLowerCase())
-      
-    if (filterStatus === 'Semua') return matchesSearch
-    return t.overallStatus === filterStatus && matchesSearch
-  })
-
-  // Calculate stats
-  const totalSelesai = tickets.filter(t => t.overallStatus === 'Selesai' || t.overallStatus === 'Dikembalikan').length
-  const totalDitolak = tickets.filter(t => t.overallStatus === 'Ditolak').length
-  const totalDipinjam = tickets.filter(t => t.overallStatus === 'Dipinjam').length
-  const totalPengajuan = tickets.length
-
   const stats: Array<{ label: string, value: number, iconPath: string, colorTheme: 'default' | 'blue' | 'green' | 'amber' | 'red' | 'purple' }> = [
-    { label: 'Total Pengajuan', value: totalPengajuan, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' },
-    { label: 'Selesai / Dikembalikan', value: totalSelesai, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'green' },
-    { label: 'Sedang Dipinjam', value: totalDipinjam, iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', colorTheme: 'amber' },
-    { label: 'Ditolak', value: totalDitolak, iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'red' },
+    { label: 'Total Pengajuan', value: totalRecords || 0, iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', colorTheme: 'blue' },
+    { label: 'Selesai / Dikembalikan', value: serverStats.totalSelesai || 0, iconPath: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'green' },
+    { label: 'Sedang Dipinjam', value: serverStats.totalDipinjam || 0, iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', colorTheme: 'amber' },
+    { label: 'Ditolak', value: serverStats.totalDitolak || 0, iconPath: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', colorTheme: 'red' },
   ]
 
   return (
@@ -108,8 +120,11 @@ export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
                   type="text"
                   placeholder="Cari ID tiket atau nama..."
                   value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  className="pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full lg:w-64 shadow-sm"
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="pl-9 pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full lg:w-64 transition-all outline-none"
                 />
               </div>
               <select
@@ -132,7 +147,9 @@ export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
           </div>
 
           <div className="lg:hidden p-2 sm:p-4 space-y-3 sm:space-y-4 bg-gray-50/30">
-            {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
+            {loading ? (
+              <div className="py-10 text-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+            ) : tickets.map((ticket) => (
               <div key={ticket.id} className="bg-white p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-2.5 sm:gap-4">
                 <div className="flex justify-between items-start gap-3 sm:gap-4">
                   <div className="min-w-0">
@@ -172,7 +189,7 @@ export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
                 </button>
               </div>
             ))}
-            {filteredTickets.length === 0 && (
+            {!loading && tickets.length === 0 && (
               <div className="py-12 text-center bg-white rounded-2xl border border-gray-100 border-dashed">
                 <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 <p className="text-gray-500 font-medium">Tidak ada riwayat yang cocok.</p>
@@ -195,7 +212,9 @@ export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredTickets.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((ticket) => (
+                {loading ? (
+                  <tr><td colSpan={7} className="py-10 text-center"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div></td></tr>
+                ) : tickets.map((ticket) => (
                   <tr key={ticket.id} className="group hover:bg-gray-50 transition-colors">
                     {/* ID Pengajuan */}
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -274,7 +293,7 @@ export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
                   </tr>
                 ))}
                 {/* Removed redundant empty state check, handled internally by loop length > 0 typically but keep if needed */}
-                {filteredTickets.length === 0 && (
+                {!loading && tickets.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                       Tidak ada riwayat tiket yang cocok dengan filter atau pencarian Anda.
@@ -286,40 +305,41 @@ export default function TicketHistory({ tickets: initialTickets = [] }: Props) {
           </div>
 
           {/* Pagination Footer */}
-          {Math.ceil(filteredTickets.length / itemsPerPage) > 0 && (
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
+          {totalPages > 0 && (
+            <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
               <span className="text-xs sm:text-sm text-gray-500 font-medium text-center sm:text-left">
-                Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredTickets.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredTickets.length)}</span> dari <span className="font-bold text-gray-900">{filteredTickets.length}</span> hasil
+                Menampilkan <span className="font-bold text-gray-900">{tickets.length}</span> dari <span className="font-bold text-gray-900">{totalRecords}</span> riwayat
               </span>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              <div className="flex gap-1 sm:gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 justify-center sm:justify-end">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1 || loading}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Sebelumnya
                 </button>
                 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.ceil(filteredTickets.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }).map((_, i) => (
                     <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                        currentPage === page 
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      disabled={loading}
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-bold transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        currentPage === i + 1 
                           ? 'bg-blue-600 text-white shadow-md' 
-                          : 'text-gray-500 hover:bg-gray-200 bg-transparent'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      {page}
+                      {i + 1}
                     </button>
                   ))}
                 </div>
-
-                <button 
-                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredTickets.length / itemsPerPage), p + 1))}
-                  disabled={currentPage === Math.ceil(filteredTickets.length / itemsPerPage) || filteredTickets.length === 0}
-                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-gray-200 text-xs sm:text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages || loading || tickets.length === 0}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Selanjutnya
                 </button>
