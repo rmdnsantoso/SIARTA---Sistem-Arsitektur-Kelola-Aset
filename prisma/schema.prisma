@@ -44,12 +44,12 @@ model User {
   office         String? // Kantor / Site
   regional       String? // Regional / Area
   isActive       Boolean  @default(true)
-  passwordHash   String? // Hash bcrypt dari password
-  tempPassword   String? // Password sementara plain-text (dihapus setelah login pertama)
-  faceDescriptor String? // JSON array 128-dimensi face descriptor (face-api.js)
-  faceRegistered Boolean  @default(false) // Apakah wajah sudah direkam
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  passwordHash       String?  // Hash bcrypt dari password
+  mustChangePassword Boolean  @default(true) // Menandakan user harus mengganti password (baru dibuat/di-reset)
+  faceDescriptor     String?  // JSON array 128-dimensi face descriptor (face-api.js)
+  faceRegistered     Boolean  @default(false) // Apakah wajah sudah direkam
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   tickets            Ticket[]            @relation("PeminjamTickets")
   maintenanceReports MaintenanceRecord[] @relation("ReporterRecords")
@@ -85,6 +85,8 @@ model PhysicalUnit {
   updatedAt    DateTime @updatedAt
 
   history UnitHistory[] @relation("UnitHistory")
+
+  @@index([assetId, status]) // Filter unit tersedia per aset
 }
 
 model UnitHistory {
@@ -93,7 +95,10 @@ model UnitHistory {
   unit      PhysicalUnit @relation("UnitHistory", fields: [unitId], references: [id], onDelete: Cascade)
   action    String
   actor     String
-  timestamp String // Waktu kejadian format string/WIB
+  timestamp String       // Label waktu format string/WIB (untuk display)
+  createdAt DateTime     @default(now()) // Waktu nyata untuk sorting & filtering
+
+  @@index([unitId, createdAt]) // Sort riwayat unit by time
 }
 
 model Ticket {
@@ -125,12 +130,14 @@ model TrackingLog {
   id        String   @id @default(uuid())
   ticketId  String
   ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  stage     String // e.g. Admin, HSSE, Area Head
-  status    String // Keterangan aksi (Disetujui, Ditolak, dll)
-  actor     String // Nama dan Role pelaku
-  notes     String? // Catatan opsional
-  timestamp String // Waktu kejadian format string/WIB
-  createdAt DateTime @default(now())
+  stage     String   // e.g. Admin, HSSE, Area Head
+  status    String   // Keterangan aksi (Disetujui, Ditolak, dll)
+  actor     String   // Nama dan Role pelaku
+  notes     String?  // Catatan opsional
+  timestamp String   // Label waktu format string/WIB (untuk display)
+  createdAt DateTime @default(now()) // Waktu nyata untuk sorting & filtering
+
+  @@index([ticketId, createdAt]) // Sort log per tiket by time
 }
 
 model Notification {
@@ -156,6 +163,8 @@ model LoginAttempt {
   resetAt   DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([resetAt]) // Cleanup data expired berdasarkan waktu
 }
 
 model ActivityLog {
@@ -167,6 +176,10 @@ model ActivityLog {
   actorId     String   // ID admin yang melakukan
   actorName   String   // Nama admin yang melakukan
   createdAt   DateTime @default(now())
+
+  @@index([actorId])                // Riwayat log per admin
+  @@index([entityType, entityId])   // Lookup riwayat per entitas
+  @@index([createdAt])              // Sorting & filter berdasarkan waktu
 }
 
 // Riwayat pemeliharaan aset (selesai diperbaiki atau write-off)
@@ -190,7 +203,8 @@ model MaintenanceRecord {
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
-  @@index([updatedAt])
+  @@index([status])    // Filter laporan aktif
+  @@index([updatedAt]) // Sorting berdasarkan waktu update
 }
 
 model MaintenancePhoto {
@@ -217,6 +231,7 @@ model MaintenanceItem {
 
 model LivenessChallenge {
   id        String   @id // sessionId
+  userId    String   // ID user dari sesi pre-auth
   sequence  String   // JSON string array e.g. "['BLINK', 'TURN_HEAD']"
   expiresAt DateTime
   createdAt DateTime @default(now())

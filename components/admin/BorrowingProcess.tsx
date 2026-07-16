@@ -2,7 +2,6 @@
 import React, { useState } from 'react'
 import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
-import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
 import { verifyTicketByAdmin, rejectTicketByAdmin, verifyAssetBorrowHandover } from '../../actions/workflows/verifikasi'
@@ -18,7 +17,7 @@ type ModalState = {
   type: 'setujui' | 'tolak' | 'serah_terima' | 'detail'
 }
 
-export default function BorrowingProcess({ tickets = initialTickets, onSuccess }: Props) {
+export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
 
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets)
   

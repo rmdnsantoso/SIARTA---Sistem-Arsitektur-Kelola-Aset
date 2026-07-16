@@ -9,40 +9,47 @@ import { createActivityLog } from './log'
 // READ
 // ============================================================
 
+// Untuk halaman listing aset (Peminjam, HSSE, AreaHead) — ringan, hanya data yang dibutuhkan
 export async function getAvailableAssets() {
   try {
-    const assets = await prisma.asset.findMany({
-      orderBy: { createdAt: 'asc' },
-      include: { units: { include: { history: { orderBy: { timestamp: 'desc' } } } } }
-    })
-    
-    const activeTickets = await prisma.ticket.findMany({
-      where: { overallStatus: { in: ['Menunggu', 'Disetujui', 'Dipinjam'] } }
-    })
-    
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
+
+    const [assets, activeTickets] = await Promise.all([
+      prisma.asset.findMany({
+        orderBy: { createdAt: 'asc' },
+        // Hanya ambil count unit per status — jauh lebih ringan dari include full history
+        include: {
+          _count: { select: { units: true } },
+          units: {
+            where: { status: { not: 'Dimusnahkan' } },
+            select: { id: true, status: true, unitId: true, serialNumber: true }
+          }
+        }
+      }),
+      prisma.ticket.findMany({
+        where: { overallStatus: { in: ['Menunggu', 'Disetujui', 'Dipinjam'] } },
+        select: { assetId: true, jumlah: true }
+      })
+    ])
+
     const data = assets.map(a => {
-      let computedTotal = 0;
-      let computedAvailable = 0;
-      
+      let computedTotal = 0
+      let computedAvailable = 0
+
       if (a.isSerialized) {
-        // Serialized: total adalah yang belum dimusnahkan
-        computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
-        // Tersedia: ambil dari a.quantity karena peminjaman sudah mengurangi a.quantity
-        computedAvailable = a.quantity;
+        computedTotal = a.units?.length || 0
+        computedAvailable = a.quantity
       } else {
-        // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
-        const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
-        computedAvailable = a.quantity;
-        computedTotal = a.quantity + borrowed;
+        const borrowed = activeTickets
+          .filter(t => t.assetId === a.id)
+          .reduce((sum, t) => sum + t.jumlah, 0)
+        computedAvailable = a.quantity
+        computedTotal = a.quantity + borrowed
       }
-      
-      return {
-        ...a,
-        computedTotalStock: computedTotal,
-        computedAvailableStock: computedAvailable
-      }
+
+      return { ...a, computedTotalStock: computedTotal, computedAvailableStock: computedAvailable }
     })
-    
+
     return { success: true, data }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -51,49 +58,78 @@ export async function getAvailableAssets() {
 
 export async function getAssetById(id: string) {
   try {
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
+    if (!id || typeof id !== 'string') throw new Error('ID aset tidak valid.')
     const asset = await prisma.asset.findUnique({ where: { id } })
-    if (!asset) throw new Error('Aset tidak ditemukan')
+    if (!asset) throw new Error('Aset tidak ditemukan.')
     return { success: true, data: asset }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
 }
 
+// Untuk halaman admin listing — mirip getAvailableAssets tapi tanpa auth gate role khusus
 export async function getAllAssetsForAdmin() {
   try {
-    const assets = await prisma.asset.findMany({ 
-      orderBy: { createdAt: 'asc' },
-      include: { units: { include: { history: { orderBy: { timestamp: 'desc' } } } } }
-    })
+    const [assets, activeTickets] = await Promise.all([
+      prisma.asset.findMany({
+        orderBy: { createdAt: 'asc' },
+        include: {
+          _count: { select: { units: true } },
+          units: {
+            where: { status: { not: 'Dimusnahkan' } },
+            select: { id: true, status: true, unitId: true, serialNumber: true }
+          }
+        }
+      }),
+      prisma.ticket.findMany({
+        where: { overallStatus: { in: ['Menunggu', 'Disetujui', 'Dipinjam'] } },
+        select: { assetId: true, jumlah: true }
+      })
+    ])
 
-    const activeTickets = await prisma.ticket.findMany({
-      where: { overallStatus: { in: ['Menunggu', 'Disetujui', 'Dipinjam'] } }
-    })
-    
     const data = assets.map(a => {
-      let computedTotal = 0;
-      let computedAvailable = 0;
-      
+      let computedTotal = 0
+      let computedAvailable = 0
+
       if (a.isSerialized) {
-        // Serialized: total adalah yang belum dimusnahkan
-        computedTotal = a.units?.filter(u => u.status !== 'Dimusnahkan').length || 0;
-        // Tersedia adalah yang statusnya beneran 'Tersedia'
-        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0;
+        computedTotal = a.units?.length || 0
+        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0
       } else {
-        // Non-serialized: quantity di DB = available stock. Total = available + borrowed.
-        const borrowed = activeTickets.filter(t => t.assetId === a.id).reduce((sum, t) => sum + t.jumlah, 0);
-        computedAvailable = a.quantity;
-        computedTotal = a.quantity + borrowed;
+        const borrowed = activeTickets
+          .filter(t => t.assetId === a.id)
+          .reduce((sum, t) => sum + t.jumlah, 0)
+        computedAvailable = a.quantity
+        computedTotal = a.quantity + borrowed
       }
-      
-      return {
-        ...a,
-        computedTotalStock: computedTotal,
-        computedAvailableStock: computedAvailable
-      }
+
+      return { ...a, computedTotalStock: computedTotal, computedAvailableStock: computedAvailable }
     })
 
     return { success: true, data }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
+// Untuk detail aset — fetch unit lengkap + history (hanya dipanggil saat buka detail modal/halaman)
+export async function getAssetUnitsById(assetId: string) {
+  try {
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
+    if (!assetId?.trim()) throw new Error('ID aset tidak valid.')
+
+    const units = await prisma.physicalUnit.findMany({
+      where: { assetId },
+      orderBy: { unitId: 'asc' },
+      include: {
+        history: {
+          orderBy: { id: 'desc' }, // Setelah prisma generate: ganti ke { createdAt: 'desc' }
+          take: 10 // Batasi 10 histori terakhir per unit
+        }
+      }
+    })
+
+    return { success: true, data: units }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -116,6 +152,16 @@ export async function createAsset(input: {
 }) {
   try {
     await requireRole([Role.Admin])
+
+    // ── Validasi input ────────────────────────────────────────────────────────
+    if (!input.assetCode?.trim()) throw new Error('Kode aset wajib diisi.')
+    if (!input.name?.trim()) throw new Error('Nama aset wajib diisi.')
+    if (!input.category?.trim()) throw new Error('Kategori aset wajib diisi.')
+    if (typeof input.quantity !== 'number' || input.quantity < 1) throw new Error('Jumlah aset harus minimal 1.')
+    if (input.quantity > 9999) throw new Error('Jumlah aset terlalu besar (maks 9999).')
+    // Sanitasi kode aset: hanya huruf, angka, dan tanda hubung
+    if (!/^[A-Za-z0-9\-]+$/.test(input.assetCode)) throw new Error('Kode aset hanya boleh berisi huruf, angka, dan tanda hubung (-)')
+
     const existing = await prisma.asset.findUnique({ where: { assetCode: input.assetCode } })
     if (existing) throw new Error(`Kode aset ${input.assetCode} sudah digunakan.`)
     
@@ -159,6 +205,13 @@ export async function updateAsset(id: string, input: {
 }) {
   try {
     await requireRole([Role.Admin])
+
+    // ── Validasi input ────────────────────────────────────────────────────────
+    if (input.name !== undefined && !input.name.trim()) throw new Error('Nama aset tidak boleh kosong.')
+    if (input.category !== undefined && !input.category.trim()) throw new Error('Kategori tidak boleh kosong.')
+    if (input.quantity !== undefined && (typeof input.quantity !== 'number' || input.quantity < 0)) throw new Error('Jumlah tidak boleh negatif.')
+    if (input.quantity !== undefined && input.quantity > 9999) throw new Error('Jumlah aset terlalu besar (maks 9999).')
+
     const asset = await prisma.asset.update({ where: { id }, data: input })
     await createActivityLog('UPDATE_ASSET', 'Asset', `Memperbarui data aset: ${asset.name} (${asset.assetCode})`, asset.id)
     return { success: true, data: asset }
@@ -253,7 +306,7 @@ export async function unarchiveAsset(id: string) {
 export async function updatePhysicalUnitSN(unitId: string, serialNumber: string) {
   try {
     const user = await requireRole([Role.Admin])
-    await requireRole([Role.Admin])
+    if (!unitId?.trim()) throw new Error('Unit ID tidak valid.')
     const unit = await prisma.physicalUnit.findUnique({ where: { unitId } })
     if (!unit) throw new Error('Unit tidak ditemukan.')
     

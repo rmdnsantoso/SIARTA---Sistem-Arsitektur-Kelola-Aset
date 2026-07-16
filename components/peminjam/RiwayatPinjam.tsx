@@ -1,7 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
-import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 
 import { usePolling } from '../../hooks/usePolling'

@@ -12,9 +12,12 @@ import {
   removePhysicalUnit, 
   addAssetStock,
   archiveAsset,
-  unarchiveAsset
+  unarchiveAsset,
+  getAssetUnitsById
 } from '../../actions/core/asset'
-import { QRCodeSVG } from 'qrcode.react'
+
+
+import StyledQRCode from '../shared/StyledQRCode'
 import { usePolling } from '../../hooks/usePolling'
 
 type UnitStatus = 'Tersedia' | 'Dipinjam' | 'Maintenance' | 'Rusak'
@@ -66,8 +69,33 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
   const [editForm, setEditForm] = useState({ name: '', imageUrl: '' })
 
   const [historyModalUnit, setHistoryModalUnit] = useState<PhysicalUnit | null>(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  // Fetch history on-demand saat user klik tombol Riwayat
+  const handleOpenHistory = async (unit: PhysicalUnit, assetId: string) => {
+    setHistoryLoading(true)
+    setHistoryModalUnit({ ...unit, history: [] }) // tampilkan modal dulu dengan loading state
+    try {
+      const res = await getAssetUnitsById(assetId)
+      if (res.success && res.data) {
+        const freshUnit = res.data.find((u: any) => u.unitId === unit.unitId)
+        if (freshUnit) {
+          setHistoryModalUnit({
+            ...unit,
+            history: (freshUnit.history || []).map((h: any) => ({
+              date: h.timestamp,
+              action: h.action,
+              user: h.actor
+            }))
+          })
+        }
+      }
+    } catch { /* silent fail */ } finally {
+      setHistoryLoading(false)
+    }
+  }
   const [unitSearchQuery, setUnitSearchQuery] = useState('')
-  const [printQRAsset, setPrintQRAsset] = useState<{ code: string; name: string }[] | null>(null)
+  const [printQRAsset, setPrintQRAsset] = useState<{ code: string; name: string; isSerialized: boolean }[] | null>(null)
   const [deleteUnitConfirm, setDeleteUnitConfirm] = useState<{assetId: string, unitId: string} | null>(null)
   const [assetActionConfirm, setAssetActionConfirm] = useState<{ id: string, action: 'archive' | 'unarchive' } | null>(null)
 
@@ -443,18 +471,18 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
   })
 
   return (
-    <div className="flex flex-col gap-6 font-sans">
+    <div className="flex flex-col gap-4 sm:gap-6 font-sans">
 
       {/* ── Top Toolbar & Filters ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col shrink-0">
         {/* Header Row: Title, Search, Add Button */}
-        <div className="p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="p-3 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
           <div>
             <h2 className="text-base sm:text-lg font-bold text-gray-900">Master Aset</h2>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">Kelola data seluruh aset dan inventaris perusahaan.</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
             <div className="relative w-full sm:w-72">
               <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -464,14 +492,14 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 placeholder="Cari Kode Aset atau nama..." 
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none shadow-sm transition-all"
+                className="w-full pl-9 pr-3 py-2 sm:py-2.5 border border-gray-200 rounded-lg sm:rounded-xl text-xs sm:text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none shadow-sm transition-all"
               />
             </div>
             
             {!isViewOnly && (
               <button 
                 onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 hover:-translate-y-[1px] transition-all shadow-md hover:shadow-lg shrink-0"
+                className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 hover:-translate-y-[1px] transition-all shadow-md hover:shadow-lg shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 Input Barang
@@ -481,13 +509,13 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
         </div>
         
         {/* Filters Row */}
-        <div className="p-3 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-4 items-center">
+        <div className="p-2 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
           {/* Tipe Pelacakan */}
-          <div className="flex items-center w-full sm:w-auto">
-            <div className="flex flex-row bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
+          <div className="flex items-center justify-center w-full sm:w-auto pb-1 sm:pb-0">
+            <div className="flex flex-row bg-gray-100 p-1 rounded-lg w-[90%] max-w-[340px] sm:w-auto">
               <button
                 onClick={() => setFilterTracking('Semua')}
-                className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all ${
                   filterTracking === 'Semua' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -495,7 +523,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
               </button>
               <button
                 onClick={() => setFilterTracking('SERIALIZED')}
-                className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all ${
                   filterTracking === 'SERIALIZED' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -503,11 +531,11 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
               </button>
               <button
                 onClick={() => setFilterTracking('NON_SERIALIZED')}
-                className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all ${
                   filterTracking === 'NON_SERIALIZED' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                Non-Serialized
+                Non-Serial
               </button>
             </div>
           </div>
@@ -515,11 +543,11 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
           <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
 
           {/* Status Barang */}
-          <div className="flex items-center w-full sm:w-auto">
-            <div className="flex flex-row bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
+          <div className="flex items-center justify-center w-full sm:w-auto pb-1 sm:pb-0">
+            <div className="flex flex-row bg-gray-100 p-1 rounded-lg w-[90%] max-w-[340px] sm:w-auto">
               <button
                 onClick={() => setActiveTab('Aktif')}
-                className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all ${
                   activeTab === 'Aktif' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -527,7 +555,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
               </button>
               <button
                 onClick={() => setActiveTab('Diarsipkan')}
-                className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold whitespace-nowrap transition-all ${
                   activeTab === 'Diarsipkan' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -540,7 +568,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
 
       <div className="flex-1">
         {/* ── E-Commerce Style Grid Layout ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-6">
         {filtered.map(a => {
           const isLow = a.availableStock === 0
           
@@ -552,9 +580,9 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 </div>
               )}
               {/* Product Image Placeholder */}
-              <div className="h-52 bg-gray-50 border-b border-gray-100 flex items-center justify-center p-4 relative overflow-hidden group-hover:bg-gray-100 transition-colors">
+              <div className="h-40 sm:h-52 bg-gray-50 border-b border-gray-100 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100 transition-colors">
                 {a.imageUrl ? (
-                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-contain" />
+                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-cover" />
                 ) : (
                   <svg className="w-24 h-24 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.8} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -812,16 +840,16 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                     <svg className="w-6 h-6 sm:w-7 sm:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                   )}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight truncate">{selectedAsset.name}</h3>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider ${
+                <div className="min-w-0 flex flex-col justify-center">
+                  <h3 className="text-lg sm:text-2xl font-bold text-gray-900 tracking-tight truncate mb-1">{selectedAsset.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider ${
                       selectedAsset.trackingType === 'SERIALIZED' ? 'bg-indigo-100 text-indigo-700' : 'bg-orange-100 text-orange-700'
                     }`}>
                       {selectedAsset.trackingType === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
                     </span>
+                    <span className="text-xs sm:text-sm text-gray-500 font-mono">{selectedAsset.assetCode}</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-gray-500 font-mono mt-0.5">{selectedAsset.assetCode}</p>
                 </div>
               </div>
               <button onClick={() => setSelectedAsset(null)} className="text-gray-400 hover:text-gray-600 bg-gray-50 p-2 rounded-full border border-gray-100 shrink-0 hover:bg-gray-100 transition-colors">
@@ -900,8 +928,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           <tr className="hover:bg-gray-50/80 transition-colors group">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl p-1 shadow-sm flex items-center justify-center shrink-0">
-                                  <QRCodeSVG value={selectedAsset.assetCode} size={36} />
+                                <div className="w-12 h-12 bg-white border-2 rounded-xl p-1 shadow-sm flex items-center justify-center shrink-0 border-amber-200">
+                                  <StyledQRCode value={selectedAsset.assetCode} size={36} isSerialized={false} />
                                 </div>
                                 <span className="font-mono font-bold text-sm text-indigo-700">{selectedAsset.assetCode} (Master)</span>
                               </div>
@@ -959,8 +987,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           <tr key={unit.unitId} className="hover:bg-gray-50/80 transition-colors group">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm flex items-center justify-center overflow-hidden">
-                                  <QRCodeSVG value={unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : unit.unitId} size={36} level="L" includeMargin={false} />
+                                <div className="w-12 h-12 bg-white border-2 rounded-xl p-1 shadow-sm flex items-center justify-center shrink-0 border-indigo-200">
+                                  <StyledQRCode value={unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : unit.unitId} size={36} isSerialized={true} />
                                 </div>
                                 <span className="font-mono font-bold text-sm text-indigo-700">{unit.unitId}</span>
                               </div>
@@ -996,7 +1024,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                             <td className="px-6 py-4 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end gap-2">
                                 <button
-                                  onClick={() => setHistoryModalUnit(unit)}
+                                  onClick={() => selectedAsset && handleOpenHistory(unit, selectedAsset.id)}
                                   className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl hover:bg-blue-100 transition-colors"
                                   title="Lihat Riwayat & Log Unit"
                                 >
@@ -1004,7 +1032,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                 </button>
                                 {!isViewOnly && (
                                   <button
-                                    onClick={() => setPrintQRAsset([{ code: unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : unit.unitId, name: `${selectedAsset.name} (${unit.unitId})` }])}
+                                    onClick={() => setPrintQRAsset([{ code: unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : unit.unitId, name: `${selectedAsset.name} (${unit.unitId})`, isSerialized: selectedAsset.trackingType === 'SERIALIZED' }])}
                                     className="inline-flex items-center gap-1 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors shadow-sm"
                                     title="Cetak Stiker QR Individual"
                                   >
@@ -1012,17 +1040,6 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                                     Cetak
                                   </button>
                                 )}
-                                {/* Tombol Hapus Unit Sementara Dinonaktifkan (Leak Prevention)
-                                {!isViewOnly && (
-                                  <button
-                                    onClick={() => setDeleteUnitConfirm({assetId: selectedAsset.id, unitId: unit.unitId})}
-                                    className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 px-3 py-2 rounded-xl hover:bg-red-100 hover:text-red-700 transition-colors shadow-sm"
-                                    title="Musnahkan/Hapus Unit"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                  </button>
-                                )}
-                                */}
                               </div>
                             </td>
                           </tr>
@@ -1039,12 +1056,11 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                   <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-4 hover:border-gray-200 transition-all">
                     <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 bg-orange-50 border border-orange-200/60 rounded-xl p-2 shadow-2xs shrink-0 flex items-center justify-center text-orange-600">
-                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        <div className="w-11 h-11 bg-white border-2 border-amber-200 rounded-xl p-1 shadow-2xs shrink-0 flex items-center justify-center">
+                          <StyledQRCode value={selectedAsset.assetCode} size={32} isSerialized={false} />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex items-center">
                           <h3 className="font-mono font-bold text-base text-gray-900 leading-tight">{selectedAsset.assetCode}</h3>
-                          <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">Stok Non-Serial</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -1096,12 +1112,11 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                     <div key={unit.unitId} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-3 hover:border-gray-200 transition-all">
                       <div className="flex justify-between items-center gap-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 bg-white border border-gray-200/60 rounded-xl p-1 shadow-2xs shrink-0 flex items-center justify-center overflow-hidden">
-                            <QRCodeSVG value={unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : unit.unitId} size={22} level="L" includeMargin={false} />
+                          <div className="w-8 h-8 bg-white border-2 rounded-lg p-0.5 shadow-sm flex items-center justify-center shrink-0 border-indigo-200">
+                            <StyledQRCode value={unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : unit.unitId} size={22} isSerialized={true} />
                           </div>
-                          <div>
+                          <div className="flex items-center">
                             <span className="font-mono font-bold text-sm text-gray-900 leading-tight block">{unit.unitId}</span>
-                            <span className="text-[10px] text-gray-400 font-mono block">Fisik Aset</span>
                           </div>
                         </div>
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider shrink-0 ${
@@ -1110,8 +1125,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           {unit.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 pt-2.5 border-t border-gray-100">
-                        <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 pt-2.5 border-t border-gray-100">
+                        <div className="flex-1 w-full min-w-0">
                           {isViewOnly ? (
                             <span className="text-xs font-mono text-gray-700 truncate block">S/N: {unit.serialNumber || '-'}</span>
                           ) : (
@@ -1128,9 +1143,9 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                             />
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center justify-end gap-2 shrink-0 w-full sm:w-auto">
                           <button
-                            onClick={() => setHistoryModalUnit(unit)}
+                            onClick={() => selectedAsset && handleOpenHistory(unit, selectedAsset.id)}
                             className="px-2.5 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
                           >
                             Riwayat
@@ -1138,7 +1153,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           {!isViewOnly && (
                             <>
                               <button
-                                onClick={() => setPrintQRAsset([{ code: unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${unit.unitId})` }])}
+                                onClick={() => setPrintQRAsset([{ code: unit.serialNumber && unit.serialNumber !== 'N/A' ? unit.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${unit.unitId})`, isSerialized: selectedAsset.trackingType === 'SERIALIZED' }])}
                                 className="px-2.5 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200/80 rounded-xl hover:bg-gray-100 transition-colors"
                               >
                                 Cetak
@@ -1192,7 +1207,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                           toast.error(`Hanya bisa mencetak maksimal sesuai stok (${selectedAsset.totalStock})`);
                         }
                         if (count > 0) {
-                          setPrintQRAsset(Array(count).fill({ code: selectedAsset.assetCode, name: selectedAsset.name }));
+                          setPrintQRAsset(Array(count).fill({ code: selectedAsset.assetCode, name: selectedAsset.name, isSerialized: selectedAsset.trackingType === 'SERIALIZED' }));
                         }
                       }}
                       className="flex-1 sm:flex-none px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm transition-colors"
@@ -1205,8 +1220,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                   !isViewOnly && (
                     <button
                       onClick={() => { 
-                        const arr = selectedAsset.units.map(u => ({ code: u.serialNumber && u.serialNumber !== 'N/A' ? u.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${u.unitId})` }));
-                        setPrintQRAsset(arr.length ? arr : [{ code: selectedAsset.assetCode, name: selectedAsset.name }]);
+                        const arr = selectedAsset.units.map(u => ({ code: u.serialNumber && u.serialNumber !== 'N/A' ? u.serialNumber : selectedAsset.assetCode, name: `${selectedAsset.name} (${u.unitId})`, isSerialized: selectedAsset.trackingType === 'SERIALIZED' }));
+                        setPrintQRAsset(arr.length ? arr : [{ code: selectedAsset.assetCode, name: selectedAsset.name, isSerialized: selectedAsset.trackingType === 'SERIALIZED' }]);
                       }}
                       className="w-full sm:w-auto px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                     >
@@ -1287,7 +1302,15 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             </div>
             
             <div className="p-4 sm:p-8 overflow-y-auto overscroll-y-contain space-y-6 sm:space-y-8 flex-1 bg-gray-50">
-              {historyModalUnit.history.filter(h => h.action.startsWith('Dipinjam') || h.action.startsWith('Dikembalikan')).length === 0 ? (
+              {historyLoading ? (
+                <div className="text-center py-10">
+                  <svg className="animate-spin w-8 h-8 text-blue-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <p className="text-sm text-gray-500">Memuat riwayat...</p>
+                </div>
+              ) : historyModalUnit.history.filter(h => h.action.startsWith('Dipinjam') || h.action.startsWith('Dikembalikan')).length === 0 ? (
                 <div className="text-center py-10">
                   <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   <p className="text-sm text-gray-500">Belum ada riwayat pemakaian untuk unit ini.</p>
@@ -1335,10 +1358,23 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
             <div className="p-6 bg-gray-50 overflow-y-auto w-full flex-1">
               <div id="qr-print-area" className="flex flex-wrap gap-4 justify-start">
                 {printQRAsset.map((item, idx) => (
-                  <div key={idx} className="qr-container bg-white p-3 rounded-xl border border-gray-200 flex flex-col items-center w-[160px] shadow-sm">
-                    <QRCodeSVG value={item.code} size={110} level="H" includeMargin={false} />
-                    <h3 className="font-bold text-[11px] text-gray-900 text-center mt-3 w-full break-words leading-snug">{item.name}</h3>
-                    <p className="text-gray-500 font-mono mt-1.5 text-[10px] text-center w-full break-all">{item.code}</p>
+                  <div key={idx} className={`qr-container bg-white rounded-xl border-2 flex flex-col items-center w-[160px] shadow-sm overflow-hidden ${item.isSerialized ? 'border-indigo-600' : 'border-amber-600'}`}>
+                    {/* Header Strip */}
+                    <div className={`w-full py-1.5 px-2 flex items-center justify-center gap-1.5 ${item.isSerialized ? 'bg-indigo-600 text-white' : 'bg-amber-600 text-white'}`}>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={item.isSerialized ? "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" : "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"} />
+                      </svg>
+                      <span className="text-[9px] font-extrabold tracking-wider">{item.isSerialized ? 'SERIALIZED' : 'NON SERIALIZED'}</span>
+                    </div>
+                    {/* QR Code */}
+                    <div className="p-3 bg-white w-full flex justify-center">
+                      <StyledQRCode value={item.code} size={110} isSerialized={item.isSerialized} />
+                    </div>
+                    {/* Footer / Info */}
+                    <div className="px-3 pb-3 w-full">
+                      <h3 className="font-bold text-[11px] text-gray-900 text-center w-full break-words leading-snug">{item.name}</h3>
+                      <p className="text-gray-500 font-mono mt-1 text-[10px] text-center w-full break-all">{item.code}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1349,13 +1385,14 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
                 const printContent = document.getElementById('qr-print-area');
                 if (printContent) {
                   const win = window.open('', '_blank');
-                  win?.document.write('<html><head><title>Print QR</title><style>@page { margin: 10mm; } body { font-family: sans-serif; margin: 0; padding: 0; } #qr-print-area { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; gap: 15px; } .qr-container { padding: 10px; border: 1px dashed #ccc; display: flex; flex-direction: column; align-items: center; width: 140px; box-sizing: border-box; page-break-inside: avoid; } .qr-container svg { width: 100px; height: 100px; } h3 { margin: 8px 0 0; font-size: 11px; text-align: center; max-width: 100%; word-break: break-word; line-height: 1.3; } p { margin: 4px 0 0; font-family: monospace; font-size: 10px; color: #555; text-align: center; max-width: 100%; word-break: break-all; }</style></head><body>');
+                  // Update print styles for the new structure
+                  win?.document.write('<html><head><title>Print QR</title><style>@page { margin: 10mm; } body { font-family: sans-serif; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } #qr-print-area { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; gap: 15px; } .qr-container { border: 2px solid #ccc; display: flex; flex-direction: column; align-items: center; width: 140px; box-sizing: border-box; page-break-inside: avoid; border-radius: 8px; overflow: hidden; } .border-indigo-600 { border-color: #4F46E5 !important; } .border-amber-600 { border-color: #D97706 !important; } .bg-indigo-600 { background-color: #4F46E5 !important; color: white !important; } .bg-amber-600 { background-color: #D97706 !important; color: white !important; } .flex { display: flex; } .items-center { align-items: center; } .justify-center { justify-content: center; } .gap-1\\.5 { gap: 6px; } .w-full { width: 100%; } .py-1\\.5 { padding-top: 6px; padding-bottom: 6px; } .px-2 { padding-left: 8px; padding-right: 8px; } .w-3\\.5 { width: 14px; } .h-3\\.5 { height: 14px; } .text-\\[9px\\] { font-size: 9px; } .font-extrabold { font-weight: 800; } .tracking-wider { letter-spacing: 0.05em; } .p-3 { padding: 12px; } .px-3 { padding-left: 12px; padding-right: 12px; } .pb-3 { padding-bottom: 12px; } .qr-styled-container svg { width: 100px; height: 100px; } h3 { margin: 0; font-size: 11px; text-align: center; max-width: 100%; word-break: break-word; line-height: 1.3; } p { margin: 4px 0 0; font-family: monospace; font-size: 10px; color: #555; text-align: center; max-width: 100%; word-break: break-all; }</style></head><body>');
                   win?.document.write(printContent.outerHTML);
                   win?.document.write('</body></html>');
                   win?.document.close();
                   setTimeout(() => {
                     win?.print();
-                  }, 250);
+                  }, 500); // Tunggu sedikit agar SVG render
                 }
               }} className="px-5 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>

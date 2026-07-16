@@ -2,7 +2,7 @@
 
 import React from 'react'
 import TicketHistory from '../admin/TicketHistory'
-import { Ticket } from '../../lib/dummyData'
+import { Ticket } from '../../types/ticket'
 
 interface HSSETicketHistoryProps {
   tickets: Ticket[]

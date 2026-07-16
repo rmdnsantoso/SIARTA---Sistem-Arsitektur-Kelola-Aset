@@ -18,6 +18,17 @@ import type { Ticket } from '../../types/ticket'
 
 export default function HSSEDashboard() {
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
+  const [isNavInitialized, setIsNavInitialized] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('hsse_activeNav')
+    if (saved) setActiveNav(saved)
+    setIsNavInitialized(true)
+  }, [])
+
+  useEffect(() => {
+    if (isNavInitialized) localStorage.setItem('hsse_activeNav', activeNav)
+  }, [activeNav, isNavInitialized])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,6 +86,7 @@ export default function HSSEDashboard() {
           userId={currentUser?.id}
           roleName="HSSE"
           hideHamburgerOnMobile={true}
+          onNewNotification={refreshData}
         />
         
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
