@@ -14,14 +14,18 @@ interface TopHeaderProps {
   hideHamburgerOnMobile?: boolean
   hideNotificationBell?: boolean
   customNotificationNode?: React.ReactNode
+  /** Dipanggil saat ada notifikasi baru masuk (unread count naik) — untuk trigger refresh data di parent */
+  onNewNotification?: () => void
 }
 
-export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userName, roleName, hideHamburgerOnMobile, hideNotificationBell, customNotificationNode }: TopHeaderProps) {
+export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userName, roleName, hideHamburgerOnMobile, hideNotificationBell, customNotificationNode, onNewNotification }: TopHeaderProps) {
   const router = useRouter()
   const [showNotifications, setShowNotifications] = useState(false)
   
   // State from backend
   const [dbNotifs, setDbNotifs] = useState<any[]>([])
+  // Ref untuk track unread count sebelumnya — deteksi notif baru
+  const prevUnreadRef = useState<number>(0)
   
   // Format waktu sederhana
   const formatTime = (dateString: string) => {
@@ -38,7 +42,15 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
     try {
       const res = await getUserNotifications(userId || '', roleName)
       if (res.success && res.data) {
-        setDbNotifs(res.data)
+        const newNotifs: any[] = res.data
+        const newUnread = newNotifs.filter((n: any) => !n.isRead).length
+        const prevUnread = prevUnreadRef[0]
+        // Jika ada notifikasi baru (unread naik), trigger refresh data di parent
+        if (newUnread > prevUnread && onNewNotification) {
+          onNewNotification()
+        }
+        prevUnreadRef[1](newUnread)
+        setDbNotifs(newNotifs)
       }
     } catch (err) {
       console.warn('Silent fail fetching notifications', err)
@@ -218,7 +230,13 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
 
         <div className="w-px h-6 bg-gray-200 mx-1"></div>
         <button
-          onClick={() => router.push('/')}
+          onClick={() => {
+            localStorage.removeItem('admin_activeNav')
+            localStorage.removeItem('peminjam_activeNav')
+            localStorage.removeItem('areahead_activeNav')
+            localStorage.removeItem('hsse_activeNav')
+            router.push('/')
+          }}
           className="flex items-center gap-2 p-2 rounded text-red-600 hover:bg-red-50 transition-colors font-medium text-sm"
           title="Keluar dari sistem"
         >

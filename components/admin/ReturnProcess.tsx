@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import toast from 'react-hot-toast'
 import { Ticket } from '../../types/ticket'
-import { initialTickets } from '../../lib/dummyData'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
 import { verifyAssetReturnHandover } from '../../actions/workflows/verifikasi'
@@ -14,7 +13,7 @@ interface Props {
   onSuccess?: () => void
 }
 
-export default function ReturnProcess({ tickets = initialTickets, onSuccess }: Props) {
+export default function ReturnProcess({ tickets = [], onSuccess }: Props) {
   // Only interested in tickets that are currently borrowed
   const [localTickets, setLocalTickets] = useState<Ticket[]>(tickets.filter(t => t.overallStatus === 'Dipinjam'))
   

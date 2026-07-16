@@ -4,7 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role } from '../../app/generated/prisma'
 import bcrypt from 'bcryptjs'
-import { createSession, getCurrentUser } from '../../lib/session'
+import { createSession, getCurrentUser, getSession } from '../../lib/session'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { createActivityLog } from './log'
@@ -122,7 +122,7 @@ export async function createUser(input: {
       data: {
         ...input,
         passwordHash,
-        tempPassword: rawPassword, // Disimpan sementara agar admin bisa lihat
+        mustChangePassword: true,
       }
     })
 
@@ -165,12 +165,24 @@ export async function updateUser(id: string, input: {
   isActive?: boolean
 }) {
   try {
-    await requireRole([Role.Admin, Role.HSSE])
+    const actor = await requireRole([Role.Admin, Role.HSSE])
     
     // Prevent self-modification for security
     const currentUser = await getCurrentUser()
     if (currentUser?.id === id) {
       throw new Error('Anda tidak dapat mengubah status atau peran akun Anda sendiri melalui manajemen pengguna.')
+    }
+
+    // ── HSSE tidak boleh mengubah user Admin ────────────────────────────────────
+    if (actor.role === Role.HSSE) {
+      const targetUser = await prisma.user.findUnique({ where: { id }, select: { role: true } })
+      if (targetUser?.role === Role.Admin) {
+        throw new Error('HSSE tidak diizinkan mengubah data pengguna dengan role Admin.')
+      }
+      // HSSE juga tidak boleh meng-upgrade role menjadi Admin
+      if (input.role === Role.Admin) {
+        throw new Error('HSSE tidak diizinkan menetapkan role Admin.')
+      }
     }
 
     const user = await prisma.user.update({ where: { id }, data: input })
@@ -186,12 +198,20 @@ export async function updateUser(id: string, input: {
 // ─────────────────────────────────────────
 export async function deleteUser(id: string) {
   try {
-    await requireRole([Role.Admin, Role.HSSE])
+    const actor = await requireRole([Role.Admin, Role.HSSE])
 
     // Prevent self-deletion for security
     const currentUser = await getCurrentUser()
     if (currentUser?.id === id) {
       throw new Error('Tindakan tidak diizinkan. Anda tidak dapat menghapus akun Anda sendiri.')
+    }
+
+    // ── HSSE tidak boleh menghapus user Admin ────────────────────────────────────
+    if (actor.role === Role.HSSE) {
+      const targetUser = await prisma.user.findUnique({ where: { id }, select: { role: true } })
+      if (targetUser?.role === Role.Admin) {
+        throw new Error('HSSE tidak diizinkan menghapus pengguna dengan role Admin.')
+      }
     }
 
     const activeTickets = await prisma.ticket.count({
@@ -227,7 +247,7 @@ export async function resetUserPassword(id: string) {
 
     await prisma.user.update({
       where: { id },
-      data: { passwordHash, tempPassword: rawPassword }
+      data: { passwordHash, mustChangePassword: true }
     })
 
     return { success: true, tempPassword: rawPassword }
@@ -264,11 +284,11 @@ export async function changeUserPassword(userId: string, oldPassword: string, ne
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { passwordHash: true, tempPassword: true }
+      select: { passwordHash: true, mustChangePassword: true }
     })
     
     if (!user) throw new Error('Pengguna tidak ditemukan.')
-    if (!user.tempPassword) {
+    if (!user.mustChangePassword) {
       throw new Error('Anda sudah pernah mengganti password. Silakan hubungi Admin jika ingin mereset password.')
     }
     if (!user.passwordHash) {
@@ -289,7 +309,7 @@ export async function changeUserPassword(userId: string, oldPassword: string, ne
       where: { id: userId },
       data: {
         passwordHash: newHash,
-        tempPassword: null // Hapus tempPassword sebagai penanda sudah pernah diganti
+        mustChangePassword: false
       }
     })
 
@@ -319,6 +339,9 @@ export async function loginWithCredentials(email: string, password: string) {
     const cleanEmail = email.toLowerCase().trim()
 
     // ── Rate limiting per email ───────────────────────────────────────────────
+    const headersList = await headers()
+    const clientIp = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+
     const rl = await checkRateLimit(`email:${cleanEmail}`)
     if (!rl.allowed) {
       const menit = Math.ceil(rl.retryAfterMs / 60000)
@@ -345,7 +368,13 @@ export async function loginWithCredentials(email: string, password: string) {
     await resetRateLimit(`email:${cleanEmail}`)
 
     let sessionCreated = false
-    if (!user.faceRegistered) {
+    let preAuthToken: string | undefined
+
+    if (user.faceRegistered) {
+      const session = await getSession()
+      session.pendingFaceUserId = user.id
+      await session.save()
+    } else {
       await createSession({
         id: user.id,
         name: user.name,
@@ -374,15 +403,27 @@ export async function loginWithCredentials(email: string, password: string) {
 // ─────────────────────────────────────────
 // Generate liveness challenge acak (Blink atau Turn Head)
 // ─────────────────────────────────────────
-export async function generateLivenessChallenge(sessionId: string) {
+export async function generateLivenessChallenge() {
   try {
-    const sequence = ['BLINK', 'TURN_HEAD'].sort(() => Math.random() - 0.5)
+    const session = await getSession()
+    if (!session.pendingFaceUserId) {
+      throw new Error('Pre-authentication required. Silakan login dengan password terlebih dahulu.')
+    }
+
+    const sessionId = crypto.randomUUID()
+
+    // Acak 2 tantangan dari kumpulan yang ada
+    const allChallenges = ['BLINK', 'TURN_LEFT', 'TURN_RIGHT']
+    const sequence = allChallenges.sort(() => Math.random() - 0.5).slice(0, 2)
     const expiresAt = new Date(Date.now() + 30 * 1000) // 30 detik untuk 2 gerakan
 
-    await prisma.livenessChallenge.upsert({
-      where: { id: sessionId },
-      update: { sequence: JSON.stringify(sequence), expiresAt },
-      create: { id: sessionId, sequence: JSON.stringify(sequence), expiresAt }
+    await prisma.livenessChallenge.create({
+      data: {
+        id: sessionId,
+        userId: session.pendingFaceUserId,
+        sequence: JSON.stringify(sequence),
+        expiresAt
+      }
     })
 
     // Bersihkan data expired secara acak 10% dari waktu
@@ -392,7 +433,7 @@ export async function generateLivenessChallenge(sessionId: string) {
       }).catch(() => {})
     }
 
-    return { success: true, challenge: sequence }
+    return { success: true, sessionId, challenge: sequence }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
@@ -403,17 +444,46 @@ export async function generateLivenessChallenge(sessionId: string) {
 // Jika userId diberikan, hanya cocokkan ke user tersebut (targeted match)
 // Jika tidak, cari ke seluruh user aktif (fallback mode)
 // ─────────────────────────────────────────
+async function logFailedLiveness(userId: string, reason: string) {
+  try {
+    if (!userId) return
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+    if (user) {
+      await prisma.activityLog.create({
+        data: {
+          action: 'FAILED_LIVENESS',
+          entityType: 'System',
+          details: `Percobaan spoofing/kegagalan liveness: ${reason}`,
+          actorId: userId,
+          actorName: user.name
+        }
+      })
+    }
+  } catch (err) {}
+}
+
 export async function verifyFaceLogin(
-  descriptor: number[], 
-  userId: string, 
-  sessionId?: string, 
-  livenessData?: { earHistory?: number[], headTurnHistory?: ('left'|'right'|'center')[] }
+  descriptor: number[],
+  sessionId?: string,
+  livenessData?: {
+    earHistory?: { ear: number, yawRatio: number }[],
+    headTurnHistory?: { dir: 'left'|'right'|'center', eyeRatio: number }[]
+  }
 ) {
   try {
-    if (!userId) return { success: false, error: 'Akses ditolak: User ID diperlukan.' }
+    const session = await getSession()
+    const userId = session.pendingFaceUserId
+
+    if (!userId) {
+      return { success: false, error: 'Pre-authentication required. Silakan login ulang.' }
+    }
+
     if (!descriptor || descriptor.length !== 128) return { success: false, error: 'Data wajah dari perangkat tidak valid atau korup.' }
 
     // ── Rate Limiting Check ──
+    const headersList = await headers()
+    const clientIp = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
+
     const rateLimit = await checkRateLimit(`face:${userId}`)
     if (!rateLimit.allowed) {
       return { success: false, error: `Terlalu banyak percobaan gagal. Silakan coba lagi setelah ${Math.ceil(rateLimit.retryAfterMs / 1000 / 60)} menit.` }
@@ -421,6 +491,7 @@ export async function verifyFaceLogin(
 
     // ── Validasi Liveness (Server-Side) ──
     if (!sessionId || !livenessData) {
+      await logFailedLiveness(userId, 'Data liveness tidak lengkap.')
       return { success: false, error: 'Data liveness tidak lengkap.' }
     }
 
@@ -428,13 +499,15 @@ export async function verifyFaceLogin(
       where: { id: sessionId }
     })
 
-    if (!storedChallenge) {
-      return { success: false, error: 'Sesi tantangan tidak valid atau sudah kedaluwarsa. Silakan coba lagi.' }
+    if (!storedChallenge || storedChallenge.userId !== userId) {
+      await logFailedLiveness(userId, 'Sesi tantangan tidak valid.')
+      return { success: false, error: 'Sesi tantangan tidak valid atau milik pengguna lain. Silakan coba lagi.' }
     }
 
     await prisma.livenessChallenge.delete({ where: { id: sessionId } }).catch(() => {})
 
     if (storedChallenge.expiresAt.getTime() < Date.now()) {
+      await logFailedLiveness(userId, 'Waktu verifikasi habis.')
       return { success: false, error: 'Waktu verifikasi habis. Coba lagi.' }
     }
 
@@ -443,26 +516,57 @@ export async function verifyFaceLogin(
     for (const challengeType of sequence) {
       if (challengeType === 'BLINK') {
         const { earHistory } = livenessData
-        if (!earHistory || earHistory.length < 3) return { success: false, error: 'Data kedipan tidak memadai.' }
+        if (!earHistory || earHistory.length < 3) {
+          await logFailedLiveness(userId, 'Data kedipan tidak memadai.')
+          return { success: false, error: 'Data kedipan tidak memadai.' }
+        }
         
-        const maxEAR = Math.max(...earHistory)
-        const minEAR = Math.min(...earHistory)
-        const latestEAR = earHistory[earHistory.length - 1]
+        // Cek EAR relatif terhadap baseline (kira-kira max dari data)
+        const ears = earHistory.map(d => d.ear)
+        const maxEAR = Math.max(...ears)
+        const minEAR = Math.min(...ears)
+        const latestEAR = ears[ears.length - 1]
         
-        if (maxEAR - minEAR < 0.05 || latestEAR - minEAR < 0.03) {
+        // Pose-gating: pastikan yawRatio relatif stabil selama window
+        const yaws = earHistory.map(d => d.yawRatio)
+        const maxYaw = Math.max(...yaws)
+        const minYaw = Math.min(...yaws)
+        
+        if (maxEAR - minEAR < 0.05 || latestEAR - minEAR < 0.03 || maxYaw - minYaw > 0.2) {
+          await logFailedLiveness(userId, 'Kedipan gagal pose-gating atau kurang signifikan.')
           return { success: false, error: 'Kedipan wajah gagal divalidasi oleh server.' }
         }
-      } else if (challengeType === 'TURN_HEAD') {
+      } else if (challengeType === 'TURN_LEFT' || challengeType === 'TURN_RIGHT') {
         const { headTurnHistory } = livenessData
-        if (!headTurnHistory || headTurnHistory.length < 4) return { success: false, error: 'Data gerakan kepala tidak memadai.' }
+        if (!headTurnHistory || headTurnHistory.length < 4) {
+          await logFailedLiveness(userId, 'Data gerakan kepala tidak memadai.')
+          return { success: false, error: 'Data gerakan kepala tidak memadai.' }
+        }
+        
+        const expectedDir = challengeType === 'TURN_LEFT' ? 'left' : 'right'
         
         const turnIdx = headTurnHistory.findIndex((d, i) => 
-          d !== 'center' && headTurnHistory.slice(i, i + 3).every(x => x === d)
+          d.dir === expectedDir && headTurnHistory.slice(i, i + 3).every(x => x.dir === expectedDir)
         )
-        const returnedToCenter = turnIdx >= 0 && headTurnHistory.slice(turnIdx + 3).some(d => d === 'center')
+        const returnedToCenter = turnIdx >= 0 && headTurnHistory.slice(turnIdx + 3).some(d => d.dir === 'center')
         
         if (turnIdx < 0 || !returnedToCenter) {
+          await logFailedLiveness(userId, `Gagal melakukan ${expectedDir}.`)
           return { success: false, error: 'Gerakan menoleh gagal divalidasi oleh server (harus menoleh lalu kembali menatap layar).' }
+        }
+        
+        // 3D Rotation Check: rasio lebar mata harus berubah secara signifikan saat menoleh
+        const centerRatios = headTurnHistory.filter(d => d.dir === 'center').map(d => d.eyeRatio)
+        const turnRatios = headTurnHistory.filter(d => d.dir === expectedDir).map(d => d.eyeRatio)
+        
+        if (centerRatios.length > 0 && turnRatios.length > 0) {
+          const avgCenter = centerRatios.reduce((a, b) => a + b, 0) / centerRatios.length
+          const avgTurn = turnRatios.reduce((a, b) => a + b, 0) / turnRatios.length
+          const diff = Math.abs(avgCenter - avgTurn)
+          if (diff < 0.05) { // Threshold dinamis, foto 2D diff nya sangat kecil
+            await logFailedLiveness(userId, '3D Rotation check gagal (terindikasi foto datar).')
+            return { success: false, error: 'Wajah terdeteksi bukan 3D (indikasi foto). Coba lagi.' }
+          }
         }
       }
     }
@@ -493,12 +597,16 @@ export async function verifyFaceLogin(
 
     if (distance < THRESHOLD) {
       // ── Buat session setelah wajah berhasil diverifikasi ──
-      await createSession({
+      // Hapus tiket pre-auth dari cookie karena sesi penuh akan diterbitkan
+      delete session.pendingFaceUserId
+      session.user = {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role as any,
-      })
+      }
+      await session.save()
+      
       // Reset rate limit on success
       await resetRateLimit(`face:${userId}`)
       

@@ -1,143 +1,111 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-
-const headlines = [
-  "Kelola Aset Operasional Lebih Presisi.",
-  "Pantau Inventaris Secara Cerdas.",
-  "Tingkatkan Efisiensi Perusahaan."
-]
+import React from 'react'
 
 export default function LoginBanner() {
-  const [headlineIndex, setHeadlineIndex] = useState(0)
-  const [fade, setFade] = useState(true)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false)
-      setTimeout(() => {
-        setHeadlineIndex((prev) => (prev + 1) % headlines.length)
-        setFade(true)
-      }, 500)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [])
-
   return (
-    <div className="
-      w-full lg:w-1/2 lg:min-h-screen
-      relative flex flex-col
-      bg-transparent
-      overflow-hidden
-      py-6 px-4
-      sm:py-8 sm:px-8
-      lg:py-0 lg:px-0
-      animate-fade-in-slide-left
-    ">
+    <div className="relative w-full lg:w-[44%] xl:w-[42%] h-[240px] sm:h-[300px] md:h-[360px] lg:h-auto lg:min-h-screen bg-[#3B4A78] overflow-hidden shrink-0">
+      <style jsx>{`
+        @keyframes floatLetter {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        @keyframes floatDot {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes pulseBadge {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.07); }
+        }
+        @keyframes waveDrift {
+          0%, 100% { transform: translateX(0px); }
+          50% { transform: translateX(14px); }
+        }
+        @keyframes cardIn {
+          from { opacity: 0; transform: translateY(14px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .anim-in { animation: cardIn 0.7s ease-out both; }
+        .letter-1 { animation: floatLetter 7s ease-in-out infinite; }
+        .letter-2 { animation: floatLetter 8.5s ease-in-out infinite 0.4s; }
+        .letter-3 { animation: floatLetter 6.5s ease-in-out infinite 1s; }
+        .letter-4 { animation: floatLetter 9s ease-in-out infinite 0.2s; }
+        .letter-5 { animation: floatLetter 7.5s ease-in-out infinite 1.4s; }
+        .letter-6 { animation: floatLetter 8s ease-in-out infinite 0.8s; }
+        .dot-1 { animation: floatDot 4s ease-in-out infinite; }
+        .dot-2 { animation: floatDot 5s ease-in-out infinite 0.6s; }
+        .dot-3 { animation: floatDot 4.5s ease-in-out infinite 1.2s; }
+        .dot-4 { animation: floatDot 5.5s ease-in-out infinite 0.3s; }
+        .badge-pulse { animation: pulseBadge 3.2s ease-in-out infinite; transform-origin: center; }
+        .wave-drift { animation: waveDrift 11s ease-in-out infinite alternate; }
+      `}</style>
 
-      {/* PGN COM Logo — top left, slides in from LEFT */}
-      <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 flex items-center">
-        <svg
-          className="h-8 sm:h-9 lg:h-10 w-auto animate-slide-from-left"
-          viewBox="0 0 290 82"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* "pgn" — bold rounded slate-gray */}
-          <text
-            x="0" y="62"
-            fontFamily="'Arial Black', 'Arial Rounded MT Bold', sans-serif"
-            fontWeight="900"
-            fontSize="68"
-            fill="#546579"
-            letterSpacing="-2"
-          >pgn</text>
+      <svg
+        viewBox="0 0 400 500"
+        className="absolute inset-0 w-full h-full anim-in"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        {/* Huruf SIARTA mengambang sebagai tekstur latar */}
+        <text x="15" y="90" fontFamily="Arial Black, sans-serif" fontWeight={900} fontSize="90" fill="#FFFFFF" opacity="0.06" transform="rotate(-14 60 60)" className="letter-1">S</text>
+        <text x="290" y="70" fontFamily="Arial Black, sans-serif" fontWeight={900} fontSize="70" fill="#FFFFFF" opacity="0.06" transform="rotate(10 320 50)" className="letter-2">I</text>
+        <text x="10" y="330" fontFamily="Arial Black, sans-serif" fontWeight={900} fontSize="110" fill="#FFFFFF" opacity="0.055" transform="rotate(-8 60 300)" className="letter-3">A</text>
+        <text x="300" y="240" fontFamily="Arial Black, sans-serif" fontWeight={900} fontSize="80" fill="#FFFFFF" opacity="0.06" transform="rotate(13 330 210)" className="letter-4">R</text>
+        <text x="170" y="55" fontFamily="Arial Black, sans-serif" fontWeight={900} fontSize="55" fill="#FFFFFF" opacity="0.05" transform="rotate(-6 190 30)" className="letter-5">T</text>
+        <text x="270" y="410" fontFamily="Arial Black, sans-serif" fontWeight={900} fontSize="95" fill="#FFFFFF" opacity="0.055" transform="rotate(7 310 380)" className="letter-6">A</text>
 
-          {/* "COM" — cyan-blue, right next to pgn */}
-          <text
-            x="156" y="58"
-            fontFamily="'Arial', sans-serif"
-            fontWeight="400"
-            fontSize="52"
-            fill="#29ABE2"
-            letterSpacing="1"
-          >COM</text>
+        {/* Bulatan besar & garis lengkung latar */}
+        <circle cx="330" cy="90" r="70" fill="#4E5E92" />
+        <path d="M40,150 Q80,120 130,150 Q170,175 220,150 Q260,128 310,155" stroke="#4E5E92" strokeWidth="26" fill="none" strokeLinecap="round" opacity="0.5" />
 
-          {/* "always reliable" — italic, smaller, same cyan-blue */}
-          <text
-            x="158" y="77"
-            fontFamily="'Arial', sans-serif"
-            fontWeight="300"
-            fontStyle="italic"
-            fontSize="17"
-            fill="#29ABE2"
-            letterSpacing="0.5"
-          >always reliable</text>
-        </svg>
-      </div>
+        {/* Ilustrasi clipboard verifikasi aset */}
+        <rect x="115" y="130" width="170" height="220" rx="18" fill="#F7F8FC" />
+        <rect x="140" y="160" width="120" height="14" rx="4" fill="#D8DCE8" />
+        <rect x="140" y="185" width="80" height="10" rx="4" fill="#E4E6EF" />
 
-      {/* Animated Background Blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-500/20 mix-blend-screen filter blur-[80px] lg:blur-[100px] animate-blob pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-500/20 mix-blend-screen filter blur-[80px] lg:blur-[100px] animate-blob animation-delay-2000 pointer-events-none" />
+        <rect x="140" y="215" width="34" height="34" rx="5" fill="#E4E6EF" />
+        <rect x="146" y="221" width="6" height="6" fill="#3B4A78" />
+        <rect x="158" y="221" width="6" height="6" fill="#3B4A78" />
+        <rect x="146" y="233" width="6" height="6" fill="#3B4A78" />
+        <rect x="158" y="233" width="6" height="6" fill="#B4924F" />
 
-      {/* Main content — centered vertically on desktop, compact on mobile */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-10 py-4 lg:py-0 pt-16 sm:pt-16 lg:pt-14">
-        {/* Glassmorphism Card */}
-        <div className="relative z-10 w-full max-w-sm sm:max-w-md lg:max-w-lg p-5 sm:p-7 lg:p-10 rounded-2xl bg-white/[0.05] backdrop-blur-md border border-white/10 shadow-2xl">
+        <rect x="185" y="215" width="75" height="10" rx="3" fill="#E4E6EF" />
+        <rect x="185" y="233" width="55" height="10" rx="3" fill="#E4E6EF" />
 
-          {/* SIARTA Logo — slides in from RIGHT */}
-          <div className="flex items-center gap-3 mb-4 lg:mb-6 animate-slide-from-right">
-            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30 flex-shrink-0">
-              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <span className="text-lg lg:text-xl font-bold tracking-[0.15em] text-white">SIARTA</span>
-          </div>
+        <rect x="140" y="270" width="120" height="10" rx="4" fill="#E4E6EF" />
+        <rect x="140" y="290" width="90" height="10" rx="4" fill="#E4E6EF" />
+        <rect x="140" y="310" width="105" height="10" rx="4" fill="#E4E6EF" />
 
-          {/* Rotating Headline */}
-          <div className="space-y-2 lg:space-y-4 mb-0 lg:mb-8">
-            <div className="min-h-[56px] sm:min-h-[70px] lg:min-h-[100px]">
-              <h1 className={`text-xl sm:text-2xl lg:text-4xl font-bold leading-snug text-white transition-all duration-500 transform ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                {headlines[headlineIndex].split(' ').map((word, idx) => {
-                  if (['aset','presisi','cerdas','perusahaan','inventaris'].includes(word.toLowerCase().replace('.', ''))) {
-                    return <span key={idx} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">{word} </span>
-                  }
-                  return word + ' '
-                })}
-              </h1>
-            </div>
-            <p className="block text-blue-200/70 text-xs lg:text-sm leading-relaxed max-w-sm mt-1">
-              Platform korporat terpadu untuk pemantauan inventaris, manajemen siklus hidup aset, dan persetujuan operasional.
-            </p>
-          </div>
+        <g className="badge-pulse">
+          <circle cx="265" cy="145" r="28" fill="#B4924F" />
+          <path d="M253,145 L262,155 L279,135" stroke="#FFFFFF" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
 
-          {/* Metrics */}
-          <div className="flex items-center gap-3 lg:gap-6 p-3 lg:p-5 rounded-xl bg-black/20 border border-white/5 mt-5 lg:mt-12">
-            <div className="flex-1 text-center">
-              <p className="text-lg lg:text-2xl font-bold text-white mb-0.5">500+</p>
-              <p className="text-[8px] lg:text-[10px] text-blue-300/80 uppercase tracking-wider font-semibold">Aset Terdaftar</p>
-            </div>
-            <div className="w-px h-7 lg:h-10 bg-white/10" />
-            <div className="flex-1 text-center">
-              <p className="text-lg lg:text-2xl font-bold text-white mb-0.5">24</p>
-              <p className="text-[8px] lg:text-[10px] text-blue-300/80 uppercase tracking-wider font-semibold">Kategori</p>
-            </div>
-            <div className="w-px h-7 lg:h-10 bg-white/10" />
-            <div className="flex-1 text-center">
-              <p className="text-lg lg:text-2xl font-bold text-[#22C55E] mb-0.5">99.9%</p>
-              <p className="text-[8px] lg:text-[10px] text-blue-300/80 uppercase tracking-wider font-semibold">System Uptime</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Titik-titik aksen */}
+        <circle cx="90" cy="210" r="7" fill="#E4394A" className="dot-1" />
+        <circle cx="325" cy="270" r="10" fill="#0076C0" className="dot-2" />
+        <circle cx="340" cy="320" r="5" fill="#ADC229" className="dot-3" />
+        <circle cx="65" cy="320" r="5" fill="#8B97C4" className="dot-4" />
 
-      {/* Footer */}
-      <div className="relative z-10 pb-4 lg:pb-8 text-center flex-shrink-0">
-        <p className="text-[9px] lg:text-[10px] text-[#94A3B8] font-bold tracking-widest uppercase">
-          SIARTA 2026 · PTGAS TELEKOMUNIKASI NUSANTARA RO LAMPUNG
+        {/* Gelombang bawah */}
+        <path
+          d="M-50,460 Q60,435 130,458 Q210,485 280,455 Q340,432 450,452 L450,510 L-50,510 Z"
+          fill="#324070"
+          className="wave-drift"
+        />
+      </svg>
+
+      {/* Wordmark SIARTA + tagline */}
+      <div className="absolute left-0 right-0 bottom-4 sm:bottom-6 lg:bottom-10 px-5 sm:px-7 lg:px-12">
+        <p className="text-lg sm:text-xl lg:text-3xl font-semibold text-white mb-1">SIARTA</p>
+        <p className="text-[10px] sm:text-[11px] lg:text-sm text-[#B9C1DE] leading-relaxed mb-2 lg:mb-3">
+          Sistem Arsitektur Kelola Aset
         </p>
+        <div className="flex gap-1">
+          <div className="w-4 h-[3px] rounded-full bg-[#E4394A]" />
+          <div className="w-4 h-[3px] rounded-full bg-[#0076C0]" />
+          <div className="w-4 h-[3px] rounded-full bg-[#ADC229]" />
+        </div>
       </div>
     </div>
   )

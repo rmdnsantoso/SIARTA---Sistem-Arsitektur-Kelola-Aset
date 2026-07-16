@@ -1,319 +1,332 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import FaceScanner from './FaceScanner'
-import toast from 'react-hot-toast'
 import { loginWithCredentials } from '../../actions/core/user'
 import { quickLoginAs } from '../../actions/core/auth'
-import { ensureModelsLoaded } from '../../lib/face/utils'
+import FaceScanner from './FaceScanner'
+
+type RoleKey = 'admin' | 'peminjam' | 'hsse' | 'areahead'
+
+const roleQuickAccess: {
+  key: RoleKey
+  label: string
+  icon: React.ReactNode
+  bg: string
+  iconColor: string
+  textColor: string
+  role: 'Admin' | 'Peminjam' | 'HSSE' | 'AreaHead'
+  description: string
+}[] = [
+  {
+    key: 'admin',
+    label: 'Admin',
+    role: 'Admin',
+    description: 'Kelola inventaris & aset',
+    bg: '#ECEBF7',
+    iconColor: '#5B5FA8',
+    textColor: '#40437F',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'peminjam',
+    label: 'Peminjam',
+    role: 'Peminjam',
+    description: 'Pinjam & kelola pinjaman',
+    bg: '#E7F1FA',
+    iconColor: '#4E85B8',
+    textColor: '#2C5B82',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'hsse',
+    label: 'Hsse',
+    role: 'HSSE',
+    description: 'Pantau keamanan & K3',
+    bg: '#E7F3F0',
+    iconColor: '#3E8574',
+    textColor: '#2C6355',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'areahead',
+    label: 'Area Head',
+    role: 'AreaHead',
+    description: 'Monitoring & kelola area',
+    bg: '#F5EBEC',
+    iconColor: '#8B4A52',
+    textColor: '#6B3941',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+]
+
+function getRoleRoute(role: string): string {
+  switch (role) {
+    case 'Admin':    return '/admin'
+    case 'HSSE':     return '/hsse'
+    case 'AreaHead': return '/areahead'
+    default:         return '/peminjam'
+  }
+}
+
+type View = 'form' | 'face'
 
 export default function LoginForm() {
   const router = useRouter()
+  const [view, setView] = useState<View>('form')
+
+  // Form state
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  
-  const [loginStep, setLoginStep] = useState<'credentials' | 'face_scan'>('credentials')
-  const [authenticatedUser, setAuthenticatedUser] = useState<{ id: string; name: string; email: string; role: string; faceRegistered?: boolean } | null>(null)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [quickLoading, setQuickLoading] = useState<RoleKey | null>(null)
+  const [errorMsg, setErrorMsg] = useState('')
 
-  // Preload AI Models quietly in the background
-  useEffect(() => {
-    ensureModelsLoaded().catch(() => {})
-  }, [])
+  // Face state
+  // faceUserId no longer needed as the server tracks pre-auth sessions via cookie
 
+  // ── Submit form login ───────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setErrorMsg('')
+    setIsSubmitting(true)
     try {
-      const res = await loginWithCredentials(email, password)
+      const res = await loginWithCredentials(email.trim(), password)
       if (res.success && res.user) {
-        if (res.sessionCreated) {
-          toast.success('Login berhasil.')
-          const role = res.user.role.toLowerCase()
-          if (role === 'admin') router.push('/admin')
-          else if (role === 'areahead' || role === 'area head') router.push('/areahead')
-          else if (role === 'hsse') router.push('/hsse')
-          else router.push('/peminjam')
-          return
+        if (res.user.faceRegistered && !res.sessionCreated) {
+          // Wajah terdaftar → ganti view ke FaceScanner (tanpa popup)
+          setView('face')
+        } else {
+          router.push(getRoleRoute(res.user.role as string))
         }
-
-        setAuthenticatedUser({
-          id: res.user.id,
-          name: res.user.name,
-          email: res.user.email,
-          role: res.user.role,
-          faceRegistered: res.user.faceRegistered
-        })
-        setLoginStep('face_scan')
       } else {
-        toast.error(res.error || 'Login gagal.')
+        setErrorMsg(res.error || 'Email atau password salah.')
       }
-    } catch (err: any) {
-      toast.error('Terjadi kesalahan sistem.')
+    } catch {
+      setErrorMsg('Terjadi kesalahan. Coba lagi.')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
-  const handleQuickLogin = async (role: 'admin' | 'peminjam' | 'hsse' | 'areahead') => {
-    setIsLoading(true)
+  // ── Akses cepat (dev mode) ──────────────────────────────────────────────────
+  const handleQuickAccess = async (role: typeof roleQuickAccess[0]) => {
+    setErrorMsg('')
+    setQuickLoading(role.key)
     try {
-      const roleMap = {
-        admin: 'Admin' as const,
-        peminjam: 'Peminjam' as const,
-        hsse: 'HSSE' as const,
-        areahead: 'AreaHead' as const,
-      }
-      const res = await quickLoginAs(roleMap[role])
+      const res = await quickLoginAs(role.role)
       if (res.success) {
-        // Testing mode: route langsung setelah session dibuat
-        if (role === 'admin') router.push('/admin')
-        else if (role === 'areahead') router.push('/areahead')
-        else if (role === 'hsse') router.push('/hsse')
-        else router.push('/peminjam')
+        router.push(getRoleRoute(res.role!))
       } else {
-        toast.error('Quick login gagal: ' + (res.error || 'Error tidak diketahui'))
-        setIsLoading(false)
+        setErrorMsg(res.error || 'Akses cepat gagal.')
       }
-    } catch (err) {
-      toast.error('Terjadi kesalahan saat quick login.')
-      setIsLoading(false)
+    } catch {
+      setErrorMsg('Terjadi kesalahan. Coba lagi.')
+    } finally {
+      setQuickLoading(null)
     }
   }
 
-  // Dipanggil oleh FaceScanner setelah wajah berhasil dikenali dari DB (atau bypass)
-  const handleFaceScanSuccess = (user?: { name: string; email: string; role: string }) => {
-    const targetRole = user?.role || authenticatedUser?.role || 'peminjam'
-    const role = targetRole.toLowerCase()
-    
-    if (role === 'admin') router.push('/admin')
-    else if (role === 'areahead' || role === 'area head') router.push('/areahead')
-    else if (role === 'hsse') router.push('/hsse')
-    else router.push('/peminjam')
+  // ── Face callbacks ──────────────────────────────────────────────────────────
+  const handleFaceSuccess = (user?: { name: string; email: string; role: string }) => {
+    router.push(getRoleRoute(user?.role ?? 'Peminjam'))
   }
 
-  if (loginStep === 'face_scan') {
+  const handleFaceCancel = () => {
+    setView('form')
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // VIEW: Face Scanner — mengisi seluruh panel kanan, tanpa modal/popup/backdrop
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (view === 'face') {
     return (
-      <div className="w-full max-w-sm mx-auto">
-        <FaceScanner 
-          onSuccess={handleFaceScanSuccess} 
-          onCancel={() => setLoginStep('credentials')} 
-          userId={authenticatedUser?.id}
-          skipFaceCheck={authenticatedUser ? !authenticatedUser.faceRegistered : false}
-          skipFaceUser={authenticatedUser && !authenticatedUser.faceRegistered ? {
-            id: authenticatedUser.id,
-            name: authenticatedUser.name || '',
-            email: authenticatedUser.email || '',
-            role: authenticatedUser.role
-          } : undefined}
-        />
+      <div className="w-full lg:w-[56%] xl:w-[58%] bg-white flex-1 flex items-center justify-center px-6 py-10 sm:px-10 sm:py-12 lg:px-16 animate-[formIn_0.5s_ease-out_both]">
+        <style jsx>{`
+          @keyframes formIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+        <div className="w-full max-w-[420px]">
+          <FaceScanner
+            onSuccess={handleFaceSuccess}
+            onCancel={handleFaceCancel}
+          />
+        </div>
       </div>
     )
   }
 
-
+  // ─────────────────────────────────────────────────────────────────────────────
+  // VIEW: Login Form
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-[#0f1f3e]/85 backdrop-blur-xl rounded-[1.5rem] shadow-[0_8px_40px_rgba(0,0,0,0.3)] border-none p-5 sm:p-6 lg:p-7 w-full select-none relative z-20 animate-fade-in-slide-right">
-      {/* Welcome Branding */}
-      <div className="text-center mb-4">
-        <h1 className="text-xl font-extrabold text-white tracking-wide">Selamat Datang</h1>
-        <p className="text-[10.5px] font-bold text-blue-200/60 mt-1 tracking-wide">
-          Masukkan kredensial Anda untuk melanjutkan.
-        </p>
-      </div>
+    <div className="w-full lg:w-[56%] xl:w-[58%] bg-white flex-1 flex items-center justify-center px-6 py-10 sm:px-10 sm:py-12 lg:px-16 animate-[formIn_0.7s_ease-out_both]">
+      <style jsx>{`
+        @keyframes formIn {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        /* Sembunyikan ikon reveal password bawaan browser */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear,
+        input[type="password"]::-webkit-credentials-auto-fill-button {
+          display: none !important;
+        }
+      `}</style>
 
-      {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-3">
-        {/* Email Input */}
-        <div>
-          <label className="block text-[10px] font-extrabold text-blue-200 uppercase tracking-wider mb-1 ml-0.5">
-            Email
-          </label>
-          <div className="relative flex items-center">
-            <div className="absolute left-3 text-blue-300/60 pointer-events-none">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
+      <div className="w-full max-w-[420px]">
+        <img
+          src="/pgn-logo-full.png"
+          alt="PGN COM"
+          className="h-6 sm:h-7 w-auto mb-7 sm:mb-8"
+          draggable={false}
+        />
+
+        <h1 className="text-[26px] sm:text-[30px] font-semibold text-[#232838] leading-snug mb-2">
+          Selamat datang<br />kembali.
+        </h1>
+        <p className="text-[13px] sm:text-sm text-[#8B8FA0] mb-7 sm:mb-8">
+          Masuk untuk mengelola aset operasional Anda.
+        </p>
+
+        {/* ── Form Login ── */}
+        <form onSubmit={handleSubmit} autoComplete="on">
+          <div className="mb-3">
+            <label htmlFor="email" className="sr-only">Email</label>
             <input
+              id="email"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-              className="w-full pl-9 pr-3 py-4 bg-blue-950/60 border border-blue-800/60 rounded-2xl text-xs text-white placeholder-blue-300/40 focus:outline-none focus:ring-0 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] transition-all font-medium disabled:opacity-50"
               placeholder="nama@perusahaan.com"
+              className="w-full bg-[#F5F6FA] border border-[#E4E6EF] rounded-[10px] px-3.5 py-3 text-[12.5px] text-[#232838] placeholder:text-[#9498AC] outline-none transition-colors focus:border-[#46578C] focus:bg-white"
             />
           </div>
-        </div>
 
-        {/* Password Input */}
-        <div>
-          <label className="block text-[10px] font-extrabold text-blue-200 uppercase tracking-wider mb-1 ml-0.5">
-            Kata Sandi
-          </label>
-          <div className="relative flex items-center">
-            <div className="absolute left-3 text-blue-300/60 pointer-events-none">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-            </div>
+          <div className="mb-3.5 relative">
+            <label htmlFor="password" className="sr-only">Kata sandi</label>
             <input
+              id="password"
               type={showPassword ? 'text' : 'password'}
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-              className="w-full pl-9 pr-9 py-4 bg-blue-950/60 border border-blue-800/60 rounded-2xl text-xs text-white placeholder-blue-300/40 focus:outline-none focus:ring-0 focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.2)] transition-all font-medium disabled:opacity-50"
-              placeholder="Masukkan kata sandi"
+              placeholder="••••••••••"
+              className="w-full bg-[#F5F6FA] border border-[#E4E6EF] rounded-[10px] px-3.5 py-3 pr-10 text-[12.5px] text-[#232838] placeholder:text-[#9498AC] outline-none transition-colors focus:border-[#46578C] focus:bg-white"
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
-              className="absolute right-3 text-blue-300/60 hover:text-blue-200 transition-colors"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9498AC] hover:text-[#5C6690] transition-colors"
+              aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
             >
               {showPassword ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.774 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               )}
             </button>
           </div>
-        </div>
 
-        {/* Checkbox and Forgot Password */}
-        <div className="flex items-center justify-between pt-0.5">
-          <label className="flex items-center cursor-pointer select-none">
-            <input
-              type="checkbox"
-              className="w-4 h-4 text-blue-500 bg-blue-950 border-blue-800/60 rounded focus:ring-blue-500/20 focus:ring-offset-0"
-            />
-            <span className="ml-2 text-[11px] font-bold text-blue-200/80">Ingat sesi ini</span>
-          </label>
-          <a
-            href="#"
-            className="text-[11px] font-extrabold text-rose-300 hover:text-rose-200 transition-colors"
-          >
-            Lupa sandi?
-          </a>
-        </div>
-
-        {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-1.5 py-4 px-4 rounded-2xl font-bold text-white bg-blue-600 hover:bg-blue-500 hover:-translate-y-[2px] hover:shadow-[0_12px_30px_rgba(37,99,235,0.25)] active:scale-[0.99] transition-all duration-300 shadow-[0_4px_10px_rgba(37,99,235,0.15)] disabled:opacity-75 disabled:cursor-not-allowed text-xs mt-2"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-1.5">
-              <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Memproses...
-            </span>
-          ) : (
-            <>
-              <span>Masuk</span>
-              <svg className="w-3.5 h-3.5 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </>
+          {/* Error */}
+          {errorMsg && (
+            <div className="mb-3 px-3 py-2.5 bg-red-50 border border-red-200 rounded-[8px]">
+              <p className="text-[11.5px] text-red-600">{errorMsg}</p>
+            </div>
           )}
-        </button>
-      </form>
 
-      {/* Akses Cepat Divider */}
-      <div className="relative my-4">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-blue-800/40"></div>
+          <div className="flex items-center justify-between mb-5">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-3.5 h-3.5 rounded accent-[#46578C]"
+              />
+              <span className="text-[11.5px] text-[#6B6F80]">Ingat saya</span>
+            </label>
+            <button type="button" className="text-[11.5px] font-medium text-[#46578C] hover:underline">
+              Lupa sandi?
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-[#46578C] hover:bg-[#3B4A78] active:scale-[0.99] disabled:opacity-70 rounded-[10px] py-3 text-[13px] font-semibold text-white transition-all mb-5 flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Memproses…
+              </>
+            ) : 'Masuk'}
+          </button>
+        </form>
+
+        {/* ── Akses Cepat ── */}
+        <p className="text-[10px] text-[#9498AC] uppercase tracking-wider mb-2.5">Atau pin in akses cepat</p>
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          {roleQuickAccess.map((role) => (
+            <button
+              key={role.key}
+              type="button"
+              disabled={quickLoading !== null}
+              onClick={() => handleQuickAccess(role)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ backgroundColor: role.bg }}
+            >
+              {quickLoading === role.key ? (
+                <svg className="w-3.5 h-3.5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" style={{ color: role.iconColor }}>
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+              ) : (
+                <span style={{ color: role.iconColor }} className="shrink-0">{role.icon}</span>
+              )}
+              <div className="text-left">
+                <p className="text-[11px] font-semibold leading-none mb-0.5" style={{ color: role.textColor }}>{role.label}</p>
+                <p className="text-[9.5px] leading-none" style={{ color: role.textColor, opacity: 0.7 }}>{role.description}</p>
+              </div>
+            </button>
+          ))}
         </div>
-        <div className="relative flex justify-center text-[8.5px] font-bold uppercase tracking-widest">
-          <span className="bg-[#0f1f3e] border border-blue-800/40 rounded-full px-3 py-0.5 text-blue-300/70">Atau Pilih Akses Cepat</span>
-        </div>
-      </div>
 
-      {/* Quick Access Role Buttons Grid */}
-      <div className="grid grid-cols-2 gap-2.5">
-        {/* Admin Card */}
-        <button
-          type="button"
-          onClick={() => handleQuickLogin('admin')}
-          disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-blue-500/60 hover:bg-blue-500/10 transition-all duration-300 text-left group disabled:opacity-50"
-        >
-          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-blue-500/20 group-hover:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-400 group-hover:text-blue-200 transition-colors duration-300 leading-tight">Admin</div>
-            <div className="text-[8.5px] text-slate-500 group-hover:text-blue-300/60 transition-colors duration-300 font-semibold truncate">Kelola sistem & aset</div>
-          </div>
-        </button>
-
-        {/* Peminjam Card */}
-        <button
-          type="button"
-          onClick={() => handleQuickLogin('peminjam')}
-          disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-rose-500/50 hover:bg-rose-500/10 transition-all duration-300 text-left group disabled:opacity-50"
-        >
-          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-rose-500/20 group-hover:text-rose-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-400 group-hover:text-rose-200 transition-colors duration-300 leading-tight">Peminjam</div>
-            <div className="text-[8.5px] text-slate-500 group-hover:text-rose-300/60 transition-colors duration-300 font-semibold truncate">Ajukan & kelola pinjam</div>
-          </div>
-        </button>
-
-        {/* HSSE Card */}
-        <button
-          type="button"
-          onClick={() => handleQuickLogin('hsse')}
-          disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-pink-500/50 hover:bg-pink-50/10 transition-all duration-300 text-left group disabled:opacity-50"
-        >
-          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-pink-500/20 group-hover:text-pink-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-            </svg>
-          </div>
-          <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-400 group-hover:text-pink-200 transition-colors duration-300 leading-tight">Hsse</div>
-            <div className="text-[8.5px] text-slate-500 group-hover:text-pink-300/60 transition-colors duration-300 font-semibold truncate">Kelola keamanan & K3</div>
-          </div>
-        </button>
-
-        {/* Area Head Card */}
-        <button
-          type="button"
-          onClick={() => handleQuickLogin('areahead')}
-          disabled={isLoading}
-          className="flex items-center gap-2 p-2 rounded-xl border border-slate-700/30 bg-slate-800/20 text-slate-400 hover:border-indigo-500/50 hover:bg-indigo-500/10 transition-all duration-300 text-left group disabled:opacity-50"
-        >
-          <div className="w-8 h-8 rounded-full bg-slate-700/30 text-slate-500 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-all duration-300">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <div className="overflow-hidden">
-            <div className="text-[11px] font-bold text-slate-400 group-hover:text-indigo-200 transition-colors duration-300 leading-tight">Area Head</div>
-            <div className="text-[8.5px] text-slate-500 group-hover:text-indigo-300/60 transition-colors duration-300 font-semibold truncate">Monitoring & setuju</div>
-          </div>
-        </button>
+        <p className="text-[9px] text-[#B4B7C4] text-center leading-relaxed">
+          © 2026 PT PGAS Telekomunikasi Nusantara RO Lampung
+        </p>
       </div>
     </div>
   )

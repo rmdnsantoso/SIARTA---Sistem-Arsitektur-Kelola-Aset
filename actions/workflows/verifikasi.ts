@@ -164,23 +164,34 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
 
     if (ticket.allocatedUnits) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
-      for (const sn of serials) {
-        await prisma.physicalUnit.updateMany({
-          where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] },
-          data: { status: 'Dipinjam' }
-        })
-        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] } })
-        for (const u of units) {
-          await prisma.unitHistory.create({
-            data: {
-              unitId: u.id,
-              action: `Dipinjam oleh ${ticket.peminjam.name}. Alasan: ${ticket.alasan}`,
-              actor: `${user.name} (Admin)`,
-              timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
-            }
-          })
-        }
-      }
+
+      // ── Batch update semua unit sekaligus — hindari N+1 queries ──────────────
+      await prisma.physicalUnit.updateMany({
+        where: {
+          assetId: ticket.assetId,
+          OR: serials.flatMap(sn => [{ serialNumber: sn }, { unitId: sn }])
+        },
+        data: { status: 'Dipinjam' }
+      })
+
+      // Ambil unit yang diupdate untuk batch-insert history
+      const updatedUnits = await prisma.physicalUnit.findMany({
+        where: {
+          assetId: ticket.assetId,
+          OR: serials.flatMap(sn => [{ serialNumber: sn }, { unitId: sn }])
+        },
+        select: { id: true }
+      })
+
+      const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
+      await prisma.unitHistory.createMany({
+        data: updatedUnits.map(u => ({
+          unitId: u.id,
+          action: `Dipinjam oleh ${ticket.peminjam.name}. Alasan: ${ticket.alasan}`,
+          actor: `${user.name} (Admin)`,
+          timestamp: now
+        }))
+      })
     }
 
     await createNotification(
@@ -241,24 +252,35 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
 
     if (ticket.allocatedUnits) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
-      for (const sn of serials) {
-        const unitStatus = isNeedingMaintenance ? 'Maintenance' : 'Tersedia'
-        await prisma.physicalUnit.updateMany({
-          where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] },
-          data: { status: unitStatus }
-        })
-        const units = await prisma.physicalUnit.findMany({ where: { assetId: ticket.assetId, OR: [{ serialNumber: sn }, { unitId: sn }] } })
-        for (const u of units) {
-          await prisma.unitHistory.create({
-            data: {
-              unitId: u.id,
-              action: `Dikembalikan. Status: ${unitStatus}`,
-              actor: `${user.name} (Admin)`,
-              timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
-            }
-          })
-        }
-      }
+      const unitStatus = isNeedingMaintenance ? 'Maintenance' : 'Tersedia'
+
+      // ── Batch update semua unit sekaligus — hindari N+1 queries ──────────────
+      await prisma.physicalUnit.updateMany({
+        where: {
+          assetId: ticket.assetId,
+          OR: serials.flatMap(sn => [{ serialNumber: sn }, { unitId: sn }])
+        },
+        data: { status: unitStatus }
+      })
+
+      // Ambil unit yang diupdate untuk batch-insert history
+      const updatedUnits = await prisma.physicalUnit.findMany({
+        where: {
+          assetId: ticket.assetId,
+          OR: serials.flatMap(sn => [{ serialNumber: sn }, { unitId: sn }])
+        },
+        select: { id: true }
+      })
+
+      const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
+      await prisma.unitHistory.createMany({
+        data: updatedUnits.map(u => ({
+          unitId: u.id,
+          action: `Dikembalikan. Status: ${unitStatus}`,
+          actor: `${user.name} (Admin)`,
+          timestamp: now
+        }))
+      })
     }
 
     if (isNeedingMaintenance) {

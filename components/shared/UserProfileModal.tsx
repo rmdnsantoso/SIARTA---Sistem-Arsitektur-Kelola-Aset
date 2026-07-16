@@ -68,7 +68,7 @@ export default function UserProfileModal({ isOpen, onClose, userId, userName, ro
         </button>
 
         <div className="text-center mb-5 sm:mb-6 mt-1 sm:mt-2">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border-[3px] sm:border-[4px] border-blue-100/50 shadow-inner">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-800 text-white rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border-[3px] sm:border-[4px] border-slate-700/50 shadow-inner">
             <span className="text-2xl sm:text-3xl font-extrabold">{userName.charAt(0).toUpperCase()}</span>
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-slate-800">{userName}</h2>
@@ -79,10 +79,10 @@ export default function UserProfileModal({ isOpen, onClose, userId, userName, ro
           <div className="space-y-3">
             <button
               onClick={() => setShowForm(true)}
-              className="w-full py-3 sm:py-3.5 px-4 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-600 rounded-xl sm:rounded-2xl font-bold text-[11px] transition-colors border border-slate-100 hover:border-blue-200 flex items-center justify-between group"
+              className="w-full py-3 sm:py-3.5 px-4 bg-slate-50 hover:bg-slate-800 text-slate-700 hover:text-white rounded-xl sm:rounded-2xl font-bold text-[11px] transition-colors border border-slate-100 hover:border-slate-700 flex items-center justify-between group"
             >
               <span className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
                 Ganti Password
@@ -107,7 +107,7 @@ export default function UserProfileModal({ isOpen, onClose, userId, userName, ro
                 value={oldPassword}
                 onChange={e => setOldPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-3 sm:px-4 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                className="w-full px-3 py-3 sm:px-4 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-slate-800 focus:ring-4 focus:ring-slate-800/10 transition-all font-medium"
                 placeholder="Masukkan password acak dari Admin"
               />
             </div>
@@ -120,7 +120,7 @@ export default function UserProfileModal({ isOpen, onClose, userId, userName, ro
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-3 sm:px-4 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                className="w-full px-3 py-3 sm:px-4 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-slate-800 focus:ring-4 focus:ring-slate-800/10 transition-all font-medium"
                 placeholder="Minimal 8 karakter"
               />
             </div>
@@ -133,7 +133,7 @@ export default function UserProfileModal({ isOpen, onClose, userId, userName, ro
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
-                className="w-full px-3 py-3 sm:px-4 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
+                className="w-full px-3 py-3 sm:px-4 sm:py-3.5 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-slate-800 focus:ring-4 focus:ring-slate-800/10 transition-all font-medium"
                 placeholder="Ulangi password baru"
               />
             </div>
@@ -150,7 +150,7 @@ export default function UserProfileModal({ isOpen, onClose, userId, userName, ro
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 flex justify-center py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors text-xs shadow-lg shadow-blue-500/30 disabled:opacity-70"
+                className="flex-1 flex justify-center py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors text-xs shadow-lg shadow-slate-800/30 disabled:opacity-70"
               >
                 {isLoading ? 'Menyimpan...' : 'Simpan'}
               </button>

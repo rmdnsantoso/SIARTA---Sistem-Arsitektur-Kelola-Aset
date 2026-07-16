@@ -130,17 +130,17 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
     <div className="space-y-4 sm:space-y-6 font-sans">
       {/* ── Toolbar ── */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div className="px-4 py-4 sm:px-6">
+        <div className="px-3 py-3 sm:px-6 sm:py-4">
           <div className="relative w-full max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
             <input
               type="text"
               placeholder="Cari ID atau nama aset..."
-              className="pl-10 w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="pl-9 sm:pl-10 w-full border border-gray-300 rounded-lg px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -148,20 +148,20 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
         </div>
         
         {/* Filters Row */}
-        <div className="p-3 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-4 items-center">
-          <div className="flex items-center w-full sm:w-auto">
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto">
+        <div className="p-2 sm:p-4 bg-gray-50/50 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center">
+          <div className="flex items-center justify-center w-full sm:w-auto pb-1 sm:pb-0">
+            <div className="flex bg-gray-100 p-1 rounded-lg w-[90%] max-w-[340px] sm:w-auto">
               {TRACKING_FILTERS.map(f => (
                 <button
                   key={f}
                   onClick={() => setFilterTracking(f)}
-                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
                     filterTracking === f 
                     ? 'bg-white text-gray-900 shadow-sm' 
                     : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {f === 'Semua' ? 'Semua Aset' : f === 'SERIALIZED' ? 'Serialized' : 'Non-Serialized'}
+                  {f === 'Semua' ? 'Semua Aset' : f === 'SERIALIZED' ? 'Serialized' : 'Non-Serial'}
                 </button>
               ))}
             </div>
@@ -169,7 +169,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
         </div>
       </div>
       {/* ── E-Commerce Style Grid Layout ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-6">
         {filtered.map(a => {
           const isLow = a.availableStock === 0
           
@@ -181,9 +181,9 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                 </div>
               )}
               {/* Product Image Placeholder */}
-              <div className="h-40 sm:h-48 bg-gray-50 border-b border-gray-100 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100 transition-colors">
+              <div className="h-40 sm:h-52 bg-gray-50 border-b border-gray-100 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100 transition-colors">
                 {a.imageUrl ? (
-                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-contain mix-blend-multiply" />
+                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-cover" />
                 ) : (
                   <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />

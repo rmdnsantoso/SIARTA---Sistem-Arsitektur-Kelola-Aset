@@ -93,9 +93,30 @@ export function getHeadTurnDirection(landmarks: { x: number, y: number }[]): 'le
   const leftDist = nose.x - leftContour.x
   const rightDist = rightContour.x - nose.x
   
-  // Jika rasio jarak hidung ke salah satu sisi jauh lebih kecil, berarti menoleh
-  if (leftDist < rightDist * 0.6) return 'left'
-  if (rightDist < leftDist * 0.6) return 'right'
+  // Karena face-api membaca raw video (tanpa CSS mirror), maka jika hidung
+  // lebih dekat ke kiri gambar, berarti pengguna menoleh ke KANAN mereka secara fisik.
+  if (leftDist < rightDist * 0.6) return 'right'
+  if (rightDist < leftDist * 0.6) return 'left'
   
   return 'center'
 }
+
+export function getYawRatio(landmarks: { x: number, y: number }[]): number {
+  if (!landmarks || landmarks.length < 68) return 1
+  const leftContour = landmarks[1]
+  const rightContour = landmarks[15]
+  const nose = landmarks[30]
+  const leftDist = nose.x - leftContour.x
+  const rightDist = rightContour.x - nose.x
+  return leftDist / (rightDist || 1)
+}
+
+export function getEyeWidthRatio(landmarks: { x: number, y: number }[]): number {
+  if (!landmarks || landmarks.length < 68) return 1
+  // left eye (indices 36-41), width from 36 to 39
+  // right eye (indices 42-47), width from 42 to 45
+  const leftEyeWidth = getEuclideanDistance(landmarks[36], landmarks[39])
+  const rightEyeWidth = getEuclideanDistance(landmarks[42], landmarks[45])
+  return leftEyeWidth / (rightEyeWidth || 1)
+}
+

@@ -18,6 +18,17 @@ import type { Ticket } from '../../types/ticket'
 
 export default function PeminjamDashboard() {
   const [activeNav, setActiveNav] = useState('Katalog Alat')
+  const [isNavInitialized, setIsNavInitialized] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('peminjam_activeNav')
+    if (saved) setActiveNav(saved)
+    setIsNavInitialized(true)
+  }, [])
+
+  useEffect(() => {
+    if (isNavInitialized) localStorage.setItem('peminjam_activeNav', activeNav)
+  }, [activeNav, isNavInitialized])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [assets, setAssets] = useState<any[]>([])
@@ -76,25 +87,26 @@ export default function PeminjamDashboard() {
           notes: newTicketData.alasan
         })
         if (!res.success) {
-          if (res.trueStock !== undefined) {
-            // Jika gagal karena stok out of sync, langsung koreksi stok lokal
-            setAssets(prev => prev.map(a => a.id === newTicketData.assetId ? {
-              ...a,
-              availableStock: res.trueStock
-            } : a))
-            toast.error(res.error)
-          } else {
-            console.error('Gagal membuat tiket di database:', res.error)
-            toast.error(`Gagal mengajukan pinjaman: ${res.error}`)
+          console.error('Gagal membuat tiket di database:', res.error)
+          toast.error(`Gagal mengajukan pinjaman: ${res.error}`)
+          // Koreksi stok di UI langsung jika server kirim trueStock
+          if (typeof (res as any).trueStock === 'number') {
+            const trueStock = (res as any).trueStock
+            setAssets(prev => prev.map(a =>
+              a.id === newTicketData.assetId
+                ? { ...a, availableStock: trueStock }
+                : a
+            ))
           }
           return false
         } else {
           // Update aset lokal secara spesifik tanpa re-fetch seluruh katalog (Targeted Update)
           if (res.updatedAsset) {
-            setAssets(prev => prev.map(a => a.id === res.updatedAsset.id ? {
+            const updatedAsset = res.updatedAsset
+            setAssets(prev => prev.map(a => a.id === updatedAsset.id ? {
               ...a,
               totalStock: a.totalStock, // totalStock remains unchanged when booking
-              availableStock: res.updatedAsset.quantity
+              availableStock: updatedAsset.quantity
             } : a))
           }
           // Fetch hanya data tiket terbaru (lebih ringan dari refreshData penuh)

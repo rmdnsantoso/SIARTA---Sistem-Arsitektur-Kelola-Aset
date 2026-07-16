@@ -3,19 +3,18 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import * as faceapi from 'face-api.js'
 import { verifyFaceLogin, generateLivenessChallenge } from '../../actions/core/user'
-import { ensureModelsLoaded, calculateEAR, checkBrightness, getHeadTurnDirection } from '../../lib/face/utils'
+import { ensureModelsLoaded, calculateEAR, checkBrightness, getHeadTurnDirection, getYawRatio, getEyeWidthRatio } from '../../lib/face/utils'
 
 interface FaceScannerProps {
   onSuccess: (user?: { name: string; email: string; role: string }) => void
   onCancel: () => void
-  userId?: string
   skipFaceCheck?: boolean
   skipFaceUser?: { id: string; name: string; email: string; role: string }
 }
 
 type ScanStatus = 'loading_models' | 'scanning' | 'verifying' | 'success' | 'failed' | 'error'
 
-// ─── Module-level guards ─────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Module-level guards ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 let _activeStream: MediaStream | null = null
 
 function killAllTracks() {
@@ -27,12 +26,11 @@ function killAllTracks() {
     _activeStream = null
   }
 }
-// ────────────────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export default function FaceScanner({
   onSuccess,
   onCancel,
-  userId,
   skipFaceCheck,
   skipFaceUser,
 }: FaceScannerProps) {
@@ -49,23 +47,30 @@ export default function FaceScanner({
   const [retryCount, setRetryCount] = useState(0)
 
   // Liveness & Light states
-  const [challengeSequence, setChallengeSequence] = useState<('BLINK' | 'TURN_HEAD')[]>([])
+  const [challengeSequence, setChallengeSequence] = useState<('BLINK' | 'TURN_LEFT' | 'TURN_RIGHT')[]>([])
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const challengeSequenceRef = useRef<('BLINK' | 'TURN_HEAD')[]>([])
+  const challengeSequenceRef = useRef<('BLINK' | 'TURN_LEFT' | 'TURN_RIGHT')[]>([])
   const currentStepIndexRef = useRef(0)
   const sessionIdRef = useRef<string>('')
+  const transitionWaitUntilRef = useRef<number>(0)
+  const earSnapshot = useRef<{ ear: number, yawRatio: number }[]>([])
+  const headTurnSnapshot = useRef<{ dir: 'left'|'right'|'center', eyeRatio: number }[]>([])
 
   const [hasBlinked, setHasBlinked] = useState(false)
   const hasBlinkedRef = useRef(false)
-  const earHistory = useRef<number[]>([])
+  const earHistory = useRef<{ ear: number, yawRatio: number }[]>([])
 
   const [hasTurned, setHasTurned] = useState(false)
   const hasTurnedRef = useRef(false)
-  const headTurnHistory = useRef<('left'|'right'|'center')[]>([])
+  const headTurnHistory = useRef<{ dir: 'left'|'right'|'center', eyeRatio: number }[]>([])
+  
+  const [baselineEAR, setBaselineEAR] = useState<number | null>(null)
+  const baselineEARRef = useRef<number | null>(null)
+  const calibrationFrames = useRef<number[]>([])
 
   const [lightStatus, setLightStatus] = useState<'normal' | 'dark' | 'bright'>('normal')
 
-  // ─── Stop everything ──────────────────────────────────────────────────────
+  // ΓöÇΓöÇΓöÇ Stop everything ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const stopAll = useCallback(() => {
     if (intervalRef.current) {
       if ('cancelVideoFrameCallback' in HTMLVideoElement.prototype && videoRef.current) {
@@ -80,9 +85,9 @@ export default function FaceScanner({
     }
   }, [])
 
-  // ─── Detection loop ───────────────────────────────────────────────────────
+  // ΓöÇΓöÇΓöÇ Detection loop ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   const startLoop = useCallback(
-    async (uid: string | undefined, cancelled: { value: boolean }) => {
+    async (cancelled: { value: boolean }) => {
       if (intervalRef.current) {
         if ('cancelVideoFrameCallback' in HTMLVideoElement.prototype && videoRef.current) {
           try { (videoRef.current as any).cancelVideoFrameCallback(intervalRef.current) } catch (e) {}
@@ -91,11 +96,10 @@ export default function FaceScanner({
       }
       
       // Fetch challenge
-      const sid = crypto.randomUUID()
-      sessionIdRef.current = sid
-      const res = await generateLivenessChallenge(sid)
+      const res = await generateLivenessChallenge()
       if (cancelled.value) return
-      if (res.success && res.challenge && Array.isArray(res.challenge)) {
+      if (res.success && res.challenge && Array.isArray(res.challenge) && res.sessionId) {
+        sessionIdRef.current = res.sessionId
         setChallengeSequence(res.challenge as any)
         challengeSequenceRef.current = res.challenge as any
         setCurrentStepIndex(0)
@@ -114,6 +118,8 @@ export default function FaceScanner({
       setHasTurned(false)
       hasTurnedRef.current = false
       headTurnHistory.current = []
+      
+      transitionWaitUntilRef.current = 0
 
       let stopped = false
       let lastBrightnessCheck = 0
@@ -137,10 +143,12 @@ export default function FaceScanner({
 
         // Cek brightness secara pasif (di-throttle 500ms)
         const now = Date.now()
+        
+        let currentLightStatus = lightStatus
         if (now - lastBrightnessCheck > 500) {
           if (canvasRef.current) {
-            const lStatus = checkBrightness(videoRef.current, canvasRef.current)
-            setLightStatus(lStatus)
+            currentLightStatus = checkBrightness(videoRef.current, canvasRef.current)
+            setLightStatus(currentLightStatus)
           }
           lastBrightnessCheck = now
         }
@@ -158,8 +166,6 @@ export default function FaceScanner({
 
         if (stopped || cancelled.value) return
 
-        if (stopped || cancelled.value) return
-
         setFaceDetected(!!det)
 
         if (!det) {
@@ -168,27 +174,61 @@ export default function FaceScanner({
         }
 
         // --- Active Liveness Detection ---
-        const landmarks = det.landmarks.positions
-        const currentChallenge = challengeSequenceRef.current[currentStepIndexRef.current]
+        // Jika pencahayaan tidak normal, jeda proses evaluasi challenge
+        if (currentLightStatus !== 'normal') {
+          if (!stopped && !cancelled.value) scheduleNext(tick)
+          return
+        }
 
+        const landmarks = det.landmarks.positions
+        
+        // --- Fase Kalibrasi EAR ---
+        if (baselineEARRef.current === null) {
+          const direction = getHeadTurnDirection(landmarks)
+          if (direction === 'center') {
+            const leftEye = landmarks.slice(36, 42)
+            const rightEye = landmarks.slice(42, 48)
+            const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2
+            calibrationFrames.current.push(avgEAR)
+            if (calibrationFrames.current.length >= 15) { // ~1 detik (tergantung FPS)
+               const base = calibrationFrames.current.reduce((a, b) => a + b, 0) / calibrationFrames.current.length
+               baselineEARRef.current = base
+               setBaselineEAR(base)
+            }
+          } else {
+             // Reset jika kepala bergoyang
+             calibrationFrames.current = []
+          }
+          if (!stopped && !cancelled.value) scheduleNext(tick)
+          return
+        }
+
+        const currentChallenge = challengeSequenceRef.current[currentStepIndexRef.current]
         let challengeCompleted = false
 
         if (currentChallenge === 'BLINK') {
           const leftEye = landmarks.slice(36, 42)
           const rightEye = landmarks.slice(42, 48)
           const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2
+          const yawRatio = getYawRatio(landmarks)
 
-          earHistory.current.push(avgEAR)
-          if (earHistory.current.length > 8) {
+          earHistory.current.push({ ear: avgEAR, yawRatio })
+          if (earHistory.current.length > 10) {
             earHistory.current.shift()
           }
 
           if (earHistory.current.length >= 3) {
-            const maxEAR = Math.max(...earHistory.current)
-            const minEAR = Math.min(...earHistory.current)
-            const latestEAR = earHistory.current[earHistory.current.length - 1]
+            const ears = earHistory.current.map(d => d.ear)
+            const yaws = earHistory.current.map(d => d.yawRatio)
+            
+            const maxEAR = Math.max(...ears)
+            const minEAR = Math.min(...ears)
+            const latestEAR = ears[ears.length - 1]
+            const maxYaw = Math.max(...yaws)
+            const minYaw = Math.min(...yaws)
 
-            if (maxEAR - minEAR >= 0.05 && latestEAR - minEAR >= 0.03) {
+            // Pose-gating: pastikan yawRatio relatif stabil selama window
+            if (maxEAR - minEAR >= 0.05 && latestEAR - minEAR >= 0.03 && maxYaw - minYaw <= 0.2) {
               if (!hasBlinkedRef.current) {
                 hasBlinkedRef.current = true
                 setHasBlinked(true)
@@ -197,35 +237,90 @@ export default function FaceScanner({
           }
 
           challengeCompleted = hasBlinkedRef.current
-        } else if (currentChallenge === 'TURN_HEAD') {
+        } else if (currentChallenge === 'TURN_LEFT' || currentChallenge === 'TURN_RIGHT') {
+          const expectedDir = currentChallenge === 'TURN_LEFT' ? 'left' : 'right'
           const direction = getHeadTurnDirection(landmarks)
-          headTurnHistory.current.push(direction)
+          const eyeRatio = getEyeWidthRatio(landmarks)
+          
+          headTurnHistory.current.push({ dir: direction, eyeRatio })
           if (headTurnHistory.current.length > 30) headTurnHistory.current.shift()
 
           const turnIdx = headTurnHistory.current.findIndex((d, i) => 
-            d !== 'center' && headTurnHistory.current.slice(i, i + 3).every(x => x === d)
+            d.dir === expectedDir && headTurnHistory.current.slice(i, i + 3).every(x => x.dir === expectedDir)
           )
-          const returnedToCenter = turnIdx >= 0 && headTurnHistory.current.slice(turnIdx + 3).some(d => d === 'center')
+          const returnedToCenter = turnIdx >= 0 && headTurnHistory.current.slice(turnIdx + 3).some(d => d.dir === 'center')
 
           if (turnIdx >= 0 && returnedToCenter) {
-            if (!hasTurnedRef.current) {
-              hasTurnedRef.current = true
-              setHasTurned(true)
+            // 3D Rotation Check: pastikan rasio lebar mata berubah signifikan
+            const centerRatios = headTurnHistory.current.filter(d => d.dir === 'center').map(d => d.eyeRatio)
+            const turnRatios = headTurnHistory.current.filter(d => d.dir === expectedDir).map(d => d.eyeRatio)
+            
+            if (centerRatios.length > 0 && turnRatios.length > 0) {
+              const avgCenter = centerRatios.reduce((a, b) => a + b, 0) / centerRatios.length
+              const avgTurn = turnRatios.reduce((a, b) => a + b, 0) / turnRatios.length
+              if (Math.abs(avgCenter - avgTurn) >= 0.05) {
+                if (!hasTurnedRef.current) {
+                  hasTurnedRef.current = true
+                  setHasTurned(true)
+                }
+              }
             }
           }
 
           challengeCompleted = hasTurnedRef.current
         }
 
-        if (challengeCompleted) {
-          if (currentStepIndexRef.current < challengeSequenceRef.current.length - 1) {
-            // Lanjut ke tantangan berikutnya
-            currentStepIndexRef.current += 1
-            setCurrentStepIndex(currentStepIndexRef.current)
+        // ─── TRANSISI ANTAR CHALLENGE DENGAN JEDA UI ───
+        if (transitionWaitUntilRef.current > 0) {
+          if (now < transitionWaitUntilRef.current) {
+            // Sedang menunggu jeda UI agar user bisa membaca 'Selesai...'
+            if (!stopped && !cancelled.value) scheduleNext(tick)
+            return
+          } else {
+            // Selesai menunggu, reset state dan lanjut challenge berikutnya
+            transitionWaitUntilRef.current = 0
+            const nextIdx = currentStepIndexRef.current + 1
+            
+            // Reset buffer untuk challenge berikutnya
+            const nextCh = challengeSequenceRef.current[nextIdx]
+            if (nextCh === 'TURN_LEFT' || nextCh === 'TURN_RIGHT') {
+              hasTurnedRef.current = false
+              setHasTurned(false)
+              headTurnHistory.current = []
+            } else if (nextCh === 'BLINK') {
+              hasBlinkedRef.current = false
+              setHasBlinked(false)
+              earHistory.current = []
+            }
+            
+            currentStepIndexRef.current = nextIdx
+            setCurrentStepIndex(nextIdx)
             if (!stopped && !cancelled.value) scheduleNext(tick)
             return
           }
-          // Jika sudah di step terakhir dan completed, lanjut ke --- MULAI VERIFIKASI ---
+        }
+
+        if (challengeCompleted) {
+          if (currentStepIndexRef.current < challengeSequenceRef.current.length - 1) {
+            // Simpan snapshot data yang membuat challenge ini lolos
+            if (currentChallenge === 'BLINK') {
+              earSnapshot.current = [...earHistory.current]
+            } else if (currentChallenge === 'TURN_LEFT' || currentChallenge === 'TURN_RIGHT') {
+              headTurnSnapshot.current = [...headTurnHistory.current]
+            }
+
+            // Mulai jeda 800ms
+            transitionWaitUntilRef.current = now + 800
+            if (!stopped && !cancelled.value) scheduleNext(tick)
+            return
+          } else {
+            // Jika sudah di step terakhir dan completed, simpan snapshot
+            if (currentChallenge === 'BLINK') {
+              earSnapshot.current = [...earHistory.current]
+            } else if (currentChallenge === 'TURN_LEFT' || currentChallenge === 'TURN_RIGHT') {
+              headTurnSnapshot.current = [...headTurnHistory.current]
+            }
+          }
         } else {
           // Masih menunggu penyelesaian challenge
           if (!stopped && !cancelled.value) scheduleNext(tick)
@@ -250,31 +345,32 @@ export default function FaceScanner({
           if (!fullDet) throw new Error('Wajah menghilang.')
           const descriptor = Array.from(fullDet.descriptor)
           
-          verifyFaceLogin(descriptor, uid || '', sessionIdRef.current, {
-            earHistory: earHistory.current,
-            headTurnHistory: headTurnHistory.current
-          }).then((result) => {
-            if (cancelled.value) return
-            if (result.success && result.user) {
-              setScanStatus('success')
-              stopAll()
-              setTimeout(() => {
-                if (!cancelled.value) onSuccessRef.current(result.user as any)
-              }, 700)
-            } else {
-              setScanStatus('failed')
-              setFailMessage(result.error || 'Wajah tidak dikenali. Coba lagi.')
-              setRetryCount(c => c + 1)
-              // Restart setelah 2.5 detik
-              setTimeout(() => {
-                if (cancelled.value) return
-                setFaceDetected(false)
-                setFailMessage('')
-                setScanStatus('scanning')
-                startLoop(uid, cancelled)
-              }, 2500)
-            }
+          const result = await verifyFaceLogin(descriptor, sessionIdRef.current, {
+            earHistory: earSnapshot.current.length > 0 ? earSnapshot.current : earHistory.current,
+            headTurnHistory: headTurnSnapshot.current.length > 0 ? headTurnSnapshot.current : headTurnHistory.current
           })
+          
+          if (cancelled.value) return
+          if (result.success && result.user) {
+            setScanStatus('success')
+            stopAll()
+            setTimeout(() => {
+              if (!cancelled.value) onSuccessRef.current(result.user as any)
+            }, 700)
+          } else {
+            setScanStatus('failed')
+            setFailMessage(result.error || 'Wajah tidak dikenali. Coba lagi.')
+            setRetryCount(c => c + 1)
+            // Restart setelah 2.5 detik
+            setTimeout(() => {
+              if (cancelled.value) return
+              setFaceDetected(false)
+              setFailMessage('')
+              setScanStatus('scanning')
+              // eslint-disable-next-line react-hooks/exhaustive-deps
+              startLoop(cancelled)
+            }, 2500)
+          }
         } catch (err: any) {
           if (cancelled.value) return
           setScanStatus('failed')
@@ -284,7 +380,8 @@ export default function FaceScanner({
             setFaceDetected(false)
             setFailMessage('')
             setScanStatus('scanning')
-            startLoop(uid, cancelled)
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+            startLoop(cancelled)
           }, 2500)
         }
       } // end tick()
@@ -294,7 +391,7 @@ export default function FaceScanner({
     [stopAll],
   )
 
-  // ─── Effect utama ─────────────────────────────────────────────────────────
+  // ΓöÇΓöÇΓöÇ Effect utama ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   useEffect(() => {
     const cancelled = { value: false }
 
@@ -346,7 +443,7 @@ export default function FaceScanner({
         }
 
         setScanStatus('scanning')
-        startLoop(userId, cancelled)
+        startLoop(cancelled)
       } catch (err: any) {
         if (cancelled.value) return
         if (err.name === 'NotAllowedError') {
@@ -375,7 +472,10 @@ export default function FaceScanner({
 
   const currentChallenge = challengeSequence[currentStepIndex]
   const currentChallengeCompleted = currentChallenge === 'BLINK' ? hasBlinked : hasTurned
-  const currentChallengeText = currentChallenge === 'BLINK' ? 'KEDIPKAN MATA ANDA' : 'TENGOK KIRI/KANAN'
+  let currentChallengeText = ''
+  if (currentChallenge === 'BLINK') currentChallengeText = 'KEDIPKAN MATA ANDA'
+  else if (currentChallenge === 'TURN_LEFT') currentChallengeText = 'TENGOK KE KIRI'
+  else if (currentChallenge === 'TURN_RIGHT') currentChallengeText = 'TENGOK KE KANAN'
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col items-center gap-5">
@@ -384,7 +484,8 @@ export default function FaceScanner({
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Verifikasi Wajah</h2>
         <p className="mt-1.5 text-sm text-gray-500">
           {scanStatus === 'loading_models' && 'Memuat sistem pengenalan wajah...'}
-          {scanStatus === 'scanning' && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
+          {scanStatus === 'scanning' && baselineEAR === null && 'Menyesuaikan kalibrasi wajah...'}
+          {scanStatus === 'scanning' && baselineEAR !== null && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
           {scanStatus === 'scanning' && !currentChallenge && 'Menyiapkan verifikasi...'}
           {scanStatus === 'verifying' && 'Memverifikasi identitas Anda...'}
           {scanStatus === 'success' && 'Identitas berhasil diverifikasi!'}
@@ -444,14 +545,14 @@ export default function FaceScanner({
 
             {/* Instruction Badge */}
             {scanStatus === 'scanning' && (
-              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
-                <span className={`text-[11px] font-bold px-4 py-1.5 rounded-full shadow-lg transition-all ${
+              <div className="absolute inset-x-0 bottom-8 flex justify-center z-30">
+                <span className={`px-4 py-2 rounded-full text-xs font-bold shadow-lg transition-colors duration-300 ${
                   faceDetected 
                     ? (currentChallengeCompleted ? 'bg-green-500 text-white' : 'bg-yellow-400 text-gray-900') 
                     : 'bg-black/60 text-white/90'
                 }`}>
                   {faceDetected 
-                    ? (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : 'Tengok ke Kiri/Kanan')) 
+                    ? (baselineEAR === null ? 'Kalibrasi...' : (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : (currentChallenge === 'TURN_LEFT' ? 'Tengok ke Kiri' : 'Tengok ke Kanan')))) 
                     : 'Posisikan wajah Anda'}
                 </span>
               </div>
@@ -490,7 +591,7 @@ export default function FaceScanner({
 
       {retryCount > 0 && scanStatus === 'failed' && (
         <p className="text-xs text-amber-600 font-medium text-center">
-          Gagal {retryCount}× — Pastikan pencahayaan cukup dan wajah terlihat jelas
+          Gagal {retryCount}├ù ΓÇö Pastikan pencahayaan cukup dan wajah terlihat jelas
         </p>
       )}
 

@@ -13,6 +13,7 @@ export interface SessionUser {
 export interface AppSessionData {
   user?: SessionUser
   isQuickLogin?: boolean // Flag untuk testing mode
+  pendingFaceUserId?: string // Pre-auth ticket (2FA)
 }
 
 // ─── Konfigurasi session ──────────────────────────────────────────────────────

@@ -19,6 +19,17 @@ import type { Ticket } from '../../types/ticket'
 
 export default function AdminDashboard() {
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
+  const [isNavInitialized, setIsNavInitialized] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('admin_activeNav')
+    if (saved) setActiveNav(saved)
+    setIsNavInitialized(true)
+  }, [])
+
+  useEffect(() => {
+    if (isNavInitialized) localStorage.setItem('admin_activeNav', activeNav)
+  }, [activeNav, isNavInitialized])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,6 +88,7 @@ export default function AdminDashboard() {
           userId={currentUser?.id}
           roleName="Admin" 
           hideHamburgerOnMobile={true}
+          onNewNotification={refreshData}
         />
         
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">

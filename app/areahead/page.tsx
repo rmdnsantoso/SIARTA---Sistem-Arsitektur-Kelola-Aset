@@ -23,6 +23,17 @@ export default function ApprovalDashboard() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
   const [activeNav, setActiveNav] = useState('Verifikasi Pinjam')
+  const [isNavInitialized, setIsNavInitialized] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem('areahead_activeNav')
+    if (saved) setActiveNav(saved)
+    setIsNavInitialized(true)
+  }, [])
+
+  useEffect(() => {
+    if (isNavInitialized) localStorage.setItem('areahead_activeNav', activeNav)
+  }, [activeNav, isNavInitialized])
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [modal, setModal] = useState<{ ticket: Ticket; action: 'Setujui' | 'Tolak' } | null>(null)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
@@ -123,6 +134,7 @@ export default function ApprovalDashboard() {
           userId={currentUser?.id}
           roleName="Area Head"
           hideHamburgerOnMobile={true}
+          onNewNotification={refreshData}
         />
 
         <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">

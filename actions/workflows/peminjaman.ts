@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
 import { createNotification } from '../core/notification'
+import { parseIndonesianDate } from '../../lib/dateUtils'
 
 interface CreateTicketInput {
   assetId: string
@@ -19,23 +20,37 @@ export async function createBorrowTicket(input: CreateTicketInput) {
     // 1. RBAC Check: Hanya Peminjam yang bisa mengajukan tiket
     const user = await requireRole([Role.Peminjam])
 
-    // 2. Cek validitas aset dan status ketersediaannya (harus Available)
+    // 2. Validasi input dasar
+    if (!input.assetId?.trim()) throw new Error('ID aset tidak valid.')
+    if (!input.alasan?.trim()) throw new Error('Alasan peminjaman wajib diisi.')
+    if (typeof input.jumlah !== 'number' || input.jumlah < 1) throw new Error('Jumlah peminjaman harus minimal 1.')
+
+    // Validasi tanggal menggunakan parser Indonesian date karena format di sistem adalah "18 Jun 2026"
+    const tglPinjam = parseIndonesianDate(input.tanggalPinjam)
+    const tglKembali = parseIndonesianDate(input.tanggalKembali)
+    if (!tglPinjam) throw new Error('Format tanggal pinjam tidak valid.')
+    if (!tglKembali) throw new Error('Format tanggal kembali tidak valid.')
+    if (tglKembali <= tglPinjam) throw new Error('Tanggal kembali harus setelah tanggal pinjam.')
+
+    // 3. Cek validitas aset dan status ketersediaannya (harus Available)
     const asset = await prisma.asset.findUnique({ where: { id: input.assetId } })
     if (!asset) throw new Error('Aset tidak ditemukan di database.')
     if (asset.status !== AssetStatus.Available) {
       throw new Error(`Aset saat ini tidak dapat dipinjam (Status: ${asset.status})`)
     }
 
-    if (input.jumlah > asset.quantity) {
-      return { 
-        success: false, 
-        error: `Stok tidak cukup. Sisa stok saat ini: ${asset.quantity} unit.`,
+    // Pre-check stok (soft check untuk UX cepat — sebelum buat tiket)
+    // Atomic check di bawah masih ada sebagai safety net untuk race condition
+    if (asset.quantity < input.jumlah) {
+      return {
+        success: false,
+        error: `Stok tidak cukup. Sisa stok tersedia: ${asset.quantity} unit.`,
         trueStock: asset.quantity
       }
     }
 
-    // 3. Buat Ticket dan catat log awal
-    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, ''); // format: YYMMDD
+    // 4. Buat Ticket dan catat log awal
+    const todayStr = new Date().toISOString().slice(2, 10).replace(/-/g, '') // format: YYMMDD
     const lastTicket = await prisma.ticket.findFirst({ 
       where: { ticketCode: { startsWith: `TK-${todayStr}-` } },
       orderBy: { createdAt: 'desc' } 
@@ -73,13 +88,32 @@ export async function createBorrowTicket(input: CreateTicketInput) {
       }
     })
 
-    // 4. Kurangi stok aset secara langsung (Reservasi)
-    const updatedAsset = await prisma.asset.update({
-      where: { id: asset.id },
+    // 5. Kurangi stok secara ATOMIK — cegah race condition
+    // updateMany dengan WHERE quantity >= jumlah: jika stok tidak cukup, count = 0
+    const stockUpdate = await prisma.asset.updateMany({
+      where: { id: asset.id, quantity: { gte: input.jumlah } },
       data: { quantity: { decrement: input.jumlah } }
     })
 
-    // 5. Kirim Notifikasi ke Admin
+    if (stockUpdate.count === 0) {
+      // Rollback: hapus tiket yang baru dibuat karena stok berubah di antara pre-check dan atomic update
+      await prisma.ticket.delete({ where: { id: ticket.id } }).catch(() => {})
+      // Ambil stok aktual terbaru untuk koreksi UI
+      const freshAsset = await prisma.asset.findUnique({ 
+        where: { id: asset.id },
+        select: { quantity: true }
+      })
+      return { 
+        success: false, 
+        error: `Stok habis diambil pengguna lain. Silakan coba lagi.`,
+        trueStock: freshAsset?.quantity ?? 0
+      }
+    }
+
+    // Ambil stok terbaru setelah update
+    const updatedAsset = await prisma.asset.findUnique({ where: { id: asset.id } })
+
+    // 6. Kirim Notifikasi ke Admin
     await createNotification(
       'Pengajuan Pinjam Baru',
       `${user.name} mengajukan pinjaman ${input.jumlah} unit ${asset.name} (${ticketCode}).`,
