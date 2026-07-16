@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, deleteAllNotifications } from '../../actions/core/notification'
+import { logoutUser } from '../../actions/core/auth'
 import { usePolling } from '../../hooks/usePolling'
 
 interface TopHeaderProps {
@@ -230,11 +231,13 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
 
         <div className="w-px h-6 bg-gray-200 mx-1"></div>
         <button
-          onClick={() => {
+          onClick={async () => {
+            await logoutUser()
             localStorage.removeItem('admin_activeNav')
             localStorage.removeItem('peminjam_activeNav')
             localStorage.removeItem('areahead_activeNav')
             localStorage.removeItem('hsse_activeNav')
+            router.refresh()
             router.push('/')
           }}
           className="flex items-center gap-2 p-2 rounded text-red-600 hover:bg-red-50 transition-colors font-medium text-sm"

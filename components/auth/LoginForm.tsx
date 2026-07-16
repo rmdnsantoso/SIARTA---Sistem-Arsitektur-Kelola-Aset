@@ -95,7 +95,6 @@ export default function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [quickLoading, setQuickLoading] = useState<RoleKey | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
@@ -264,20 +263,7 @@ export default function LoginForm() {
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-5">
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-3.5 h-3.5 rounded accent-[#46578C]"
-              />
-              <span className="text-[11.5px] text-[#6B6F80]">Ingat saya</span>
-            </label>
-            <button type="button" className="text-[11.5px] font-medium text-[#46578C] hover:underline">
-              Lupa sandi?
-            </button>
-          </div>
+
 
           <button
             type="submit"
@@ -294,10 +280,20 @@ export default function LoginForm() {
               </>
             ) : 'Masuk'}
           </button>
+
+          <div className="flex justify-center mb-5">
+            <button 
+              type="button" 
+              onClick={() => setErrorMsg('Silakan hubungi Admin untuk mereset kata sandi Anda.')}
+              className="text-[11.5px] font-medium text-[#46578C] hover:underline"
+            >
+              Lupa sandi?
+            </button>
+          </div>
         </form>
 
         {/* ── Akses Cepat ── */}
-        <p className="text-[10px] text-[#9498AC] uppercase tracking-wider mb-2.5">Atau pin in akses cepat</p>
+        <p className="text-[10px] text-[#9498AC] uppercase tracking-wider mb-2.5">DEV ACCOUNT (QUICK ACCESSS)</p>
         <div className="grid grid-cols-2 gap-2 mb-6">
           {roleQuickAccess.map((role) => (
             <button
