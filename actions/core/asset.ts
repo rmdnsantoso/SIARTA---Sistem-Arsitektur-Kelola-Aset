@@ -38,11 +38,12 @@ export async function getAvailableAssets() {
 
       if (a.isSerialized) {
         computedTotal = a.units?.length || 0
-        computedAvailable = a.quantity
+        computedAvailable = a.units?.filter(u => u.status === 'Tersedia').length || 0
       } else {
         const borrowed = activeTickets
           .filter(t => t.assetId === a.id)
           .reduce((sum, t) => sum + t.jumlah, 0)
+        // a.quantity represents current physical available stock for non-serialized
         computedAvailable = a.quantity
         computedTotal = a.quantity + borrowed
       }
@@ -71,6 +72,7 @@ export async function getAssetById(id: string) {
 // Untuk halaman admin listing — mirip getAvailableAssets tapi tanpa auth gate role khusus
 export async function getAllAssetsForAdmin() {
   try {
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
     const [assets, activeTickets] = await Promise.all([
       prisma.asset.findMany({
         orderBy: { createdAt: 'asc' },
@@ -395,6 +397,7 @@ export async function addAssetStock(assetId: string, addedStock: number) {
 // Ambil list serial number yang berstatus Tersedia untuk suatu aset
 export async function getAvailableSerials(assetId: string) {
   try {
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
     const units = await prisma.physicalUnit.findMany({
       where: { assetId, status: 'Tersedia' },
       select: { serialNumber: true, unitId: true }

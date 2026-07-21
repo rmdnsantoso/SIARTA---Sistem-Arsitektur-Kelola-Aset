@@ -209,14 +209,12 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
 }
 
 // 5. Admin Verifikasi Pengembalian Barang (Return Handover)
-export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaintenance: boolean, maintenanceNotes?: string) {
+export async function verifyAssetReturnHandover(ticketId: string) {
   try {
     const user = await requireRole([Role.Admin])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
     if (ticket.overallStatus !== TicketStatus.Dipinjam) throw new Error('Tiket sedang tidak dalam status dipinjam.')
-
-    const finalAssetStatus = isNeedingMaintenance ? (ticket.asset.isSerialized ? AssetStatus.Maintenance : undefined) : AssetStatus.Available
 
     const updatedTicket = await prisma.ticket.update({
       where: { id: ticketId },
@@ -226,41 +224,32 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
         logs: {
           create: {
             stage: 'Admin',
-            status: `Pengembalian aset diverifikasi. Kondisi akhir: ${finalAssetStatus}.`,
+            status: `Pengembalian aset diverifikasi. Kondisi akhir: ${AssetStatus.Available}.`,
             actor: `${user.name} (Admin)`,
-            timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB',
-            notes: maintenanceNotes
+            timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
           }
         }
       }
     })
 
-    const assetUpdateData: any = {}
-    if (!isNeedingMaintenance) {
-      assetUpdateData.quantity = { increment: ticket.jumlah }
-      assetUpdateData.status = AssetStatus.Available
-    } else if (finalAssetStatus) {
-      assetUpdateData.status = finalAssetStatus
-    }
-
-    if (Object.keys(assetUpdateData).length > 0) {
-      await prisma.asset.update({
-        where: { id: ticket.assetId },
-        data: assetUpdateData
-      })
-    }
+    await prisma.asset.update({
+      where: { id: ticket.assetId },
+      data: { 
+        quantity: { increment: ticket.jumlah },
+        status: AssetStatus.Available
+      }
+    })
 
     if (ticket.allocatedUnits) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
-      const unitStatus = isNeedingMaintenance ? 'Maintenance' : 'Tersedia'
-
+      
       // ── Batch update semua unit sekaligus — hindari N+1 queries ──────────────
       await prisma.physicalUnit.updateMany({
         where: {
           assetId: ticket.assetId,
           OR: serials.flatMap(sn => [{ serialNumber: sn }, { unitId: sn }])
         },
-        data: { status: unitStatus }
+        data: { status: 'Tersedia' }
       })
 
       // Ambil unit yang diupdate untuk batch-insert history
@@ -276,51 +265,11 @@ export async function verifyAssetReturnHandover(ticketId: string, isNeedingMaint
       await prisma.unitHistory.createMany({
         data: updatedUnits.map(u => ({
           unitId: u.id,
-          action: `Dikembalikan. Status: ${unitStatus}`,
+          action: `Dikembalikan. Status: Tersedia`,
           actor: `${user.name} (Admin)`,
           timestamp: now
         }))
       })
-    }
-
-    if (isNeedingMaintenance) {
-      // Buat record maintenance baru agar terdeteksi di board AssetMaintenance
-      const lastRecord = await prisma.maintenanceRecord.findFirst({ orderBy: { createdAt: 'desc' } })
-      let nextNum = 1
-      if (lastRecord && lastRecord.recordCode.startsWith('ESC-')) {
-        const parts = lastRecord.recordCode.split('-')
-        const lastNum = parseInt(parts[1])
-        if (!isNaN(lastNum)) nextNum = lastNum + 1
-      }
-      const recordCode = `ESC-${String(nextNum).padStart(3, '0')}`
-      const today = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' })
-      
-      await prisma.maintenanceRecord.create({
-        data: {
-          recordCode,
-          issue: maintenanceNotes || 'Dilaporkan rusak saat pengembalian',
-          status: 'Menunggu Tindakan',
-          reporterId: user.id,
-          reporterName: `Admin: ${user.name}`,
-          dateReported: today,
-          items: {
-            create: [{
-              assetId: ticket.assetId,
-              assetName: ticket.asset.name,
-              assetCode: ticket.asset.assetCode,
-              isSerialized: ticket.asset.isSerialized,
-              qty: 1
-            }]
-          }
-        }
-      })
-
-      await createNotification(
-        'Inspeksi HSSE / Maintenance Diperlukan',
-        `Aset ${ticket.asset.name} (${ticket.asset.assetCode}) dikembalikan melalui Admin: ${user.name} dan dimasukkan ke status Maintenance.`,
-        'warning',
-        'HSSE'
-      )
     }
 
     await createNotification(

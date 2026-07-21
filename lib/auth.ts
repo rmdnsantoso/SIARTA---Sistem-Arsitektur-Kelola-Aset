@@ -18,7 +18,7 @@ export async function requireRole(allowedRoles: Role[]) {
     // Izinkan akses tanpa session untuk development lokal.
     // JANGAN set ALLOW_DEV_BYPASS=true di production!
     // =========================================================
-    if (process.env.ALLOW_DEV_BYPASS === 'true') {
+    if (process.env.ALLOW_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
       return {
         id: 'dev-fallback',
         name: 'Dev User',

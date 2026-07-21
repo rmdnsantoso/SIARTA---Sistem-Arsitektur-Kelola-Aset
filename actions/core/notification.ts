@@ -3,6 +3,7 @@
 import { prisma } from '../../lib/prisma'
 import { Role } from '../../app/generated/prisma'
 import { getCurrentUser } from '../../lib/session'
+import { requireRole } from '../../lib/auth'
 
 // ─── Wrapper Fungsi untuk Mobile (Otomatis deteksi dari Session) ───
 export async function getMyNotifications() {
@@ -38,6 +39,10 @@ export async function deleteAllMyNotifications() {
 // Ambil notifikasi berdasarkan userId
 export async function getUserNotifications(userId: string, role: string) {
   try {
+    const user = await getCurrentUser()
+    if (!user || (user.id !== userId && user.role !== 'Admin')) {
+      throw new Error('Unauthorized')
+    }
     const notifications = await prisma.notification.findMany({
       where: { recipientId: userId },
       orderBy: { createdAt: 'desc' },
@@ -54,8 +59,10 @@ export async function getUserNotifications(userId: string, role: string) {
 // Menandai satu notifikasi sebagai sudah dibaca
 export async function markNotificationAsRead(notificationId: string) {
   try {
-    const updated = await prisma.notification.update({
-      where: { id: notificationId },
+    const user = await getCurrentUser()
+    if (!user) throw new Error('Unauthorized')
+    const updated = await prisma.notification.updateMany({
+      where: { id: notificationId, recipientId: user.id },
       data: { isRead: true }
     })
     return { success: true, data: updated }
@@ -67,6 +74,10 @@ export async function markNotificationAsRead(notificationId: string) {
 // Menandai semua notifikasi milik user sebagai sudah dibaca
 export async function markAllNotificationsAsRead(userId: string, role: string) {
   try {
+    const user = await getCurrentUser()
+    if (!user || (user.id !== userId && user.role !== 'Admin')) {
+      throw new Error('Unauthorized')
+    }
     await prisma.notification.updateMany({
       where: {
         isRead: false,
@@ -82,8 +93,10 @@ export async function markAllNotificationsAsRead(userId: string, role: string) {
 
 export async function deleteNotification(notificationId: string) {
   try {
-    await prisma.notification.delete({
-      where: { id: notificationId }
+    const user = await getCurrentUser()
+    if (!user) throw new Error('Unauthorized')
+    await prisma.notification.deleteMany({
+      where: { id: notificationId, recipientId: user.id }
     })
     return { success: true }
   } catch (error: any) {
@@ -93,6 +106,10 @@ export async function deleteNotification(notificationId: string) {
 
 export async function deleteAllNotifications(userId: string) {
   try {
+    const user = await getCurrentUser()
+    if (!user || (user.id !== userId && user.role !== 'Admin')) {
+      throw new Error('Unauthorized')
+    }
     await prisma.notification.deleteMany({
       where: { recipientId: userId }
     })
@@ -111,6 +128,7 @@ export async function createNotification(
   link?: string
 ) {
   try {
+    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
     if (recipientId) {
       // ── Target Individu Spesifik ──
       const notif = await prisma.notification.create({

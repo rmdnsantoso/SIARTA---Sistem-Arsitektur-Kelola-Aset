@@ -9,8 +9,9 @@ import { createNotification } from './notification'
 
 export async function getAllMaintenanceRecords() {
   try {
+    await requireRole([Role.Admin, Role.HSSE])
     const records = await prisma.maintenanceRecord.findMany({
-      include: { reporter: true, items: true, photos: true },
+      include: { reporter: { select: { id: true, name: true, email: true, nip: true, wa: true, office: true } }, items: true, photos: true },
       orderBy: { createdAt: 'desc' }
     })
     return { success: true, data: records }
@@ -21,9 +22,10 @@ export async function getAllMaintenanceRecords() {
 
 export async function getActiveMaintenanceRecords() {
   try {
+    await requireRole([Role.Admin, Role.HSSE])
     const records = await prisma.maintenanceRecord.findMany({
       where: { status: 'Menunggu Tindakan' },
-      include: { reporter: true, items: true, photos: true },
+      include: { reporter: { select: { id: true, name: true, email: true, nip: true, wa: true, office: true } }, items: true, photos: true },
       orderBy: { createdAt: 'desc' }
     })
     return { success: true, data: records }
@@ -68,7 +70,7 @@ export async function getMaintenanceHistory(page = 1, pageSize = 20, statusFilte
     const [data, total, groups] = await Promise.all([
       prisma.maintenanceRecord.findMany({
         where,
-        include: { reporter: true, items: true, photos: true },
+        include: { reporter: { select: { id: true, name: true, email: true, nip: true, wa: true, office: true } }, items: true, photos: true },
         orderBy: { updatedAt: 'desc' },
         take: pageSize,
         skip: (page - 1) * pageSize
