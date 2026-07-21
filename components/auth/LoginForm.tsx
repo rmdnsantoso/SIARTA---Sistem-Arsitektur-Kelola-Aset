@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { loginWithCredentials } from '../../actions/core/user'
-import { quickLoginAs } from '../../actions/core/auth'
 import FaceScanner from './FaceScanner'
 
 type RoleKey = 'admin' | 'peminjam' | 'hsse' | 'areahead'
@@ -126,23 +125,6 @@ export default function LoginForm() {
     }
   }
 
-  // ── Akses cepat (dev mode) ──────────────────────────────────────────────────
-  const handleQuickAccess = async (role: typeof roleQuickAccess[0]) => {
-    setErrorMsg('')
-    setQuickLoading(role.key)
-    try {
-      const res = await quickLoginAs(role.role)
-      if (res.success) {
-        router.push(getRoleRoute(res.role!))
-      } else {
-        setErrorMsg(res.error || 'Akses cepat gagal.')
-      }
-    } catch {
-      setErrorMsg('Terjadi kesalahan. Coba lagi.')
-    } finally {
-      setQuickLoading(null)
-    }
-  }
 
   // ── Face callbacks ──────────────────────────────────────────────────────────
   const handleFaceSuccess = (user?: { name: string; email: string; role: string }) => {
@@ -179,7 +161,7 @@ export default function LoginForm() {
   // VIEW: Login Form
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full lg:w-[56%] xl:w-[58%] bg-white flex-1 flex items-center justify-center px-6 py-10 sm:px-10 sm:py-12 lg:px-16 animate-[formIn_0.7s_ease-out_both]">
+    <div className="w-full lg:w-[56%] xl:w-[58%] bg-white flex-1 flex items-center justify-center px-6 py-10 sm:px-10 sm:py-12 lg:px-16 animate-[formIn_0.7s_ease-out_both] relative">
       <style jsx>{`
         @keyframes formIn {
           from { opacity: 0; transform: translateY(14px); }
@@ -193,7 +175,7 @@ export default function LoginForm() {
         }
       `}</style>
 
-      <div className="w-full max-w-[420px]">
+      <div className="w-full max-w-[420px] -mt-16 sm:-mt-24 lg:-mt-12">
         <img
           src="/pgn-logo-full.png"
           alt="PGN COM"
@@ -219,7 +201,7 @@ export default function LoginForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@perusahaan.com"
+              placeholder="nama@example.com"
               className="w-full bg-[#F5F6FA] border border-[#E4E6EF] rounded-[10px] px-3.5 py-3 text-[12.5px] text-[#232838] placeholder:text-[#9498AC] outline-none transition-colors focus:border-[#46578C] focus:bg-white"
             />
           </div>
@@ -292,38 +274,11 @@ export default function LoginForm() {
           </div>
         </form>
 
-        {/* ── Akses Cepat ── */}
-        <p className="text-[10px] text-[#9498AC] uppercase tracking-wider mb-2.5">DEV ACCOUNT (QUICK ACCESSS)</p>
-        <div className="grid grid-cols-2 gap-2 mb-6">
-          {roleQuickAccess.map((role) => (
-            <button
-              key={role.key}
-              type="button"
-              disabled={quickLoading !== null}
-              onClick={() => handleQuickAccess(role)}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ backgroundColor: role.bg }}
-            >
-              {quickLoading === role.key ? (
-                <svg className="w-3.5 h-3.5 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" style={{ color: role.iconColor }}>
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-              ) : (
-                <span style={{ color: role.iconColor }} className="shrink-0">{role.icon}</span>
-              )}
-              <div className="text-left">
-                <p className="text-[11px] font-semibold leading-none mb-0.5" style={{ color: role.textColor }}>{role.label}</p>
-                <p className="text-[9.5px] leading-none" style={{ color: role.textColor, opacity: 0.7 }}>{role.description}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        <p className="text-[9px] text-[#B4B7C4] text-center leading-relaxed">
-          © 2026 PT PGAS Telekomunikasi Nusantara RO Lampung
-        </p>
       </div>
+      
+      <p className="absolute bottom-6 left-0 w-full px-8 text-[9px] text-[#B4B7C4] text-center leading-relaxed">
+        © 2026 PT PGAS Telekomunikasi Nusantara RO Lampung. All Rights Reserved | Developed by Mahasiswa Kerja Praktik Teknik Informatika ITERA: Audy Olivya Br Gurusinga, Jesika Filosofi Br Perangin-Angin, Muhammad Romadhon S
+      </p>
     </div>
   )
 }

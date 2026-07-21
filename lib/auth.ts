@@ -12,20 +12,7 @@ export async function requireRole(allowedRoles: Role[]) {
 
   // Jika tidak ada session → unauthorized
   if (!user) {
-    // =========================================================
-    // ⚠️  DEV-ONLY BYPASS — WAJIB DIHAPUS SEBELUM GO-LIVE ⚠️
-    // Env: ALLOW_DEV_BYPASS (di .env)
-    // Izinkan akses tanpa session untuk development lokal.
-    // JANGAN set ALLOW_DEV_BYPASS=true di production!
-    // =========================================================
-    if (process.env.ALLOW_DEV_BYPASS === 'true' && process.env.NODE_ENV !== 'production') {
-      return {
-        id: 'dev-fallback',
-        name: 'Dev User',
-        email: 'dev@siarta.dev',
-        role: allowedRoles[0]
-      }
-    }
+
     throw new Error('Unauthorized: Anda belum login.')
   }
 

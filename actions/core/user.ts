@@ -65,6 +65,11 @@ export async function getAllUsers() {
   try {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
     const users = await prisma.user.findMany({
+      where: {
+        role: {
+          not: Role.Admin
+        }
+      },
       orderBy: { createdAt: 'asc' },
       select: {
         id: true,
@@ -362,6 +367,7 @@ export async function loginWithCredentials(email: string, password: string) {
     if (!user.isActive) throw new Error('Akun ini telah dinonaktifkan. Hubungi administrator.')
 
     const isMatch = await bcrypt.compare(password, user.passwordHash)
+
     if (!isMatch) throw new Error('Email atau password salah.')
 
     // ── Login sukses — reset rate limit ──────────────────────────────────────
