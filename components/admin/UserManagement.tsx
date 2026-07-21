@@ -622,7 +622,8 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
             </div>
 
             {/* Footer Actions */}
-            <div className="p-4 sm:p-6 bg-slate-50/90 border-t border-slate-100 shrink-0 flex flex-col gap-4">
+            {!isViewOnly && (
+              <div className="p-4 sm:p-6 bg-slate-50/90 border-t border-slate-100 shrink-0 flex flex-col gap-4">
               {selectedUser.id === currentUserId ? (
                 <div className="flex items-center justify-center py-3 px-4 rounded-xl text-sm font-bold bg-amber-50 text-amber-700 border border-amber-200">
                   <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -693,7 +694,7 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
                 </div>
               )}
             </div>
-            
+            )}
           </div>
         </div>
       )}

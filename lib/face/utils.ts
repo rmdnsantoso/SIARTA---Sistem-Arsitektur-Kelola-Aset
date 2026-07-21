@@ -26,10 +26,17 @@ export async function ensureModelsLoaded(): Promise<boolean> {
 
       console.log('TF Backend aktif:', faceapi.tf.getBackend())
 
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      const timeoutPromise = new Promise<void>((_, reject) => 
+        setTimeout(() => reject(new Error('Model load timeout')), 15000)
+      )
+
+      await Promise.race([
+        Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]),
+        timeoutPromise
       ])
       
       modelsLoaded = true

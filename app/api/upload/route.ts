@@ -46,20 +46,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Ekstensi file tidak diizinkan.' }, { status: 400 })
     }
 
-    // ── Simpan file dengan nama acak kriptografis ──────────────────────────────
+    // ── Simpan file ke Supabase Storage ────────────────────────────────────────
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     const fileName = `${crypto.randomUUID()}${ext}`
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'assets')
-    await mkdir(uploadDir, { recursive: true })
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    const filePath = path.join(uploadDir, fileName)
-    await writeFile(filePath, buffer)
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json({ error: 'Konfigurasi Supabase Storage belum diatur (NEXT_PUBLIC_SUPABASE_URL atau SUPABASE_SERVICE_ROLE_KEY).' }, { status: 500 })
+    }
 
-    const fileUrl = `/uploads/assets/${fileName}`
+    // Menggunakan package standar @supabase/supabase-js
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    return NextResponse.json({ url: fileUrl })
+    const { error: uploadError } = await supabase.storage
+      .from('assets')
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError)
+      return NextResponse.json({ error: 'Gagal mengunggah file ke cloud storage.' }, { status: 500 })
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('assets')
+      .getPublicUrl(fileName)
+
+    return NextResponse.json({ url: publicUrlData.publicUrl })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Terjadi kesalahan saat mengunggah file.'
     console.error('Error uploading file:', error)

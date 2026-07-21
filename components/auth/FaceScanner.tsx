@@ -26,6 +26,10 @@ function killAllTracks() {
     _activeStream = null
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', killAllTracks)
+}
 // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export default function FaceScanner({
@@ -45,6 +49,7 @@ export default function FaceScanner({
   const [error, setError] = useState('')
   const [failMessage, setFailMessage] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  const [initTrigger, setInitTrigger] = useState(0)
 
   // Liveness & Light states
   const [challengeSequence, setChallengeSequence] = useState<('BLINK' | 'TURN_LEFT' | 'TURN_RIGHT')[]>([])
@@ -468,7 +473,7 @@ export default function FaceScanner({
         videoRef.current.srcObject = null
       }
     }
-  }, []) 
+  }, [initTrigger, skipFaceCheck, skipFaceUser]) 
 
   const currentChallenge = challengeSequence[currentStepIndex]
   const currentChallengeCompleted = currentChallenge === 'BLINK' ? hasBlinked : hasTurned
@@ -512,11 +517,22 @@ export default function FaceScanner({
         )}
 
         {scanStatus === 'error' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-gray-50 z-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 bg-gray-50 z-20">
             <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <p className="text-red-600 text-sm font-medium text-center">{error}</p>
+            <button 
+              onClick={() => {
+                setScanStatus('loading_models')
+                setError('')
+                setInitTrigger(c => c + 1)
+              }}
+              className="mt-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              Coba Lagi
+            </button>
           </div>
         )}
 
