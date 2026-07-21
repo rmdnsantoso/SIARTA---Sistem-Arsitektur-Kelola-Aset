@@ -66,8 +66,8 @@ export async function getAllUsers() {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
     const users = await prisma.user.findMany({
       where: {
-        role: {
-          not: Role.Admin
+        id: {
+          not: 'usr-admin-01'
         }
       },
       orderBy: { createdAt: 'asc' },
