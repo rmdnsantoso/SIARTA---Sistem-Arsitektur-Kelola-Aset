@@ -591,7 +591,7 @@ export default function FaceScanner({
 
       {retryCount > 0 && scanStatus === 'failed' && (
         <p className="text-xs text-amber-600 font-medium text-center">
-          Gagal {retryCount}├ù ΓÇö Pastikan pencahayaan cukup dan wajah terlihat jelas
+          Gagal {retryCount}x - Pastikan pencahayaan cukup dan wajah terlihat jelas
         </p>
       )}
 
