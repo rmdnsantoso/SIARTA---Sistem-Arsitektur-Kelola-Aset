@@ -734,16 +734,16 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
                 <div className="p-6 sm:p-8 overflow-y-auto overscroll-y-contain space-y-6 flex-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                     <div>
-                      <label htmlFor="reg_nip" className="block text-sm font-bold text-gray-700 mb-1.5">NIP (Username) <span className="text-red-500">*</span></label>
+                      <label htmlFor="reg_nip" className="block text-sm font-bold text-gray-700 mb-1.5">No. Pegawai <span className="text-red-500">*</span></label>
                       <input id="reg_nip" name="reg_nip" type="text" autoComplete="new-password" value={addForm.nip} onChange={e => setAddForm({...addForm, nip: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-mono placeholder:font-sans transition-all" placeholder="Mis. 100239" />
                     </div>
                     <div>
                       <label htmlFor="reg_name" className="block text-sm font-bold text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
-                      <input id="reg_name" name="reg_name" type="text" autoComplete="new-password" value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Budi Doremi" />
+                      <input id="reg_name" name="reg_name" type="text" autoComplete="new-password" value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. John Doe" />
                     </div>
                     <div>
                       <label htmlFor="reg_email" className="block text-sm font-bold text-gray-700 mb-1.5">Email Akses <span className="text-red-500">*</span></label>
-                      <input id="reg_email" name="reg_email" type="email" autoComplete="new-password" value={addForm.email} onChange={e => setAddForm({...addForm, email: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. budi@siarta.com" />
+                      <input id="reg_email" name="reg_email" type="email" autoComplete="new-password" value={addForm.email} onChange={e => setAddForm({...addForm, email: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. john@siarta.com" />
                     </div>
                     <div>
                       <label htmlFor="reg_wa" className="block text-sm font-bold text-gray-700 mb-1.5">No. WhatsApp <span className="text-red-500">*</span></label>
@@ -751,11 +751,11 @@ export default function UserManagement({ isViewOnly = false, currentUserId }: { 
                     </div>
                     <div>
                       <label htmlFor="reg_jabatan" className="block text-sm font-bold text-gray-700 mb-1.5">Jabatan <span className="text-red-500">*</span></label>
-                      <input id="reg_jabatan" name="reg_jabatan" type="text" autoComplete="new-password" value={addForm.jabatan} onChange={e => setAddForm({...addForm, jabatan: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Field Technician" />
+                      <input id="reg_jabatan" name="reg_jabatan" type="text" autoComplete="new-password" value={addForm.jabatan} onChange={e => setAddForm({...addForm, jabatan: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Engineer" />
                     </div>
                     <div>
                       <label htmlFor="reg_office" className="block text-sm font-bold text-gray-700 mb-1.5">Office / Base <span className="text-red-500">*</span></label>
-                      <input id="reg_office" name="reg_office" type="text" autoComplete="new-password" value={addForm.office} onChange={e => setAddForm({...addForm, office: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Site Delta" />
+                      <input id="reg_office" name="reg_office" type="text" autoComplete="new-password" value={addForm.office} onChange={e => setAddForm({...addForm, office: e.target.value})} className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Mis. Kantor Pusat" />
                     </div>
                     <div>
                       <label htmlFor="reg_regional" className="block text-sm font-bold text-gray-700 mb-1.5">Regional <span className="text-red-500">*</span></label>
