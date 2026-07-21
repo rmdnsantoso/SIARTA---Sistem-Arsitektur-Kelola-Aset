@@ -167,7 +167,7 @@ export default function ReturnProcess({ tickets = [], onSuccess }: Props) {
     if (!modalTicket) return
 
     if (modalTicket.dbId) {
-      const res = await verifyAssetReturnHandover(modalTicket.dbId, false, '')
+      const res = await verifyAssetReturnHandover(modalTicket.dbId)
       if (!res.success) {
         toast.error(`Gagal memverifikasi pengembalian: ${res.error}`)
         return

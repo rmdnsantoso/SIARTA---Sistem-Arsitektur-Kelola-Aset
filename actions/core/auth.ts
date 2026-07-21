@@ -22,7 +22,7 @@ function toSessionRole(role: Role): SessionUser['role'] {
 
 export async function quickLoginAs(role: 'Admin' | 'Peminjam' | 'HSSE' | 'AreaHead') {
   try {
-    if (process.env.ALLOW_QUICK_LOGIN !== 'true') {
+    if (process.env.ALLOW_QUICK_LOGIN !== 'true' || process.env.NODE_ENV === 'production') {
       throw new Error('Fitur ini tidak tersedia.')
     }
 
