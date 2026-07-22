@@ -59,7 +59,9 @@ export async function destroySession(): Promise<void> {
 
 // ─── Helper: Ambil user yang sedang login (untuk dipakai di halaman role) ────
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+import { cache } from 'react'
+
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const session = await getSession()
   return session.user || null
-}
+})

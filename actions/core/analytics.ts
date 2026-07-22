@@ -3,10 +3,10 @@
 import { prisma } from '../../lib/prisma'
 import { Role } from '../../app/generated/prisma'
 import { requireRole } from '../../lib/auth'
+import { unstable_cache } from 'next/cache'
 
-export async function getAnalyticsDashboardData(startDate?: string, endDate?: string) {
+const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: string) => {
   try {
-    await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
 
     const dateFilter = startDate && endDate ? {
       gte: new Date(startDate + "T00:00:00Z"),
@@ -271,8 +271,18 @@ export async function getAnalyticsDashboardData(startDate?: string, endDate?: st
   }
 }
 
-export async function getExportData(startDate?: string, endDate?: string) {
-  await requireRole([Role.Admin, Role.HSSE, Role.AreaHead]);
+export const getAnalyticsDashboardDataCached = unstable_cache(
+  getAnalyticsDashboardDataInternal,
+  ['analytics-dashboard'],
+  { revalidate: 60 }
+)
+
+export async function getAnalyticsDashboardData(startDate?: string, endDate?: string) {
+  await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
+  return getAnalyticsDashboardDataCached(startDate, endDate)
+}
+
+const getExportDataInternal = async (startDate?: string, endDate?: string) => {
 
   try {
     const dateFilter = startDate && endDate ? {
@@ -380,4 +390,15 @@ export async function getExportData(startDate?: string, endDate?: string) {
       message: error instanceof Error ? error.message : "Gagal mengambil data untuk export"
     };
   }
+}
+
+export const getExportDataCached = unstable_cache(
+  getExportDataInternal,
+  ['analytics-export-data'],
+  { revalidate: 60 }
+)
+
+export async function getExportData(startDate?: string, endDate?: string) {
+  await requireRole([Role.Admin, Role.HSSE, Role.AreaHead]);
+  return getExportDataCached(startDate, endDate)
 }
