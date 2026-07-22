@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import Sidebar from '../../components/areahead/AreaHeadSidebar'
@@ -14,6 +14,7 @@ import UserManagement from '../../components/admin/UserManagement'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistoryAreaHead from '../../components/areahead/MaintenanceHistoryAreaHead'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 import { getTicketsForAreaHead } from '../../actions/core/ticket'
 import { approveTicketByAreaHead, rejectTicketByAreaHead } from '../../actions/workflows/approval'
 import { getLoggedInUser } from '../../actions/core/session'
@@ -38,7 +39,7 @@ export default function ApprovalDashboard() {
   const [modal, setModal] = useState<{ ticket: Ticket; action: 'Setujui' | 'Tolak' } | null>(null)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       const [dbTickets, sessionRes] = await Promise.all([
         getTicketsForAreaHead(1, 100),
@@ -53,9 +54,10 @@ export default function ApprovalDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  usePolling(refreshData, 15000)
+  useRealtimeRefetch('Ticket', refreshData)
+  usePolling(refreshData, 60000)
 
   const handleAction = (ticket: Ticket, action: 'Setujui' | 'Tolak') => {
     if (ticket.overallStatus !== 'Menunggu' || ticket.currentStage !== 'Area Head') return

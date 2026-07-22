@@ -1,9 +1,10 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
 
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 import { getHistoryTicketsByUser } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
@@ -52,7 +53,7 @@ export default function RiwayatPinjam() {
     return () => clearTimeout(handler)
   }, [searchQuery])
   
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const sessionRes = await getLoggedInUser()
       const userId = sessionRes.user?.id
@@ -71,12 +72,13 @@ export default function RiwayatPinjam() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, itemsPerPage, debouncedSearch, filterStatus])
 
   useEffect(() => {
     fetchData()
-  }, [currentPage, debouncedSearch, filterStatus])
+  }, [currentPage, debouncedSearch, filterStatus, fetchData])
 
+  useRealtimeRefetch('Ticket', fetchData)
   usePolling(fetchData, 120000)
 
   // Modal State for details

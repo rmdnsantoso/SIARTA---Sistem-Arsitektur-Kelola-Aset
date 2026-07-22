@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
 
@@ -33,6 +33,7 @@ function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus,
 import { getAllTickets } from '../../actions/core/ticket'
 import { adaptTickets } from '../../types/db'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 import { isOverdue } from '../../lib/dateUtils'
 
 export default function TicketHistory({ tickets: initialTickets = [], fetchAction = getAllTickets }: Props) {
@@ -56,7 +57,7 @@ export default function TicketHistory({ tickets: initialTickets = [], fetchActio
     return () => clearTimeout(handler)
   }, [searchQuery])
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       const res = await fetchAction(currentPage, itemsPerPage, undefined, undefined, debouncedSearch, filterStatus)
       if (res.data) {
@@ -70,14 +71,15 @@ export default function TicketHistory({ tickets: initialTickets = [], fetchActio
     } finally {
       setLoading(false)
     }
-  }
+  }, [fetchAction, currentPage, debouncedSearch, filterStatus])
 
   React.useEffect(() => {
     setLoading(true)
     refreshData()
-  }, [currentPage, debouncedSearch, filterStatus])
+  }, [currentPage, debouncedSearch, filterStatus, refreshData])
 
-  usePolling(refreshData, 10000)
+  useRealtimeRefetch('Ticket', refreshData)
+  usePolling(refreshData, 60000)
 
   // Modal State for details
   const [modalTicketId, setModalTicketId] = useState<string | null>(null)

@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import StatCard from '../shared/StatCard'
 import { getAllMaintenanceRecords } from '../../actions/core/maintenance'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 
 interface HistoryTicket {
   id: string
@@ -44,7 +45,7 @@ export default function MaintenanceHistoryAreaHead() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     getAllMaintenanceRecords().then(res => {
       if (res.success && res.data) {
         const adapted: HistoryTicket[] = res.data.map(r => ({
@@ -64,9 +65,14 @@ export default function MaintenanceHistoryAreaHead() {
         setRecords(adapted)
       }
     }).finally(() => setLoading(false))
-  }
+  }, [])
 
-  usePolling(refreshData, 5000)
+  useEffect(() => {
+    refreshData()
+  }, [refreshData])
+
+  useRealtimeRefetch('MaintenanceRecord', refreshData)
+  usePolling(refreshData, 60000)
 
   const historyData = records
 

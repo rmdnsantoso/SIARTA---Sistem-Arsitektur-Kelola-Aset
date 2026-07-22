@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import HSSESidebar from '../../components/hsse/HSSESidebar'
 import TopHeader from '../../components/shared/TopHeader'
 import HSSEBorrowingProcess from '../../components/hsse/HSSEBorrowingProcess'
@@ -11,6 +11,7 @@ import HSSETicketHistory from '../../components/hsse/HSSETicketHistory'
 import HSSEMaintenanceHistory from '../../components/hsse/HSSEMaintenanceHistory'
 import UserManagement from '../../components/admin/UserManagement'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 import { getTicketsForHSSE } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
@@ -34,7 +35,7 @@ export default function HSSEDashboard() {
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       const [dbTickets, sessionRes] = await Promise.all([
         getTicketsForHSSE(1, 100),
@@ -49,9 +50,10 @@ export default function HSSEDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  usePolling(refreshData, 15000)
+  useRealtimeRefetch('Ticket', refreshData)
+  usePolling(refreshData, 60000)
 
   const hssePendingCount = tickets.filter(
     (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'HSSE'

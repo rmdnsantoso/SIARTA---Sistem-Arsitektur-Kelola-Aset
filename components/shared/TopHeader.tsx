@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, deleteAllNotifications } from '../../actions/core/notification'
 import { logoutUser } from '../../actions/core/auth'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 
 interface TopHeaderProps {
   sidebarOpen: boolean
@@ -26,7 +27,7 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
   // State from backend
   const [dbNotifs, setDbNotifs] = useState<any[]>([])
   // Ref untuk track unread count sebelumnya — deteksi notif baru
-  const prevUnreadRef = useState<number>(0)
+  const prevUnreadRef = useRef<number>(0)
   
   // Format waktu sederhana
   const formatTime = (dateString: string) => {
@@ -38,28 +39,29 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
     return `${Math.floor(diff/1440)} hari lalu`
   }
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!roleName) return
     try {
       const res = await getUserNotifications(userId || '', roleName)
       if (res.success && res.data) {
         const newNotifs: any[] = res.data
         const newUnread = newNotifs.filter((n: any) => !n.isRead).length
-        const prevUnread = prevUnreadRef[0]
+        const prevUnread = prevUnreadRef.current
         // Jika ada notifikasi baru (unread naik), trigger refresh data di parent
         if (newUnread > prevUnread && onNewNotification) {
           onNewNotification()
         }
-        prevUnreadRef[1](newUnread)
+        prevUnreadRef.current = newUnread
         setDbNotifs(newNotifs)
       }
     } catch (err) {
       console.warn('Silent fail fetching notifications', err)
     }
-  }
+  }, [userId, roleName, onNewNotification])
 
-  // Polling interval menggunakan custom hook (15 detik)
-  usePolling(fetchNotifications, 15000, [userId, roleName])
+  // Realtime & Polling
+  useRealtimeRefetch('Notification', fetchNotifications)
+  usePolling(fetchNotifications, 60000, [userId, roleName])
 
   // Hitung jumlah yang belum dibaca dari dbNotifs
   const unreadCount = dbNotifs.filter(n => !n.isRead).length

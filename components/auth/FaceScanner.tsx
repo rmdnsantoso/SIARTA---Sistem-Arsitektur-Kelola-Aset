@@ -128,14 +128,22 @@ export default function FaceScanner({
 
       let stopped = false
       let lastBrightnessCheck = 0
+      
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent)
+      const detectorInputSize = isMobile ? 160 : 224
 
       const scheduleNext = (fn: () => void) => {
         if (stopped || cancelled.value || !videoRef.current) return
-        const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
-        if (supportsVFC) {
-          intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
+        
+        if (isMobile) {
+          intervalRef.current = setTimeout(fn, 900)
         } else {
-          intervalRef.current = setTimeout(fn, 200)
+          const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
+          if (supportsVFC) {
+            intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
+          } else {
+            intervalRef.current = setTimeout(fn, 200)
+          }
         }
       }
 
@@ -162,7 +170,7 @@ export default function FaceScanner({
 
         try {
           det = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: detectorInputSize, scoreThreshold: 0.5 }))
             .withFaceLandmarks()
         } catch {
           if (!stopped && !cancelled.value) scheduleNext(tick)
@@ -343,7 +351,7 @@ export default function FaceScanner({
         // Ekstrak descriptor hanya saat kedipan sudah divalidasi
         try {
           const fullDet = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: detectorInputSize, scoreThreshold: 0.5 }))
             .withFaceLandmarks()
             .withFaceDescriptor()
 

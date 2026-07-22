@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import PeminjamSidebar from '../../components/peminjam/PeminjamSidebar'
 import TopHeader from '../../components/shared/TopHeader'
@@ -8,6 +8,7 @@ import KatalogAlat from '../../components/peminjam/KatalogAlat'
 import TiketSaya from '../../components/peminjam/TiketSaya'
 import RiwayatPinjam from '../../components/peminjam/RiwayatPinjam'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 
 import { getActiveTicketsByUser } from '../../actions/core/ticket'
 import { getAvailableAssets } from '../../actions/core/asset'
@@ -35,7 +36,7 @@ export default function PeminjamDashboard() {
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       // Ambil session user dan data lainnya bersamaan
       const [sessionRes, dbAssets] = await Promise.all([
@@ -71,9 +72,10 @@ export default function PeminjamDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  usePolling(refreshData, 30000)
+  useRealtimeRefetch('Ticket', refreshData)
+  usePolling(refreshData, 60000)
 
   const handleAddTicket = async (newTicketData: any) => {
     try {

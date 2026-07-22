@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import AdminSidebar from '../../components/admin/AdminSidebar'
 import TopHeader from '../../components/shared/TopHeader'
 import AnalyticsContent from '../../components/shared/AnalyticsContent'
@@ -12,6 +12,7 @@ import ReturnProcess from '../../components/admin/ReturnProcess'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 import { getAllTickets } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
@@ -35,7 +36,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string; role: string } | null>(null)
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
       const [dbTickets, sessionRes] = await Promise.all([
         getAllTickets(1, 100),
@@ -50,9 +51,10 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  usePolling(refreshData, 30000)
+  useRealtimeRefetch('Ticket', refreshData)
+  usePolling(refreshData, 60000)
 
   const adminPendingCount = tickets.filter(
     (t) => t.overallStatus === 'Menunggu' && t.currentStage === 'Admin'

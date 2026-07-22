@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import StatCard from '../shared/StatCard'
 import { getMaintenanceHistory } from '../../actions/core/maintenance'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 
 interface HistoryTicket {
   id: string
@@ -55,7 +56,7 @@ export default function MaintenanceHistory() {
     return () => clearTimeout(handler)
   }, [searchQuery])
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     getMaintenanceHistory(currentPage, itemsPerPage, filterStatus, debouncedSearch).then(res => {
       if (res.success && res.data) {
         const adapted: HistoryTicket[] = res.data.map(r => ({
@@ -80,14 +81,15 @@ export default function MaintenanceHistory() {
         }
       }
     }).finally(() => setLoading(false))
-  }
+  }, [currentPage, itemsPerPage, filterStatus, debouncedSearch])
 
   React.useEffect(() => {
     setLoading(true)
     refreshData()
-  }, [currentPage, debouncedSearch, filterStatus])
+  }, [currentPage, debouncedSearch, filterStatus, refreshData])
 
-  usePolling(refreshData, 10000)
+  useRealtimeRefetch('MaintenanceRecord', refreshData)
+  usePolling(refreshData, 60000)
 
   return (
     <div className="space-y-4 sm:space-y-6 font-sans relative animate-fade-in">

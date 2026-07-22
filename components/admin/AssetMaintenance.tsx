@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { createMaintenanceRecord, resolveMaintenanceRecord, getActiveMaintenanceRecords } from '../../actions/core/maintenance'
 import { getAllAssetsForAdmin } from '../../actions/core/asset'
 import InlineQRScanner from '../shared/InlineQRScanner'
 import { usePolling } from '../../hooks/usePolling'
-
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 type EscalationStatus = 'Menunggu Tindakan' | 'Selesai' | 'Dimusnahkan'
 
 interface EscalationTicket {
@@ -71,7 +71,7 @@ export default function AssetMaintenance() {
     }
   }, [isCameraOpen])
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     // Load aset dari DB untuk dropdown
     getAllAssetsForAdmin().then(res => {
       if (res.success && res.data) {
@@ -97,9 +97,14 @@ export default function AssetMaintenance() {
         setTickets([])
       }
     }).finally(() => setLoading(false))
-  }
+  }, [])
 
-  usePolling(refreshData, 10000)
+  useEffect(() => {
+    refreshData()
+  }, [refreshData])
+
+  useRealtimeRefetch('MaintenanceRecord', refreshData)
+  usePolling(refreshData, 60000)
 
   const handleAction = async (newStatus: EscalationStatus | 'Selesai') => {
     if (!selectedTicket) return

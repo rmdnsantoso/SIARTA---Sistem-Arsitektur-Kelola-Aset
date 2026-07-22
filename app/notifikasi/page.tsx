@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { getMyNotifications, markMyNotificationAsRead, markAllMyNotificationsAsRead, deleteMyNotification, deleteAllMyNotifications } from '../../actions/core/notification'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 
 // Format waktu sederhana
 const formatTime = (dateString: string) => {
@@ -32,7 +33,8 @@ function NotifikasiContent() {
     }
   }
 
-  usePolling(fetchNotifications, 15000)
+  useRealtimeRefetch('Notification', fetchNotifications)
+  usePolling(fetchNotifications, 60000)
 
   // 2. FILTER TAB STATUS (Semua, Belum Dibaca, Penting)
   const filteredNotifs = dbNotifs.filter(n => {

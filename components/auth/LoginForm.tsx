@@ -277,7 +277,7 @@ export default function LoginForm() {
       </div>
       
       <p className="absolute bottom-6 left-0 w-full px-8 text-[9px] text-[#B4B7C4] text-center leading-relaxed">
-        © 2026 PT PGAS Telekomunikasi Nusantara RO Lampung. All Rights Reserved | Developed by Mahasiswa Kerja Praktik Teknik Informatika ITERA: Audy Olivya Br Gurusinga, Jesika Filosofi Br Perangin-Angin, Muhammad Romadhon S
+        © 2026 PT PGAS Telekomunikasi Nusantara RO Lampung. All Rights Reserved | Developed by Mahasiswa Kerja Praktik Teknik Informatika ITERA: Audy Olivya Br Gurusinga, Jesika Filosovi Br Perangin-Angin, Muhammad Romadhon S
       </p>
     </div>
   )
