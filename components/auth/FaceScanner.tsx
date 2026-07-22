@@ -26,6 +26,10 @@ function killAllTracks() {
     _activeStream = null
   }
 }
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', killAllTracks)
+}
 // ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 export default function FaceScanner({
@@ -45,6 +49,7 @@ export default function FaceScanner({
   const [error, setError] = useState('')
   const [failMessage, setFailMessage] = useState('')
   const [retryCount, setRetryCount] = useState(0)
+  const [initTrigger, setInitTrigger] = useState(0)
 
   // Liveness & Light states
   const [challengeSequence, setChallengeSequence] = useState<('BLINK' | 'TURN_LEFT' | 'TURN_RIGHT')[]>([])
@@ -64,9 +69,7 @@ export default function FaceScanner({
   const hasTurnedRef = useRef(false)
   const headTurnHistory = useRef<{ dir: 'left'|'right'|'center', eyeRatio: number }[]>([])
   
-  const [baselineEAR, setBaselineEAR] = useState<number | null>(null)
-  const baselineEARRef = useRef<number | null>(null)
-  const calibrationFrames = useRef<number[]>([])
+
 
   const [lightStatus, setLightStatus] = useState<'normal' | 'dark' | 'bright'>('normal')
 
@@ -123,19 +126,18 @@ export default function FaceScanner({
 
       let stopped = false
       let lastBrightnessCheck = 0
-
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        typeof navigator !== 'undefined' ? navigator.userAgent : ''
-      )
-      const tickIntervalMs = isMobile ? 900 : 200
+      
+      const isMobile = /Mobi|Android/i.test(navigator.userAgent)
+      const detectorInputSize = isMobile ? 160 : 224
 
       const scheduleNext = (fn: () => void) => {
         if (stopped || cancelled.value || !videoRef.current) return
+        
         const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
-        if (supportsVFC && !isMobile) {
+        if (supportsVFC) {
           intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
         } else {
-          intervalRef.current = setTimeout(fn, tickIntervalMs)
+          intervalRef.current = setTimeout(fn, 200)
         }
       }
 
@@ -161,13 +163,8 @@ export default function FaceScanner({
         let det: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68> | undefined
 
         try {
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-            typeof navigator !== 'undefined' ? navigator.userAgent : ''
-          )
-          const inputSize = isMobile ? 160 : 224
-
           det = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold: 0.5 }))
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: detectorInputSize, scoreThreshold: 0.5 }))
             .withFaceLandmarks()
         } catch {
           if (!stopped && !cancelled.value) scheduleNext(tick)
@@ -192,26 +189,7 @@ export default function FaceScanner({
 
         const landmarks = det.landmarks.positions
         
-        // --- Fase Kalibrasi EAR ---
-        if (baselineEARRef.current === null) {
-          const direction = getHeadTurnDirection(landmarks)
-          if (direction === 'center') {
-            const leftEye = landmarks.slice(36, 42)
-            const rightEye = landmarks.slice(42, 48)
-            const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2
-            calibrationFrames.current.push(avgEAR)
-            if (calibrationFrames.current.length >= 15) { // ~1 detik (tergantung FPS)
-               const base = calibrationFrames.current.reduce((a, b) => a + b, 0) / calibrationFrames.current.length
-               baselineEARRef.current = base
-               setBaselineEAR(base)
-            }
-          } else {
-             // Reset jika kepala bergoyang
-             calibrationFrames.current = []
-          }
-          if (!stopped && !cancelled.value) scheduleNext(tick)
-          return
-        }
+
 
         const currentChallenge = challengeSequenceRef.current[currentStepIndexRef.current]
         let challengeCompleted = false
@@ -347,13 +325,8 @@ export default function FaceScanner({
 
         // Ekstrak descriptor hanya saat kedipan sudah divalidasi
         try {
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-            typeof navigator !== 'undefined' ? navigator.userAgent : ''
-          )
-          const inputSize = isMobile ? 160 : 224
-
           const fullDet = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold: 0.5 }))
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: detectorInputSize, scoreThreshold: 0.5 }))
             .withFaceLandmarks()
             .withFaceDescriptor()
 
@@ -471,10 +444,8 @@ export default function FaceScanner({
     }
 
     init()
-    window.addEventListener('pagehide', killAllTracks)
 
     return () => {
-      window.removeEventListener('pagehide', killAllTracks)
       cancelled.value = true
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -485,7 +456,7 @@ export default function FaceScanner({
         videoRef.current.srcObject = null
       }
     }
-  }, []) 
+  }, [initTrigger, skipFaceCheck, skipFaceUser]) 
 
   const currentChallenge = challengeSequence[currentStepIndex]
   const currentChallengeCompleted = currentChallenge === 'BLINK' ? hasBlinked : hasTurned
@@ -501,8 +472,7 @@ export default function FaceScanner({
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Verifikasi Wajah</h2>
         <p className="mt-1.5 text-sm text-gray-500">
           {scanStatus === 'loading_models' && 'Memuat sistem pengenalan wajah...'}
-          {scanStatus === 'scanning' && baselineEAR === null && 'Menyesuaikan kalibrasi wajah...'}
-          {scanStatus === 'scanning' && baselineEAR !== null && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
+          {scanStatus === 'scanning' && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
           {scanStatus === 'scanning' && !currentChallenge && 'Menyiapkan verifikasi...'}
           {scanStatus === 'verifying' && 'Memverifikasi identitas Anda...'}
           {scanStatus === 'success' && 'Identitas berhasil diverifikasi!'}
@@ -529,21 +499,20 @@ export default function FaceScanner({
         )}
 
         {scanStatus === 'error' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 bg-gray-50 z-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 bg-gray-50 z-20">
             <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <p className="text-red-600 text-sm font-medium text-center">{error}</p>
-            <button
-              type="button"
+            <button 
               onClick={() => {
                 setError('')
                 setScanStatus('loading_models')
-                const cancelled = { value: false }
-                startLoop(cancelled)
+                setInitTrigger(prev => prev + 1)
               }}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium shadow-md hover:bg-blue-700 transition"
+              className="mt-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-2"
             >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
               Coba Lagi
             </button>
           </div>
@@ -581,7 +550,7 @@ export default function FaceScanner({
                     : 'bg-black/60 text-white/90'
                 }`}>
                   {faceDetected 
-                    ? (baselineEAR === null ? 'Kalibrasi...' : (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : (currentChallenge === 'TURN_LEFT' ? 'Tengok ke Kiri' : 'Tengok ke Kanan')))) 
+                    ? (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : (currentChallenge === 'TURN_LEFT' ? 'Tengok ke Kiri' : 'Tengok ke Kanan'))) 
                     : 'Posisikan wajah Anda'}
                 </span>
               </div>

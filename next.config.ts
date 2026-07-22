@@ -13,6 +13,24 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: '/models/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/uploads/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           // Cegah halaman dimuat dalam iframe (anti-clickjacking)

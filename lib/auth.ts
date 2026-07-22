@@ -1,18 +1,18 @@
 import { prisma } from './prisma'
 import { Role } from '../app/generated/prisma'
 import { getCurrentUser } from './session'
+import { cache } from 'react'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper RBAC (Role-Based Access Control) untuk Server Actions
 // Membaca sesi dari cookie iron-session yang nyata
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function requireRole(allowedRoles: Role[]) {
+export const requireRole = cache(async (allowedRoles: Role[]) => {
   const user = await getCurrentUser()
 
   // Jika tidak ada session → unauthorized
   if (!user) {
-
     throw new Error('Unauthorized: Anda belum login.')
   }
 
@@ -36,4 +36,4 @@ export async function requireRole(allowedRoles: Role[]) {
     email: user.email,
     role: userRole
   }
-}
+})

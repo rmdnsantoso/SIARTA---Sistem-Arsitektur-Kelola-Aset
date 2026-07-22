@@ -1,5 +1,5 @@
 import * as faceapi from 'face-api.js'
-import '@tensorflow/tfjs-backend-wasm'
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 export const MODEL_URL = '/models'
 
@@ -18,21 +18,17 @@ export async function ensureModelsLoaded(): Promise<boolean> {
       // Pastikan backend GPU (WebGL) dipaksa nyala terlebih dahulu
       try {
         await faceapi.tf.setBackend('webgl')
-      } catch {
-        try {
-          await faceapi.tf.setBackend('wasm')
-        } catch (err) {
-          console.warn('WebGL & WASM tidak didukung, pakai CPU (lambat)', err)
-        }
+        await faceapi.tf.ready()
+      } catch (err) {
+        console.warn('WebGL tidak didukung di perangkat ini, fallback ke CPU:', err)
+        await faceapi.tf.ready()
       }
-      await faceapi.tf.ready()
 
       console.log('TF Backend aktif:', faceapi.tf.getBackend())
 
-      // Menggunakan Promise.race untuk menerapkan timeout 15 detik
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout loading models')), 15000)
-      })
+      const timeoutPromise = new Promise<void>((_, reject) => 
+        setTimeout(() => reject(new Error('Model load timeout')), 15000)
+      )
 
       await Promise.race([
         Promise.all([
