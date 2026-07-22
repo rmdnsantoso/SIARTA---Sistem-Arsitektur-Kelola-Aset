@@ -49,6 +49,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
   const [borrowDuration, setBorrowDuration] = useState(1)
   const [borrowQty, setBorrowQty] = useState(1)
   const [alasan, setAlasan] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const calculateReturnDate = () => {
     const start = new Date()
     const end = new Date()
@@ -73,6 +74,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
     e.preventDefault()
     if (!borrowAsset) return
 
+    setIsSubmitting(true)
     const { startDateStr, endDateStr } = calculateReturnDate()
     const timestampStr = () => {
       const now = new Date()
@@ -111,6 +113,7 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
       ]
     })
     
+    setIsSubmitting(false)
     if (success) {
       toast.success(`Pengajuan peminjaman untuk ${borrowQty} unit ${borrowAsset.name} berhasil dibuat!`)
       // Reset Form
@@ -370,9 +373,16 @@ export default function KatalogAlat({ onAddTicket, assets: propAssets }: Katalog
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                  disabled={isSubmitting}
+                  className="flex-1 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  Kirim Pengajuan
+                  {isSubmitting && (
+                    <svg className="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {isSubmitting ? 'Memproses...' : 'Kirim Pengajuan'}
                 </button>
               </div>
             </form>

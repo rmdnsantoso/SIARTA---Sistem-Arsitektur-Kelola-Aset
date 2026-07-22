@@ -28,6 +28,7 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
   // State khusus Alokasi Fisik
   const [catatan, setCatatan] = useState('')
   const [modal, setModal] = useState<ModalState | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [allocatedSerials, setAllocatedSerials] = useState<string[]>([])
   const allocatedSerialsRef = React.useRef<string[]>([])
@@ -150,37 +151,47 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
     if (!modal) return
     const { ticket, type } = modal
 
-    if (type === 'setujui') {
-      if (ticket.dbId) {
-        const res = await verifyTicketByAdmin(ticket.dbId, 'Dialokasikan oleh Admin', allocatedSerials)
-        if (!res.success) {
-          toast.error(`Gagal memverifikasi tiket: ${res.error}`)
-          return
+    setIsSubmitting(true)
+    try {
+      if (type === 'setujui') {
+        if (ticket.dbId) {
+          const res = await verifyTicketByAdmin(ticket.dbId, 'Dialokasikan oleh Admin', allocatedSerials)
+          if (!res.success) {
+            toast.error(`Gagal memverifikasi tiket: ${res.error}`)
+            setIsSubmitting(false)
+            return
+          }
         }
-      }
-      toast.success(`Tiket ${ticket.id} dialokasikan & diteruskan ke HSSE untuk diverifikasi.`)
-    } else if (type === 'tolak') {
-      if (ticket.dbId) {
-        const res = await rejectTicketByAdmin(ticket.dbId, catatan)
-        if (!res.success) {
-          toast.error(`Gagal menolak tiket: ${res.error}`)
-          return
+        toast.success(`Tiket ${ticket.id} dialokasikan & diteruskan ke HSSE untuk diverifikasi.`)
+      } else if (type === 'tolak') {
+        if (ticket.dbId) {
+          const res = await rejectTicketByAdmin(ticket.dbId, catatan)
+          if (!res.success) {
+            toast.error(`Gagal menolak tiket: ${res.error}`)
+            setIsSubmitting(false)
+            return
+          }
         }
-      }
-      toast.success(`Tiket ${ticket.id} ditolak.`)
-    } else if (type === 'serah_terima') {
-      if (ticket.dbId) {
-        const res = await verifyAssetBorrowHandover(ticket.dbId)
-        if (!res.success) {
-          toast.error(`Gagal memverifikasi serah terima: ${res.error}`)
-          return
+        toast.success(`Tiket ${ticket.id} ditolak.`)
+      } else if (type === 'serah_terima') {
+        if (ticket.dbId) {
+          const res = await verifyAssetBorrowHandover(ticket.dbId)
+          if (!res.success) {
+            toast.error(`Gagal memverifikasi serah terima: ${res.error}`)
+            setIsSubmitting(false)
+            return
+          }
         }
+        toast.success(`Serah terima tiket ${ticket.id} selesai. Barang resmi keluar gudang.`)
       }
-      toast.success(`Serah terima tiket ${ticket.id} selesai. Barang resmi keluar gudang.`)
-    }
 
-    onSuccess?.()
-    setModal(null)
+      await onSuccess?.()
+      setModal(null)
+    } catch (err: any) {
+      toast.error(`Terjadi kesalahan: ${err.message}`)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Cek apakah form alokasi sudah valid
@@ -766,12 +777,18 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
                   </button>
                   <button
                     onClick={handleConfirm}
-                    disabled={!isAllocationValid()}
-                    className={`flex-1 py-2.5 sm:py-3 text-white rounded-xl text-xs sm:text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
+                    disabled={!isAllocationValid() || isSubmitting}
+                    className={`flex-1 py-2.5 sm:py-3 text-white rounded-xl text-xs sm:text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
                       modal.type === 'setujui' ? 'bg-blue-600 hover:bg-blue-700' : modal.type === 'serah_terima' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-red-600 hover:bg-red-700'
                     }`}
                   >
-                    {modal.type === 'setujui' ? 'Kunci Alokasi & Lanjut' : modal.type === 'serah_terima' ? 'Selesai Serah Terima' : 'Konfirmasi Tolak'}
+                    {isSubmitting && (
+                      <svg className="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {isSubmitting ? 'Proses...' : modal.type === 'setujui' ? 'Kunci Alokasi & Lanjut' : modal.type === 'serah_terima' ? 'Selesai Serah Terima' : 'Konfirmasi Tolak'}
                   </button>
                 </>
               )}
