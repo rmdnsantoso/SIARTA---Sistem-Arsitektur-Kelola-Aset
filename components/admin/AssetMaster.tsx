@@ -64,6 +64,7 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
   const [activeTab, setActiveTab] = useState<'Aktif' | 'Diarsipkan'>('Aktif')
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', imageUrl: '' })
@@ -184,6 +185,8 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
       }
     } catch (err) {
       console.error('Gagal memuat master aset:', err)
+    } finally {
+      setInitialLoading(false)
     }
   }
 
@@ -568,112 +571,122 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
 
       <div className="flex-1">
         {/* ── E-Commerce Style Grid Layout ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-6">
-        {filtered.map(a => {
-          const isLow = a.availableStock === 0
-          
-          return (
-            <div key={a.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col group relative">
-              {isLow && (
-                <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10">
-                  STOK HABIS
-                </div>
-              )}
-              {/* Product Image Placeholder */}
-              <div className="h-40 sm:h-52 bg-gray-50 border-b border-gray-100 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100 transition-colors">
-                {a.imageUrl ? (
-                  <img src={a.imageUrl} alt={a.name} className="w-full h-full object-cover" />
-                ) : (
-                  <svg className="w-24 h-24 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.8} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                  </svg>
-                )}
-                {/* Tracking Badge */}
-                <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg shadow text-[10px] font-bold tracking-wider ${
-                  a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-500 text-white'
-                }`}>
-                  {a.trackingType === 'SERIALIZED' ? (
-                    <>
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                      Serialized
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                      Non-Serialized
-                    </>
-                  )}
-                </div>
-                <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200">
-                  {a.assetCode}
-                </div>
-              </div>
-              
-              {/* Product Info */}
-              <div className="p-3 sm:p-4 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-1">
-                  <span className="text-[10px] text-gray-400 font-mono">{a.assetCode}</span>
-                </div>
-                <h3 className="font-bold text-gray-900 leading-tight mb-3 line-clamp-2">{a.name}</h3>
-                
-                <div className="mt-auto">
-                  <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">Tersedia:</span>
-                    <span className={`text-lg font-extrabold ${a.availableStock > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {a.availableStock} <span className="text-xs font-medium text-gray-400">/ {a.totalStock}</span>
-                    </span>
-                  </div>
-                  <div className="flex flex-col xl:flex-row gap-2 mt-2">
-                    <button
-                      onClick={() => setSelectedAsset(a)}
-                      className="flex-1 py-1.5 sm:py-2 px-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 min-w-0"
-                    >
-                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
-                      <span className="truncate">{isViewOnly ? 'Lihat Unit' : 'Kelola Unit & QR'}</span>
-                    </button>
-                    {!isViewOnly && (
-                      <div className="flex gap-2 justify-center shrink-0">
-                        <button
-                          onClick={() => {
-                            setEditingAssetId(a.id);
-                            setEditForm({ name: a.name, imageUrl: a.imageUrl || '' });
-                          }}
-                          className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
-                          title="Edit Profil Barang"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        </button>
-                        <button
-                          onClick={() => setAssetActionConfirm({ id: a.id, action: a.isActive === false ? 'unarchive' : 'archive' })}
-                          className={`flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 border rounded-lg transition-colors flex items-center justify-center ${
-                            a.isActive === false 
-                              ? 'bg-white border-green-200 text-green-600 hover:bg-green-50' 
-                              : 'bg-white border-amber-200 text-amber-600 hover:bg-amber-50'
-                          }`}
-                          title={a.isActive === false ? "Aktifkan Kembali" : "Arsipkan Barang"}
-                        >
-                          {a.isActive === false ? (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                          ) : (
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-        
-        {filtered.length === 0 && (
-          <div className="col-span-full py-20 text-center">
-            <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-            <p className="text-gray-500 font-medium">Tidak ada aset yang ditemukan.</p>
+        {initialLoading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-sm font-semibold text-gray-500">Memuat data master aset...</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 sm:gap-6">
+            {filtered.map(a => {
+              const isLow = a.availableStock === 0
+              
+              return (
+                <div key={a.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col group relative">
+                  {isLow && (
+                    <div className="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10">
+                      STOK HABIS
+                    </div>
+                  )}
+                  {/* Product Image Placeholder */}
+                  <div className="h-40 sm:h-52 bg-gray-50 border-b border-gray-100 flex items-center justify-center relative overflow-hidden group-hover:bg-gray-100 transition-colors">
+                    {a.imageUrl ? (
+                      <img src={a.imageUrl} alt={a.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <svg className="w-24 h-24 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.8} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    )}
+                    {/* Tracking Badge */}
+                    <div className={`absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-lg shadow text-[10px] font-bold tracking-wider ${
+                      a.trackingType === 'SERIALIZED' ? 'bg-indigo-600 text-white' : 'bg-orange-500 text-white'
+                    }`}>
+                      {a.trackingType === 'SERIALIZED' ? (
+                        <>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                          Serialized
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                          Non-Serialized
+                        </>
+                      )}
+                    </div>
+                    <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-2 py-1 rounded text-[10px] font-bold text-gray-600 border border-gray-200">
+                      {a.assetCode}
+                    </div>
+                  </div>
+                  
+                  {/* Product Info */}
+                  <div className="p-3 sm:p-4 flex-1 flex flex-col">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-[10px] text-gray-400 font-mono">{a.assetCode}</span>
+                    </div>
+                    <h3 className="font-bold text-gray-900 leading-tight mb-3 line-clamp-2">{a.name}</h3>
+                    
+                    <div className="mt-auto">
+                      <div className="flex items-center justify-between py-2 border-t border-gray-100">
+                        <span className="text-xs text-gray-500">Tersedia:</span>
+                        <span className={`text-lg font-extrabold ${a.availableStock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                          {a.availableStock} <span className="text-xs font-medium text-gray-400">/ {a.totalStock}</span>
+                        </span>
+                      </div>
+                      <div className="flex flex-col xl:flex-row gap-2 mt-2">
+                        <button
+                          onClick={() => setSelectedAsset(a)}
+                          className="flex-1 py-1.5 sm:py-2 px-2 bg-white border border-blue-600 text-blue-600 rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-50 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 min-w-0"
+                        >
+                          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                          <span className="truncate">{isViewOnly ? 'Lihat Unit' : 'Kelola Unit & QR'}</span>
+                        </button>
+                        {!isViewOnly && (
+                          <div className="flex gap-2 justify-center shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingAssetId(a.id);
+                                setEditForm({ name: a.name, imageUrl: a.imageUrl || '' });
+                              }}
+                              className="flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-100 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                              title="Edit Profil Barang"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            </button>
+                            <button
+                              onClick={() => setAssetActionConfirm({ id: a.id, action: a.isActive === false ? 'unarchive' : 'archive' })}
+                              className={`flex-1 xl:flex-none px-2.5 sm:px-3 py-1.5 sm:py-2 border rounded-lg transition-colors flex items-center justify-center ${
+                                a.isActive === false 
+                                  ? 'bg-white border-green-200 text-green-600 hover:bg-green-50' 
+                                  : 'bg-white border-amber-200 text-amber-600 hover:bg-amber-50'
+                              }`}
+                              title={a.isActive === false ? "Aktifkan Kembali" : "Arsipkan Barang"}
+                            >
+                              {a.isActive === false ? (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+            
+            {filtered.length === 0 && (
+              <div className="col-span-full py-20 text-center">
+                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <p className="text-gray-500 font-medium">Tidak ada aset yang ditemukan.</p>
+              </div>
+            )}
+            </div>
+          </>
         )}
       </div>
     </div>
