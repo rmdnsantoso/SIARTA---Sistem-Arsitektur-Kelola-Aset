@@ -69,9 +69,7 @@ export default function FaceScanner({
   const hasTurnedRef = useRef(false)
   const headTurnHistory = useRef<{ dir: 'left'|'right'|'center', eyeRatio: number }[]>([])
   
-  const [baselineEAR, setBaselineEAR] = useState<number | null>(null)
-  const baselineEARRef = useRef<number | null>(null)
-  const calibrationFrames = useRef<number[]>([])
+
 
   const [lightStatus, setLightStatus] = useState<'normal' | 'dark' | 'bright'>('normal')
 
@@ -191,26 +189,7 @@ export default function FaceScanner({
 
         const landmarks = det.landmarks.positions
         
-        // --- Fase Kalibrasi EAR ---
-        if (baselineEARRef.current === null) {
-          const direction = getHeadTurnDirection(landmarks)
-          if (direction === 'center') {
-            const leftEye = landmarks.slice(36, 42)
-            const rightEye = landmarks.slice(42, 48)
-            const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2
-            calibrationFrames.current.push(avgEAR)
-            if (calibrationFrames.current.length >= 15) { // ~1 detik (tergantung FPS)
-               const base = calibrationFrames.current.reduce((a, b) => a + b, 0) / calibrationFrames.current.length
-               baselineEARRef.current = base
-               setBaselineEAR(base)
-            }
-          } else {
-             // Reset jika kepala bergoyang
-             calibrationFrames.current = []
-          }
-          if (!stopped && !cancelled.value) scheduleNext(tick)
-          return
-        }
+
 
         const currentChallenge = challengeSequenceRef.current[currentStepIndexRef.current]
         let challengeCompleted = false
@@ -493,8 +472,7 @@ export default function FaceScanner({
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Verifikasi Wajah</h2>
         <p className="mt-1.5 text-sm text-gray-500">
           {scanStatus === 'loading_models' && 'Memuat sistem pengenalan wajah...'}
-          {scanStatus === 'scanning' && baselineEAR === null && 'Menyesuaikan kalibrasi wajah...'}
-          {scanStatus === 'scanning' && baselineEAR !== null && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
+          {scanStatus === 'scanning' && currentChallenge && `Tantangan ${currentStepIndex + 1}/${challengeSequence.length}: Arahkan wajah ke kamera dan ${currentChallengeText}`}
           {scanStatus === 'scanning' && !currentChallenge && 'Menyiapkan verifikasi...'}
           {scanStatus === 'verifying' && 'Memverifikasi identitas Anda...'}
           {scanStatus === 'success' && 'Identitas berhasil diverifikasi!'}
@@ -572,7 +550,7 @@ export default function FaceScanner({
                     : 'bg-black/60 text-white/90'
                 }`}>
                   {faceDetected 
-                    ? (baselineEAR === null ? 'Kalibrasi...' : (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : (currentChallenge === 'TURN_LEFT' ? 'Tengok ke Kiri' : 'Tengok ke Kanan')))) 
+                    ? (currentChallengeCompleted ? 'Selesai...' : (currentChallenge === 'BLINK' ? 'Silakan Berkedip' : (currentChallenge === 'TURN_LEFT' ? 'Tengok ke Kiri' : 'Tengok ke Kanan'))) 
                     : 'Posisikan wajah Anda'}
                 </span>
               </div>
