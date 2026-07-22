@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
 import { createNotification } from '../core/notification'
+import { appEvents } from '../../lib/events'
 import { parseIndonesianDate } from '../../lib/dateUtils'
 
 interface CreateTicketInput {
@@ -121,6 +122,7 @@ export async function createBorrowTicket(input: CreateTicketInput) {
       'Admin'
     )
 
+    appEvents.emit('ticket_updated', { ticketId: ticket.id, status: ticket.overallStatus })
     return { success: true, data: ticket, updatedAsset }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -156,12 +158,13 @@ export async function cancelBorrowTicket(ticketId: string) {
     })
 
     // 3. Kembalikan stok yang di-booking
-    await prisma.asset.update({
+    const updatedAsset = await prisma.asset.update({
       where: { id: ticket.assetId },
       data: { quantity: { increment: ticket.jumlah } }
     })
 
-    return { success: true, data: updatedTicket }
+    appEvents.emit('ticket_updated', { ticketId: updatedTicket.id, status: updatedTicket.overallStatus })
+    return { success: true, data: updatedTicket, updatedAsset }
   } catch (error: any) {
     return { success: false, error: error.message }
   }

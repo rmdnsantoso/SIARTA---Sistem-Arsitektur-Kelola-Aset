@@ -124,13 +124,18 @@ export default function FaceScanner({
       let stopped = false
       let lastBrightnessCheck = 0
 
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        typeof navigator !== 'undefined' ? navigator.userAgent : ''
+      )
+      const tickIntervalMs = isMobile ? 900 : 200
+
       const scheduleNext = (fn: () => void) => {
         if (stopped || cancelled.value || !videoRef.current) return
         const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
-        if (supportsVFC) {
+        if (supportsVFC && !isMobile) {
           intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
         } else {
-          intervalRef.current = setTimeout(fn, 200)
+          intervalRef.current = setTimeout(fn, tickIntervalMs)
         }
       }
 
@@ -156,8 +161,13 @@ export default function FaceScanner({
         let det: faceapi.WithFaceLandmarks<{ detection: faceapi.FaceDetection }, faceapi.FaceLandmarks68> | undefined
 
         try {
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            typeof navigator !== 'undefined' ? navigator.userAgent : ''
+          )
+          const inputSize = isMobile ? 160 : 224
+
           det = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold: 0.5 }))
             .withFaceLandmarks()
         } catch {
           if (!stopped && !cancelled.value) scheduleNext(tick)
@@ -337,8 +347,13 @@ export default function FaceScanner({
 
         // Ekstrak descriptor hanya saat kedipan sudah divalidasi
         try {
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            typeof navigator !== 'undefined' ? navigator.userAgent : ''
+          )
+          const inputSize = isMobile ? 160 : 224
+
           const fullDet = await faceapi
-            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+            .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold: 0.5 }))
             .withFaceLandmarks()
             .withFaceDescriptor()
 
@@ -456,8 +471,10 @@ export default function FaceScanner({
     }
 
     init()
+    window.addEventListener('pagehide', killAllTracks)
 
     return () => {
+      window.removeEventListener('pagehide', killAllTracks)
       cancelled.value = true
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
@@ -517,6 +534,18 @@ export default function FaceScanner({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <p className="text-red-600 text-sm font-medium text-center">{error}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setError('')
+                setScanStatus('loading_models')
+                const cancelled = { value: false }
+                startLoop(cancelled)
+              }}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium shadow-md hover:bg-blue-700 transition"
+            >
+              Coba Lagi
+            </button>
           </div>
         )}
 

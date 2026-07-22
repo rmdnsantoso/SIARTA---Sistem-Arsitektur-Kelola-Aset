@@ -33,6 +33,7 @@ function StatusBadge({ status, stage, align = 'start' }: { status: TicketStatus,
 import { getAllTickets } from '../../actions/core/ticket'
 import { adaptTickets } from '../../types/db'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 import { isOverdue } from '../../lib/dateUtils'
 
 export default function TicketHistory({ tickets: initialTickets = [], fetchAction = getAllTickets }: Props) {
@@ -77,7 +78,11 @@ export default function TicketHistory({ tickets: initialTickets = [], fetchActio
     refreshData()
   }, [currentPage, debouncedSearch, filterStatus])
 
-  usePolling(refreshData, 10000)
+  usePolling(refreshData, 60000)
+
+  useRealtimeEvent('ticket_updated', () => {
+    refreshData()
+  })
 
   // Modal State for details
   const [modalTicketId, setModalTicketId] = useState<string | null>(null)

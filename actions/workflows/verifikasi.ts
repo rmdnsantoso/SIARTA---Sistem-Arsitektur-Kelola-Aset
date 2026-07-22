@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
 import { createNotification } from '../core/notification'
+import { appEvents } from '../../lib/events'
 
 // 1. Admin menyetujui tahap pertama dan meneruskan ke HSSE (bukan langsung Area Head)
 export async function verifyTicketByAdmin(ticketId: string, notes?: string, allocatedSerials?: string[]) {
@@ -39,6 +40,7 @@ export async function verifyTicketByAdmin(ticketId: string, notes?: string, allo
       'HSSE'
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updated.id, status: updated.overallStatus })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -77,6 +79,7 @@ export async function approveTicketByHSSE(ticketId: string, notes?: string) {
       'AreaHead'
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updated.id, status: updated.overallStatus })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -122,6 +125,7 @@ export async function rejectTicketByHSSE(ticketId: string, rejectReason: string)
       ticket.peminjamId
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updated.id, status: updated.overallStatus })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -202,6 +206,7 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
       ticket.peminjamId
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updatedTicket.id, status: updatedTicket.overallStatus })
     return { success: true, data: updatedTicket }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -280,6 +285,7 @@ export async function verifyAssetReturnHandover(ticketId: string) {
       ticket.peminjamId
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updatedTicket.id, status: updatedTicket.overallStatus })
     return { success: true, data: updatedTicket }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -309,6 +315,7 @@ export async function setAssetToMaintenance(assetId: string, maintenanceNotes: s
       'Semua'
     )
 
+    appEvents.emit('maintenance_updated', { assetId: updated.id })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -355,6 +362,7 @@ export async function rejectTicketByAdmin(ticketId: string, rejectReason: string
       ticket.peminjamId
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updated.id, status: updated.overallStatus })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
 import { getMaintenanceHistory } from '../../actions/core/maintenance'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 
 interface HistoryTicket {
   id: string
@@ -87,7 +88,11 @@ export default function MaintenanceHistory() {
     refreshData()
   }, [currentPage, debouncedSearch, filterStatus])
 
-  usePolling(refreshData, 10000)
+  usePolling(refreshData, 60000)
+
+  useRealtimeEvent('maintenance_updated', () => {
+    refreshData()
+  })
 
   return (
     <div className="space-y-4 sm:space-y-6 font-sans relative animate-fade-in">

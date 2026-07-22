@@ -1,5 +1,5 @@
 import * as faceapi from 'face-api.js'
-
+import '@tensorflow/tfjs-backend-wasm'
 // ─── Constants ───────────────────────────────────────────────────────────────
 export const MODEL_URL = '/models'
 
@@ -18,18 +18,29 @@ export async function ensureModelsLoaded(): Promise<boolean> {
       // Pastikan backend GPU (WebGL) dipaksa nyala terlebih dahulu
       try {
         await faceapi.tf.setBackend('webgl')
-        await faceapi.tf.ready()
-      } catch (err) {
-        console.warn('WebGL tidak didukung di perangkat ini, fallback ke CPU/WASM:', err)
-        await faceapi.tf.ready()
+      } catch {
+        try {
+          await faceapi.tf.setBackend('wasm')
+        } catch (err) {
+          console.warn('WebGL & WASM tidak didukung, pakai CPU (lambat)', err)
+        }
       }
+      await faceapi.tf.ready()
 
       console.log('TF Backend aktif:', faceapi.tf.getBackend())
 
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      // Menggunakan Promise.race untuk menerapkan timeout 15 detik
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout loading models')), 15000)
+      })
+
+      await Promise.race([
+        Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]),
+        timeoutPromise
       ])
       
       modelsLoaded = true

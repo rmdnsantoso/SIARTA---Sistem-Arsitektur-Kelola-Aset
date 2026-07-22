@@ -6,6 +6,7 @@ import { createMaintenanceRecord, resolveMaintenanceRecord, getActiveMaintenance
 import { getAllAssetsForAdmin } from '../../actions/core/asset'
 import InlineQRScanner from '../shared/InlineQRScanner'
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 
 type EscalationStatus = 'Menunggu Tindakan' | 'Selesai' | 'Dimusnahkan'
 
@@ -99,7 +100,11 @@ export default function AssetMaintenance() {
     }).finally(() => setLoading(false))
   }
 
-  usePolling(refreshData, 10000)
+  usePolling(refreshData, 60000)
+
+  useRealtimeEvent('maintenance_updated', () => {
+    refreshData()
+  })
 
   const handleAction = async (newStatus: EscalationStatus | 'Selesai') => {
     if (!selectedTicket) return

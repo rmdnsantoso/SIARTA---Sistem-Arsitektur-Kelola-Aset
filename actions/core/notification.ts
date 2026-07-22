@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { Role } from '../../app/generated/prisma'
 import { getCurrentUser } from '../../lib/session'
 import { requireRole } from '../../lib/auth'
+import { appEvents } from '../../lib/events'
 
 // ─── Wrapper Fungsi untuk Mobile (Otomatis deteksi dari Session) ───
 export async function getMyNotifications() {
@@ -134,6 +135,7 @@ export async function createNotification(
       const notif = await prisma.notification.create({
         data: { title, message, type, recipientId, link }
       })
+      appEvents.emit('notification_new', { recipientId, notificationId: notif.id })
       return { success: true, data: notif }
     } else {
       // ── Target Role / Semua Pengguna (Broadcast Individual) ──
@@ -160,6 +162,9 @@ export async function createNotification(
       const result = await prisma.notification.createMany({
         data: dataToInsert
       })
+      
+      // Emit event broadcast for all users or role
+      appEvents.emit('notification_new', { broadcast: true, role: roleEnum })
       
       return { success: true, data: result }
     }

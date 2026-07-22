@@ -4,6 +4,7 @@ import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
 
 import { usePolling } from '../../hooks/usePolling'
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 import { getHistoryTicketsByUser } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
@@ -77,7 +78,11 @@ export default function RiwayatPinjam() {
     fetchData()
   }, [currentPage, debouncedSearch, filterStatus])
 
-  usePolling(fetchData, 120000)
+  usePolling(fetchData, 60000)
+
+  useRealtimeEvent('ticket_updated', () => {
+    fetchData()
+  })
 
   // Modal State for details
   const [modalTicketId, setModalTicketId] = useState<string | null>(null)

@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, TicketStatus } from '../../app/generated/prisma'
 import { createNotification } from '../core/notification'
+import { appEvents } from '../../lib/events'
 
 // 1. Area Head melakukan approval akhir
 export async function approveTicketByAreaHead(ticketId: string, notes?: string) {
@@ -39,6 +40,7 @@ export async function approveTicketByAreaHead(ticketId: string, notes?: string) 
       ticket.peminjamId
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updated.id, status: updated.overallStatus })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -85,6 +87,7 @@ export async function rejectTicketByAreaHead(ticketId: string, rejectReason: str
       ticket.peminjamId
     )
 
+    appEvents.emit('ticket_updated', { ticketId: updated.id, status: updated.overallStatus })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }

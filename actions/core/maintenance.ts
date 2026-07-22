@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
 import { Role, AssetStatus, Prisma } from '../../app/generated/prisma'
 import { createNotification } from './notification'
+import { appEvents } from '../../lib/events'
 
 // ─── READ ─────────────────────────────────────────────────────────────────────
 
@@ -193,6 +194,7 @@ export async function createMaintenanceRecord(input: {
       'Semua'
     )
 
+    appEvents.emit('maintenance_updated', { recordId: record.id, status: record.status })
     return { success: true, data: record }
   } catch (error: any) {
     return { success: false, error: error.message }
@@ -272,6 +274,7 @@ export async function resolveMaintenanceRecord(
       'Semua'
     )
 
+    appEvents.emit('maintenance_updated', { recordId: updated.id, status: updated.status })
     return { success: true, data: updated }
   } catch (error: any) {
     return { success: false, error: error.message }

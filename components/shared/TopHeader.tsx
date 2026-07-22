@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification, deleteAllNotifications } from '../../actions/core/notification'
 import { logoutUser } from '../../actions/core/auth'
 import { usePolling } from '../../hooks/usePolling'
-
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 interface TopHeaderProps {
   sidebarOpen: boolean
   setSidebarOpen: (val: boolean) => void
@@ -58,8 +58,18 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
     }
   }
 
-  // Polling interval menggunakan custom hook (15 detik)
-  usePolling(fetchNotifications, 15000, [userId, roleName])
+  // Polling interval diturunkan ke 60 detik sebagai safety net
+  usePolling(fetchNotifications, 60000, [userId, roleName])
+
+  // Dengarkan SSE event untuk trigger fetch data real-time
+  useRealtimeEvent('notification_new', (data) => {
+    // Validasi apakah notifikasi ditujukan ke role ini atau broadcast
+    if (data.broadcast && (!data.role || data.role === roleName)) {
+      fetchNotifications()
+    } else if (data.recipientId && data.recipientId === userId) {
+      fetchNotifications()
+    }
+  })
 
   // Hitung jumlah yang belum dibaca dari dbNotifs
   const unreadCount = dbNotifs.filter(n => !n.isRead).length
