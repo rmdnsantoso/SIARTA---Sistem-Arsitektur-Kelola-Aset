@@ -20,15 +20,8 @@ export async function ensureModelsLoaded(): Promise<boolean> {
         await faceapi.tf.setBackend('webgl')
         await faceapi.tf.ready()
       } catch (err) {
-        console.warn('WebGL tidak didukung di perangkat ini, mencoba WASM:', err)
-        try {
-          await import('@tensorflow/tfjs-backend-wasm')
-          await faceapi.tf.setBackend('wasm')
-          await faceapi.tf.ready()
-        } catch (wasmErr) {
-          console.warn('WASM tidak didukung, fallback ke CPU murni:', wasmErr)
-          await faceapi.tf.ready()
-        }
+        console.warn('WebGL tidak didukung di perangkat ini, fallback ke CPU:', err)
+        await faceapi.tf.ready()
       }
 
       console.log('TF Backend aktif:', faceapi.tf.getBackend())

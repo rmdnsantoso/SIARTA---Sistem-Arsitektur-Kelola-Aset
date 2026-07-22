@@ -135,15 +135,11 @@ export default function FaceScanner({
       const scheduleNext = (fn: () => void) => {
         if (stopped || cancelled.value || !videoRef.current) return
         
-        if (isMobile) {
-          intervalRef.current = setTimeout(fn, 900)
+        const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
+        if (supportsVFC) {
+          intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
         } else {
-          const supportsVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype
-          if (supportsVFC) {
-            intervalRef.current = (videoRef.current as any).requestVideoFrameCallback(fn)
-          } else {
-            intervalRef.current = setTimeout(fn, 200)
-          }
+          intervalRef.current = setTimeout(fn, 200)
         }
       }
 
@@ -532,9 +528,9 @@ export default function FaceScanner({
             <p className="text-red-600 text-sm font-medium text-center">{error}</p>
             <button 
               onClick={() => {
-                setScanStatus('loading_models')
                 setError('')
-                setInitTrigger(c => c + 1)
+                setScanStatus('loading_models')
+                setInitTrigger(prev => prev + 1)
               }}
               className="mt-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold transition-all shadow-sm flex items-center gap-2"
             >

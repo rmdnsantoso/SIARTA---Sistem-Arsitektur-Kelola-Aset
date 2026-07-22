@@ -16,7 +16,6 @@
     "@prisma/client": "^5.22.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.7",
-    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
     "face-api.js": "^0.22.2",
