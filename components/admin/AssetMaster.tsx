@@ -689,7 +689,6 @@ export default function AssetMaster({ isViewOnly = false }: { isViewOnly?: boole
           </>
         )}
       </div>
-    </div>
 
     {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
