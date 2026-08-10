@@ -121,6 +121,7 @@ model Ticket {
   updatedAt      DateTime     @updatedAt
 
   logs TrackingLog[]
+  handoverPhotos HandoverPhoto[]
 
   @@index([peminjamId])
   @@index([currentStage, overallStatus])
@@ -237,3 +238,12 @@ model LivenessChallenge {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model HandoverPhoto {
+  id        String   @id @default(uuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  createdAt DateTime @default(now())
+}
+

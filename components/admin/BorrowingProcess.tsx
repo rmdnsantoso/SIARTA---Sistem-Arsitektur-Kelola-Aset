@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { Ticket, TicketStatus } from '../../types/ticket'
 import StatCard from '../shared/StatCard'
 import InlineQRScanner from '../shared/InlineQRScanner'
+import LiveCameraCapture from '../shared/LiveCameraCapture'
 import { verifyTicketByAdmin, rejectTicketByAdmin, verifyAssetBorrowHandover } from '../../actions/workflows/verifikasi'
 import { getAvailableSerials } from '../../actions/core/asset'
 
@@ -30,6 +31,8 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
   const [modal, setModal] = useState<ModalState | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
+  const [handoverPhotos, setHandoverPhotos] = useState<string[]>([])
+  const [isHandoverCameraOpen, setIsHandoverCameraOpen] = useState(false)
 
   const [allocatedSerials, setAllocatedSerials] = useState<string[]>([])
   const allocatedSerialsRef = React.useRef<string[]>([])
@@ -92,6 +95,7 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
   const handleOpenSerahTerima = (ticket: Ticket) => {
     setModal({ ticket, type: 'serah_terima' })
     setCatatan('')
+    setHandoverPhotos([])
   }
 
   const handleOpenAllocation = async (ticket: Ticket) => {
@@ -153,6 +157,15 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
     setAllocatedSerials(newSerials)
   }
 
+  const dataURLtoFile = (dataurl: string, filename: string) => {
+    let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)![1],
+      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+  }
+
   const handleConfirm = async () => {
     if (!modal) return
     const { ticket, type } = modal
@@ -181,7 +194,21 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
         toast.success(`Tiket ${ticket.id} ditolak.`)
       } else if (type === 'serah_terima') {
         if (ticket.dbId) {
-          const res = await verifyAssetBorrowHandover(ticket.dbId)
+          const uploadedUrls: string[] = []
+          for (let i = 0; i < handoverPhotos.length; i++) {
+            const file = dataURLtoFile(handoverPhotos[i], `handover-${ticket.id}-${i}.jpg`)
+            const formData = new FormData()
+            formData.append('file', file)
+            const res = await fetch('/api/upload', { method: 'POST', body: formData })
+            const data = await res.json()
+            if (res.ok && data.url) {
+              uploadedUrls.push(data.url)
+            } else {
+              throw new Error('Gagal mengupload foto serah terima.')
+            }
+          }
+
+          const res = await verifyAssetBorrowHandover(ticket.dbId, uploadedUrls)
           if (!res.success) {
             toast.error(`Gagal memverifikasi serah terima: ${res.error}`)
             setIsSubmitting(false)
@@ -204,6 +231,7 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
   const isAllocationValid = () => {
     if (!modal) return true
     if (modal.type === 'tolak') return catatan.trim().length > 0
+    if (modal.type === 'serah_terima') return handoverPhotos.length > 0 && handoverPhotos.length <= 2
     if (modal.type !== 'setujui') return true
     if (modal.ticket.assetType === 'NON_SERIALIZED') {
       return allocatedSerials.length === 1
@@ -705,13 +733,40 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
               )}
 
               {modal.type === 'serah_terima' && (
-                <div className="bg-amber-50 border border-amber-200 p-3 sm:p-4 rounded-xl">
-                  <p className="text-sm text-amber-800 font-medium">Pastikan pekerja menerima barang fisik berikut:</p>
-                  <ul className="mt-2 space-y-1">
-                    {modal.ticket.allocatedUnits?.map((sn: string) => (
-                       <li key={sn} className="text-sm font-bold text-amber-900">• SN: {sn}</li>
-                    ))}
-                  </ul>
+                <div className="space-y-4">
+                  <div className="bg-amber-50 border border-amber-200 p-3 sm:p-4 rounded-xl">
+                    <p className="text-sm text-amber-800 font-medium">Pastikan pekerja menerima barang fisik berikut:</p>
+                    <ul className="mt-2 space-y-1">
+                      {modal.ticket.allocatedUnits?.map((sn: string) => (
+                         <li key={sn} className="text-sm font-bold text-amber-900">• SN: {sn}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Foto Bukti Serah Terima (Wajib 1-2 foto) <span className="text-red-500">*</span></label>
+                    <div className="flex gap-2 flex-wrap">
+                      {handoverPhotos.map((photo, i) => (
+                        <div key={i} className="relative w-20 h-20">
+                          <img src={photo} className="w-full h-full object-cover rounded-lg border border-gray-200" alt="Bukti Serah Terima" />
+                          <button 
+                            onClick={() => setHandoverPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                      {handoverPhotos.length < 2 && (
+                        <button 
+                          onClick={() => setIsHandoverCameraOpen(true)}
+                          className="w-20 h-20 flex flex-col items-center justify-center gap-1 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:text-blue-600 hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                        >
+                          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
+                          <span className="text-[10px] font-bold text-center leading-tight">Ambil<br/>Foto</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -810,6 +865,14 @@ export default function BorrowingProcess({ tickets = [], onSuccess }: Props) {
       )}
 
       {/* Scanner Modal Removed */}
+      
+      <LiveCameraCapture
+        isCameraOpen={isHandoverCameraOpen}
+        setIsCameraOpen={setIsHandoverCameraOpen}
+        photos={handoverPhotos}
+        onPhotosChange={setHandoverPhotos}
+        maxPhotos={2}
+      />
     </div>
   )
 }
