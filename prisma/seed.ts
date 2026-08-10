@@ -1,11 +1,11 @@
-import { PrismaClient, Role } from '../app/generated/prisma'
+﻿import { PrismaClient, Role } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Mulai seeding database SIARTA untuk Production...')
+  console.log('ðŸŒ± Mulai seeding database SIARTA untuk Production...')
 
-  console.log('✅ Skrip seeding selesai. Tabel sudah bersih dan siap digunakan.')
+  console.log('âœ… Skrip seeding selesai. Tabel sudah bersih dan siap digunakan.')
 }
 
 main()

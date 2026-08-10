@@ -1,8 +1,8 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role, TicketStatus } from '../../app/generated/prisma'
+import { Role, TicketStatus } from '@prisma/client'
 import { createNotification } from '../core/notification'
 import { appEvents } from '../../lib/events'
 

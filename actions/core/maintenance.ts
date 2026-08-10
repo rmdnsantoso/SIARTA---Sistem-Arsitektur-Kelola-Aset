@@ -1,12 +1,12 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role, AssetStatus, Prisma } from '../../app/generated/prisma'
+import { Role, AssetStatus, Prisma } from '@prisma/client'
 import { createNotification } from './notification'
 import { appEvents } from '../../lib/events'
 
-// ─── READ ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ READ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function getAllMaintenanceRecords() {
   try {
@@ -96,7 +96,7 @@ export async function getMaintenanceHistory(page = 1, pageSize = 20, statusFilte
   }
 }
 
-// ─── CREATE ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ CREATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function createMaintenanceRecord(input: {
   issue: string
@@ -201,7 +201,7 @@ export async function createMaintenanceRecord(input: {
   }
 }
 
-// ─── UPDATE STATUS (Selesai / Dimusnahkan) ───────────────────────────────────
+// â”€â”€â”€ UPDATE STATUS (Selesai / Dimusnahkan) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function resolveMaintenanceRecord(
   recordId: string,

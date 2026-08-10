@@ -1,8 +1,8 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
+import { Role, TicketStatus, AssetStatus } from '@prisma/client'
 import { createNotification } from '../core/notification'
 import { appEvents } from '../../lib/events'
 
@@ -175,7 +175,7 @@ export async function verifyAssetBorrowHandover(ticketId: string, photoUrls: str
     if (ticket.allocatedUnits) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
 
-      // ── Batch update semua unit sekaligus — hindari N+1 queries ──────────────
+      // â”€â”€ Batch update semua unit sekaligus â€” hindari N+1 queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       transactionOperations.push(prisma.physicalUnit.updateMany({
         where: {
           assetId: ticket.assetId,
@@ -257,7 +257,7 @@ export async function verifyAssetReturnHandover(ticketId: string) {
     if (ticket.allocatedUnits) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
       
-      // ── Batch update semua unit sekaligus — hindari N+1 queries ──────────────
+      // â”€â”€ Batch update semua unit sekaligus â€” hindari N+1 queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       await prisma.physicalUnit.updateMany({
         where: {
           assetId: ticket.assetId,

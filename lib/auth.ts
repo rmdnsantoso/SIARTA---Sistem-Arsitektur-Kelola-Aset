@@ -1,17 +1,17 @@
-import { prisma } from './prisma'
-import { Role } from '../app/generated/prisma'
+﻿import { prisma } from './prisma'
+import { Role } from '@prisma/client'
 import { getCurrentUser } from './session'
 import { cache } from 'react'
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helper RBAC (Role-Based Access Control) untuk Server Actions
 // Membaca sesi dari cookie iron-session yang nyata
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const requireRole = cache(async (allowedRoles: Role[]) => {
   const user = await getCurrentUser()
 
-  // Jika tidak ada session → unauthorized
+  // Jika tidak ada session â†’ unauthorized
   if (!user) {
     throw new Error('Unauthorized: Anda belum login.')
   }

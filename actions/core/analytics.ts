@@ -1,7 +1,7 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
-import { Role } from '../../app/generated/prisma'
+import { Role } from '@prisma/client'
 import { requireRole } from '../../lib/auth'
 import { unstable_cache } from 'next/cache'
 
@@ -25,9 +25,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
 
     const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 1. Eksekusi Query Paralel
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const [
       assets, 
       activeTickets, 
@@ -60,9 +60,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
       })
     ]);
 
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 2. Precompute Map untuk Optimasi O(1) Lookup
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const ticketsByAsset = new Map<string, number>();
     activeTickets.forEach(t => {
       ticketsByAsset.set(t.assetId, (ticketsByAsset.get(t.assetId) || 0) + t.jumlah);
@@ -77,9 +77,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
       });
     });
 
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 3. Kalkulasi Stok dan KPI
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let availableCount = 0;
     let borrowedCount = 0;
     let maintenanceCount = 0;
@@ -130,9 +130,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
       topType = { name: 'Seimbang', borrowed: serializedBorrowed };
     }
 
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 4. Kalkulasi Trend & On-Time Rate
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let peminjamanTrend = "Sama";
     let peminjamanValue = 0;
     
@@ -157,9 +157,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
     });
     const onTimeRate = returnedTickets.length > 0 ? Math.round((onTimeCount / returnedTickets.length) * 100) : 100;
 
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 5. Area Chart - Tren 6 Bulan Absolut
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const trendData = [];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     
@@ -178,9 +178,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
       trendData.push({ month: mStr, peminjaman: pinjam, pengembalian: kembali });
     }
 
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 6. Bar Chart - Top 5 Aset (Berdasarkan Rentang)
-    // ──────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const groupedTickets = await prisma.ticket.groupBy({
       by: ['assetId'],
       where: ticketsWhere,
@@ -229,7 +229,7 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
           critical: criticalAssets.slice(0, 3).map(assetName => ({
             icon: 'alert-circle',
             label: 'Stok Kritis',
-            text: `${assetName} menipis (sisa ≤ 3 unit) — pertimbangkan restock.`
+            text: `${assetName} menipis (sisa â‰¤ 3 unit) â€” pertimbangkan restock.`
           })),
           rotating: [
             { 

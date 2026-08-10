@@ -1,12 +1,12 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
-import { Role } from '../../app/generated/prisma'
+import { Role } from '@prisma/client'
 import { getCurrentUser } from '../../lib/session'
 import { requireRole } from '../../lib/auth'
 import { appEvents } from '../../lib/events'
 
-// ─── Wrapper Fungsi untuk Mobile (Otomatis deteksi dari Session) ───
+// â”€â”€â”€ Wrapper Fungsi untuk Mobile (Otomatis deteksi dari Session) â”€â”€â”€
 export async function getMyNotifications() {
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
@@ -131,14 +131,14 @@ export async function createNotification(
   try {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
     if (recipientId) {
-      // ── Target Individu Spesifik ──
+      // â”€â”€ Target Individu Spesifik â”€â”€
       const notif = await prisma.notification.create({
         data: { title, message, type, recipientId, link }
       })
       appEvents.emit('notification_new', { recipientId, notificationId: notif.id })
       return { success: true, data: notif }
     } else {
-      // ── Target Role / Semua Pengguna (Broadcast Individual) ──
+      // â”€â”€ Target Role / Semua Pengguna (Broadcast Individual) â”€â”€
       const cleanedTargetRole = targetRole.replace(/\s+/g, '')
       const roleEnum = targetRole !== 'Semua' ? (cleanedTargetRole as Role) : null
       

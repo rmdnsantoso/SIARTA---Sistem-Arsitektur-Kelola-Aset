@@ -1,15 +1,15 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Prisma, AssetStatus, Role } from '../../app/generated/prisma'
+import { Prisma, AssetStatus, Role } from '@prisma/client'
 import { createActivityLog } from './log'
 
 // ============================================================
 // READ
 // ============================================================
 
-// Untuk halaman listing aset (Peminjam, HSSE, AreaHead) — ringan, hanya data yang dibutuhkan
+// Untuk halaman listing aset (Peminjam, HSSE, AreaHead) â€” ringan, hanya data yang dibutuhkan
 export async function getAvailableAssets() {
   try {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
@@ -17,7 +17,7 @@ export async function getAvailableAssets() {
     const [assets, activeTickets] = await Promise.all([
       prisma.asset.findMany({
         orderBy: { createdAt: 'asc' },
-        // Hanya ambil count unit per status — jauh lebih ringan dari include full history
+        // Hanya ambil count unit per status â€” jauh lebih ringan dari include full history
         include: {
           _count: { select: { units: true } },
           units: {
@@ -69,7 +69,7 @@ export async function getAssetById(id: string) {
   }
 }
 
-// Untuk halaman admin listing — mirip getAvailableAssets tapi tanpa auth gate role khusus
+// Untuk halaman admin listing â€” mirip getAvailableAssets tapi tanpa auth gate role khusus
 export async function getAllAssetsForAdmin() {
   try {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
@@ -114,7 +114,7 @@ export async function getAllAssetsForAdmin() {
   }
 }
 
-// Untuk detail aset — fetch unit lengkap + history (hanya dipanggil saat buka detail modal/halaman)
+// Untuk detail aset â€” fetch unit lengkap + history (hanya dipanggil saat buka detail modal/halaman)
 export async function getAssetUnitsById(assetId: string) {
   try {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead, Role.Peminjam])
@@ -155,7 +155,7 @@ export async function createAsset(input: {
   try {
     await requireRole([Role.Admin])
 
-    // ── Validasi input ────────────────────────────────────────────────────────
+    // â”€â”€ Validasi input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (!input.assetCode?.trim()) throw new Error('Kode aset wajib diisi.')
     if (!input.name?.trim()) throw new Error('Nama aset wajib diisi.')
     if (!input.category?.trim()) throw new Error('Kategori aset wajib diisi.')
@@ -208,7 +208,7 @@ export async function updateAsset(id: string, input: {
   try {
     await requireRole([Role.Admin])
 
-    // ── Validasi input ────────────────────────────────────────────────────────
+    // â”€â”€ Validasi input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (input.name !== undefined && !input.name.trim()) throw new Error('Nama aset tidak boleh kosong.')
     if (input.category !== undefined && !input.category.trim()) throw new Error('Kategori tidak boleh kosong.')
     if (input.quantity !== undefined && (typeof input.quantity !== 'number' || input.quantity < 0)) throw new Error('Jumlah tidak boleh negatif.')
