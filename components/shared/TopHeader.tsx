@@ -275,4 +275,3 @@ export default function TopHeader({ sidebarOpen, setSidebarOpen, userId, userNam
     </header>
   )
 }
-

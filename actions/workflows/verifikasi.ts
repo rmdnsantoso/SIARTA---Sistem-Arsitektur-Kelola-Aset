@@ -133,15 +133,18 @@ export async function rejectTicketByHSSE(ticketId: string, rejectReason: string)
 }
 
 // 4. Admin Verifikasi Serah Terima Barang (Handover Pinjam)
-export async function verifyAssetBorrowHandover(ticketId: string) {
+export async function verifyAssetBorrowHandover(ticketId: string, photoUrls: string[]) {
   try {
     const user = await requireRole([Role.Admin])
     const ticket = await prisma.ticket.findUnique({ where: { id: ticketId }, include: { asset: true, peminjam: true } })
     if (!ticket) throw new Error('Tiket tidak ditemukan.')
     if (ticket.overallStatus !== TicketStatus.Disetujui) throw new Error('Tiket belum disetujui Area Head.')
+    if (!photoUrls || photoUrls.length === 0 || photoUrls.length > 2) throw new Error('Foto serah terima wajib disertakan (1-2 foto).')
+
+    const transactionOperations = []
 
     // Update status tiket jadi Dipinjam, update status aset jadi Borrowed
-    const updatedTicket = await prisma.ticket.update({
+    transactionOperations.push(prisma.ticket.update({
       where: { id: ticketId },
       data: {
         overallStatus: TicketStatus.Dipinjam,
@@ -153,30 +156,33 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
             actor: `${user.name} (Admin)`,
             timestamp: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
           }
+        },
+        handoverPhotos: {
+          create: photoUrls.map(url => ({ imageUrl: url }))
         }
       }
-    })
+    }))
 
     // Cek sisa stok. Jika 0, ubah status jadi Borrowed
     const currentAsset = await prisma.asset.findUnique({ where: { id: ticket.assetId } })
     if (currentAsset && currentAsset.quantity === 0) {
-      await prisma.asset.update({
+      transactionOperations.push(prisma.asset.update({
         where: { id: ticket.assetId },
         data: { status: AssetStatus.Borrowed }
-      })
+      }))
     }
 
     if (ticket.allocatedUnits) {
       const serials: string[] = JSON.parse(ticket.allocatedUnits)
 
       // ── Batch update semua unit sekaligus — hindari N+1 queries ──────────────
-      await prisma.physicalUnit.updateMany({
+      transactionOperations.push(prisma.physicalUnit.updateMany({
         where: {
           assetId: ticket.assetId,
           OR: serials.flatMap(sn => [{ serialNumber: sn }, { unitId: sn }])
         },
         data: { status: 'Dipinjam' }
-      })
+      }))
 
       // Ambil unit yang diupdate untuk batch-insert history
       const updatedUnits = await prisma.physicalUnit.findMany({
@@ -188,15 +194,18 @@ export async function verifyAssetBorrowHandover(ticketId: string) {
       })
 
       const now = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB'
-      await prisma.unitHistory.createMany({
+      transactionOperations.push(prisma.unitHistory.createMany({
         data: updatedUnits.map(u => ({
           unitId: u.id,
           action: `Dipinjam oleh ${ticket.peminjam.name}. Alasan: ${ticket.alasan}`,
           actor: `${user.name} (Admin)`,
           timestamp: now
         }))
-      })
+      }))
     }
+
+    const transactionResults = await prisma.$transaction(transactionOperations)
+    const updatedTicket = transactionResults[0] as any
 
     await createNotification(
       'Aset Diserahkan',

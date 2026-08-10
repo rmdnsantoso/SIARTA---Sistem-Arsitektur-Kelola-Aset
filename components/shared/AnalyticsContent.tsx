@@ -33,22 +33,26 @@ export default function AnalyticsContent() {
   const [exporting, setExporting] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const res = await getAnalyticsDashboardData(startDate || undefined, endDate || undefined)
+      if (res.success && res.data) {
+        setData(res.data)
+      } else {
+        setError(res.error || 'Gagal memuat data analitik')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Terjadi kesalahan')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await getAnalyticsDashboardData()
-        if (res.success && res.data) {
-          setData(res.data)
-        } else {
-          setError(res.error || 'Gagal memuat data analitik')
-        }
-      } catch (err: any) {
-        setError(err.message || 'Terjadi kesalahan')
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchData()
   }, [])
 
@@ -56,7 +60,7 @@ export default function AnalyticsContent() {
     try {
       setExporting(true)
       setShowExportMenu(false)
-      const result = await getExportData()
+      const result = await getExportData(startDate || undefined, endDate || undefined)
       if (!result.success || !result.data) {
         alert(result.message || 'Gagal mengekspor data')
         return
@@ -128,7 +132,7 @@ export default function AnalyticsContent() {
     try {
       setExporting(true)
       setShowExportMenu(false)
-      const result = await getExportData()
+      const result = await getExportData(startDate || undefined, endDate || undefined)
       if (!result.success || !result.data) {
         alert(result.message || 'Gagal mengekspor data')
         return
@@ -570,22 +574,45 @@ export default function AnalyticsContent() {
           </p>
         </div>
         
-        {/* Dropdown Export */}
-        <div className="relative">
-          <button 
-            onClick={() => setShowExportMenu(!showExportMenu)}
-            disabled={exporting}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" 
-            title="Download Laporan"
-          >
-            <svg className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-500 ${exporting ? 'animate-bounce' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {exporting ? 'Menyiapkan Data...' : 'Export Laporan'}
-            <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex flex-row items-center gap-2">
+            <input 
+              type="date"
+              className="text-xs sm:text-sm px-3 py-2 border border-gray-300 rounded-lg text-gray-700 outline-none focus:border-blue-500"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+            />
+            <span className="text-gray-400 text-sm">s.d</span>
+            <input 
+              type="date"
+              className="text-xs sm:text-sm px-3 py-2 border border-gray-300 rounded-lg text-gray-700 outline-none focus:border-blue-500"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+            />
+            <button 
+              onClick={fetchData}
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold rounded-lg shadow-sm transition-colors whitespace-nowrap"
+            >
+              Filter
+            </button>
+          </div>
+
+          {/* Dropdown Export */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={exporting}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-all shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" 
+              title="Download Laporan"
+            >
+              <svg className={`w-4 h-4 sm:w-4 sm:h-4 text-gray-500 ${exporting ? 'animate-bounce' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {exporting ? 'Menyiapkan...' : 'Export Laporan'}
+              <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
           {showExportMenu && !exporting && (
             <>
@@ -612,6 +639,7 @@ export default function AnalyticsContent() {
               </div>
             </>
           )}
+        </div>
         </div>
       </div>
 
