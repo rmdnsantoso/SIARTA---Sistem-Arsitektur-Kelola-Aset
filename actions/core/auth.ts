@@ -1,10 +1,10 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { createSession, destroySession, SessionUser } from '../../lib/session'
-import { Role } from '../../app/generated/prisma'
+import { Role } from '@prisma/client'
 
-// ─── Mapping role enum ke SessionUser role type ───────────────────────────────
+// â”€â”€â”€ Mapping role enum ke SessionUser role type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function toSessionRole(role: Role): SessionUser['role'] {
   switch (role) {
@@ -17,9 +17,9 @@ function toSessionRole(role: Role): SessionUser['role'] {
 
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Logout — Hancurkan session
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Logout â€” Hancurkan session
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export async function logoutUser() {
   try {

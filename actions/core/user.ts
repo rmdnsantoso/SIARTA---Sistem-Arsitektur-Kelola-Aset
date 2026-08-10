@@ -1,18 +1,18 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role } from '../../app/generated/prisma'
+import { Role } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { createSession, getCurrentUser, getSession } from '../../lib/session'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
 import { createActivityLog } from './log'
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Database-backed brute-force / rate limiter
 // Max 5 gagal per key per 15 menit
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MAX_ATTEMPTS = 5
 const WINDOW_MS = 15 * 60 * 1000 // 15 menit
 
@@ -51,16 +51,16 @@ async function resetRateLimit(key: string) {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Helper: Generate password acak kriptografis 12 karakter
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function generateRandomPassword(): string {
   return crypto.randomBytes(6).toString('hex')
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Ambil semua pengguna (Admin, HSSE, Area Head)
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function getAllUsers() {
   try {
     await requireRole([Role.Admin, Role.HSSE, Role.AreaHead])
@@ -95,9 +95,9 @@ export async function getAllUsers() {
   }
 }
 
-// ─────────────────────────────────────────
-// Buat pengguna baru — semua field wajib
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Buat pengguna baru â€” semua field wajib
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function createUser(input: {
   name: string
   email: string
@@ -155,9 +155,9 @@ export async function createUser(input: {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Update data pengguna
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function updateUser(id: string, input: {
   name?: string
   email?: string
@@ -178,7 +178,7 @@ export async function updateUser(id: string, input: {
       throw new Error('Anda tidak dapat mengubah status atau peran akun Anda sendiri melalui manajemen pengguna.')
     }
 
-    // ── HSSE tidak boleh mengubah user Admin ────────────────────────────────────
+    // â”€â”€ HSSE tidak boleh mengubah user Admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (actor.role === Role.HSSE) {
       const targetUser = await prisma.user.findUnique({ where: { id }, select: { role: true } })
       if (targetUser?.role === Role.Admin) {
@@ -198,9 +198,9 @@ export async function updateUser(id: string, input: {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Hapus pengguna
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function deleteUser(id: string) {
   try {
     const actor = await requireRole([Role.Admin, Role.HSSE])
@@ -211,7 +211,7 @@ export async function deleteUser(id: string) {
       throw new Error('Tindakan tidak diizinkan. Anda tidak dapat menghapus akun Anda sendiri.')
     }
 
-    // ── HSSE tidak boleh menghapus user Admin ────────────────────────────────────
+    // â”€â”€ HSSE tidak boleh menghapus user Admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (actor.role === Role.HSSE) {
       const targetUser = await prisma.user.findUnique({ where: { id }, select: { role: true } })
       if (targetUser?.role === Role.Admin) {
@@ -240,9 +240,9 @@ export async function deleteUser(id: string) {
   }
 }
 
-// ─────────────────────────────────────────
-// Reset password → generate acak baru
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Reset password â†’ generate acak baru
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function resetUserPassword(id: string) {
   try {
     await requireRole([Role.Admin, Role.HSSE])
@@ -261,9 +261,9 @@ export async function resetUserPassword(id: string) {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Simpan face descriptor setelah registrasi wajah
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function saveFaceDescriptor(userId: string, descriptor: number[]) {
   try {
     await requireRole([Role.Admin, Role.HSSE])
@@ -282,9 +282,9 @@ export async function saveFaceDescriptor(userId: string, descriptor: number[]) {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Ganti password sendiri oleh user (Hanya sekali)
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function changeUserPassword(userId: string, oldPassword: string, newPassword: string) {
   try {
     const user = await prisma.user.findUnique({
@@ -324,13 +324,13 @@ export async function changeUserPassword(userId: string, oldPassword: string, ne
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Login dengan kredensial (email + password)
-// Tidak butuh role khusus — ini endpoint publik
-// ─────────────────────────────────────────
+// Tidak butuh role khusus â€” ini endpoint publik
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function loginWithCredentials(email: string, password: string) {
   try {
-    // ── Validasi input dasar ──────────────────────────────────────────────────
+    // â”€â”€ Validasi input dasar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (!email || !password) throw new Error('Email dan password wajib diisi.')
 
     // Batas panjang untuk mencegah oversized payload
@@ -343,7 +343,7 @@ export async function loginWithCredentials(email: string, password: string) {
 
     const cleanEmail = email.toLowerCase().trim()
 
-    // ── Rate limiting per email ───────────────────────────────────────────────
+    // â”€â”€ Rate limiting per email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const headersList = await headers()
     const clientIp = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
 
@@ -353,7 +353,7 @@ export async function loginWithCredentials(email: string, password: string) {
       throw new Error(`Terlalu banyak percobaan login. Coba lagi dalam ${menit} menit.`)
     }
 
-    // ── Cek user di database ──────────────────────────────────────────────────
+    // â”€â”€ Cek user di database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },
       select: {
@@ -370,7 +370,7 @@ export async function loginWithCredentials(email: string, password: string) {
 
     if (!isMatch) throw new Error('Email atau password salah.')
 
-    // ── Login sukses — reset rate limit ──────────────────────────────────────
+    // â”€â”€ Login sukses â€” reset rate limit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     await resetRateLimit(`email:${cleanEmail}`)
 
     let sessionCreated = false
@@ -406,9 +406,9 @@ export async function loginWithCredentials(email: string, password: string) {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Generate liveness challenge acak (Blink atau Turn Head)
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export async function generateLivenessChallenge() {
   try {
     const session = await getSession()
@@ -445,11 +445,11 @@ export async function generateLivenessChallenge() {
   }
 }
 
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Verifikasi wajah saat login
 // Jika userId diberikan, hanya cocokkan ke user tersebut (targeted match)
 // Jika tidak, cari ke seluruh user aktif (fallback mode)
-// ─────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function logFailedLiveness(userId: string, reason: string) {
   try {
     if (!userId) return
@@ -486,7 +486,7 @@ export async function verifyFaceLogin(
 
     if (!descriptor || descriptor.length !== 128) return { success: false, error: 'Data wajah dari perangkat tidak valid atau korup.' }
 
-    // ── Rate Limiting Check ──
+    // â”€â”€ Rate Limiting Check â”€â”€
     const headersList = await headers()
     const clientIp = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown'
 
@@ -495,7 +495,7 @@ export async function verifyFaceLogin(
       return { success: false, error: `Terlalu banyak percobaan gagal. Silakan coba lagi setelah ${Math.ceil(rateLimit.retryAfterMs / 1000 / 60)} menit.` }
     }
 
-    // ── Validasi Liveness (Server-Side) ──
+    // â”€â”€ Validasi Liveness (Server-Side) â”€â”€
     if (!sessionId || !livenessData) {
       await logFailedLiveness(userId, 'Data liveness tidak lengkap.')
       return { success: false, error: 'Data liveness tidak lengkap.' }
@@ -579,7 +579,7 @@ export async function verifyFaceLogin(
 
     const THRESHOLD = 0.55
 
-    // ── Targeted: hanya cocokkan wajah user yg sudah login via kredensial ──
+    // â”€â”€ Targeted: hanya cocokkan wajah user yg sudah login via kredensial â”€â”€
     const user = await prisma.user.findUnique({
       where: { id: userId, isActive: true, faceRegistered: true },
       select: { id: true, name: true, email: true, role: true, faceDescriptor: true }
@@ -602,7 +602,7 @@ export async function verifyFaceLogin(
     const distance = Math.sqrt(sum)
 
     if (distance < THRESHOLD) {
-      // ── Buat session setelah wajah berhasil diverifikasi ──
+      // â”€â”€ Buat session setelah wajah berhasil diverifikasi â”€â”€
       // Hapus tiket pre-auth dari cookie karena sesi penuh akan diterbitkan
       delete session.pendingFaceUserId
       session.user = {

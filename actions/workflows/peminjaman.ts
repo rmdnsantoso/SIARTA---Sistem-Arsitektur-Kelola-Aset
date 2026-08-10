@@ -1,8 +1,8 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role, TicketStatus, AssetStatus } from '../../app/generated/prisma'
+import { Role, TicketStatus, AssetStatus } from '@prisma/client'
 import { createNotification } from '../core/notification'
 import { parseIndonesianDate } from '../../lib/dateUtils'
 
@@ -39,7 +39,7 @@ export async function createBorrowTicket(input: CreateTicketInput) {
       throw new Error(`Aset saat ini tidak dapat dipinjam (Status: ${asset.status})`)
     }
 
-    // Pre-check stok (soft check untuk UX cepat — sebelum buat tiket)
+    // Pre-check stok (soft check untuk UX cepat â€” sebelum buat tiket)
     // Atomic check di bawah masih ada sebagai safety net untuk race condition
     if (asset.quantity < input.jumlah) {
       return {
@@ -88,7 +88,7 @@ export async function createBorrowTicket(input: CreateTicketInput) {
       }
     })
 
-    // 5. Kurangi stok secara ATOMIK — cegah race condition
+    // 5. Kurangi stok secara ATOMIK â€” cegah race condition
     // updateMany dengan WHERE quantity >= jumlah: jika stok tidak cukup, count = 0
     const stockUpdate = await prisma.asset.updateMany({
       where: { id: asset.id, quantity: { gte: input.jumlah } },

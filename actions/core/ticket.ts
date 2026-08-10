@@ -1,11 +1,11 @@
-'use server'
+﻿'use server'
 
 import { prisma } from '../../lib/prisma'
 import { requireRole } from '../../lib/auth'
-import { Role, TicketStatus } from '../../app/generated/prisma'
+import { Role, TicketStatus } from '@prisma/client'
 import { createNotification } from '../core/notification'
 
-import { Prisma } from '../../app/generated/prisma'
+import { Prisma } from '@prisma/client'
 
 // Tipe lengkap tiket dengan relasi (dipakai sebagai return type)
 export type TicketWithRelations = Prisma.TicketGetPayload<{
@@ -18,7 +18,7 @@ export type TicketWithRelations = Prisma.TicketGetPayload<{
   }
 }>
 
-// ─── Helper filter tanggal (default 6 bulan) ──────────────────────────────
+// â”€â”€â”€ Helper filter tanggal (default 6 bulan) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getDateFilter(startDate?: string, endDate?: string) {
   const defaultStart = new Date()
   defaultStart.setMonth(defaultStart.getMonth() - 6)
