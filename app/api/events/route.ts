@@ -6,11 +6,13 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: Request) {
   let controllerRef: ReadableStreamDefaultController | null = null
 
+  const encoder = new TextEncoder()
+  
   // Format sebuah event SSE
   const sendEvent = (eventName: string, data: any) => {
     if (!controllerRef) return
     try {
-      controllerRef.enqueue(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`)
+      controllerRef.enqueue(encoder.encode(`event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`))
     } catch (e) {
       console.error('Error sending event', e)
     }
