@@ -70,6 +70,12 @@ export default function AnalyticsContent() {
       // Add BOM for Excel UTF-8 support
       let csvContent = "\uFEFF";
       
+      const formatID = (d: Date) => d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })
+      const now = new Date();
+      const pStart = startDate ? new Date(startDate + "T00:00:00Z") : new Date(now.getFullYear(), now.getMonth(), 1);
+      const pEnd = endDate ? new Date(endDate + "T23:59:59Z") : now;
+      const periodLabel = `${formatID(pStart)} - ${formatID(pEnd)}`;
+      
       const escapeCsvField = (field: any) => {
         if (field === null || field === undefined) return '""';
         let str = String(field);
@@ -103,7 +109,7 @@ export default function AnalyticsContent() {
       csvContent += "\n"
 
       // Transaksi
-      csvContent += "=== RIWAYAT TRANSAKSI (30 HARI TERAKHIR) ===\n"
+      csvContent += `=== RIWAYAT TRANSAKSI (${periodLabel}) ===\n`
       csvContent += `ID_Tiket,Nama_Peminjam,Nama_Barang,Tgl_Pinjam,Tgl_Kembali_Batas,Status_Akhir,Alasan_Pinjam\n`
       
       result.data.transaksi.forEach((t: any) => {
@@ -142,6 +148,12 @@ export default function AnalyticsContent() {
       
       const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
       const currentMonth = `${monthNames[new Date().getMonth()]} ${new Date().getFullYear()}`
+      
+      const formatID = (d: Date) => d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })
+      const now = new Date();
+      const pStart = startDate ? new Date(startDate + "T00:00:00Z") : new Date(now.getFullYear(), now.getMonth(), 1);
+      const pEnd = endDate ? new Date(endDate + "T23:59:59Z") : now;
+      const periodLabel = `${formatID(pStart)} - ${formatID(pEnd)}`;
 
       // --- HALAMAN SAMPUL (COVER PAGE) ---
       doc.setFontSize(24)
@@ -345,7 +357,7 @@ export default function AnalyticsContent() {
           doc.setFontSize(9)
           doc.setFont("helvetica", "italic")
           doc.setTextColor(100)
-          const vizDesc = `Grafik tren di atas memperlihatkan dinamika peminjaman dan pengembalian unit selama 6 bulan terakhir, sementara diagram status menunjukkan proporsi ${pctTersedia}% aset dalam kondisi tersedia dan ${pctDipinjam}% sedang dipinjam. Data ini membantu tim memantau kecukupan stok secara real-time.`
+          const vizDesc = `Grafik tren di atas memperlihatkan dinamika peminjaman dan pengembalian unit pada periode ${periodLabel}, sementara diagram status menunjukkan proporsi ${pctTersedia}% aset dalam kondisi tersedia dan ${pctDipinjam}% sedang dipinjam. Data ini membantu tim memantau kecukupan stok secara real-time.`
           const splitVizDesc = doc.splitTextToSize(vizDesc, 180)
           doc.text(splitVizDesc, 14, currentY)
           currentY += (splitVizDesc.length * 5) + 10
@@ -436,7 +448,7 @@ export default function AnalyticsContent() {
       doc.setFontSize(9)
       doc.setFont("helvetica", "italic")
       doc.setTextColor(100)
-      const txDesc = "Perekaman 30 hari terakhir dari aktivitas keluar-masuk barang, mencakup informasi jadwal pengembalian untuk memonitor tingkat kepatuhan pengguna."
+      const txDesc = `Perekaman riwayat aktivitas keluar-masuk barang pada periode ${periodLabel}, mencakup informasi jadwal pengembalian untuk memonitor tingkat kepatuhan pengguna.`
       const splitTxDesc = doc.splitTextToSize(txDesc, 180)
       doc.text(splitTxDesc, 14, currentY)
       currentY += (splitTxDesc.length * 5) + 10
@@ -676,7 +688,7 @@ export default function AnalyticsContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-2">
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-gray-900">Tren Aktivitas</h2>
-              <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">Peminjaman vs. Pengembalian 6 bulan terakhir</p>
+              <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">Peminjaman vs. Pengembalian pada periode terpilih</p>
             </div>
             <div className="flex items-center gap-3 text-[11px] sm:text-xs text-gray-500">
               <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500"></span>Dipinjam</span>

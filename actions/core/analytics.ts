@@ -8,22 +8,21 @@ import { unstable_cache } from 'next/cache'
 const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: string) => {
   try {
 
-    const dateFilter = startDate && endDate ? {
-      gte: new Date(startDate + "T00:00:00Z"),
-      lte: new Date(endDate + "T23:59:59Z")
-    } : undefined;
-    const ticketsWhere = dateFilter ? { createdAt: dateFilter } : {};
-
     const now = new Date();
     // Gunakan periodStart dan periodEnd dari filter (atau bulan berjalan sebagai default)
     const periodStart = startDate ? new Date(startDate + "T00:00:00Z") : new Date(now.getFullYear(), now.getMonth(), 1);
     const periodEnd = endDate ? new Date(endDate + "T23:59:59Z") : now;
 
+    const ticketsWhere = {
+      createdAt: {
+        gte: periodStart,
+        lte: periodEnd
+      }
+    };
+
     const diffTime = periodEnd.getTime() - periodStart.getTime();
     const lastPeriodStart = new Date(periodStart.getTime() - diffTime - 1);
     const lastPeriodEnd = new Date(periodStart.getTime() - 1);
-
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // 1. Eksekusi Query Paralel
@@ -53,9 +52,9 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
         where: { overallStatus: 'Dikembalikan', ...ticketsWhere },
         select: { updatedAt: true, tanggalKembali: true }
       }),
-      // recent tickets untuk area chart 6 bulan absolut
+      // recent tickets untuk area chart menggunakan rentang filter
       prisma.ticket.findMany({
-        where: { createdAt: { gte: sixMonthsAgo } },
+        where: ticketsWhere,
         select: { createdAt: true, overallStatus: true }
       })
     ]);
@@ -158,24 +157,59 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
     const onTimeRate = returnedTickets.length > 0 ? Math.round((onTimeCount / returnedTickets.length) * 100) : 100;
 
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // 5. Area Chart - Tren 6 Bulan Absolut
+    // 5. Area Chart - Tren Dinamis
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const trendData = [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const rangeDays = diffTime / (1000 * 60 * 60 * 24);
     
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mStr = monthNames[d.getMonth()];
+    if (rangeDays <= 31) {
+      // Bucket per hari
+      const daysCount = Math.max(1, Math.ceil(rangeDays));
+      for (let i = 0; i <= daysCount; i++) {
+        const d = new Date(periodStart.getTime() + i * 24 * 60 * 60 * 1000);
+        if (d > periodEnd) break;
+        
+        const dayStr = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        
+        const ticketsInDay = allRecentTickets.filter(t => {
+          const tDate = new Date(t.createdAt);
+          return tDate.getDate() === d.getDate() && tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear();
+        });
+        
+        trendData.push({ month: dayStr, peminjaman: ticketsInDay.length, pengembalian: ticketsInDay.filter(t => t.overallStatus === 'Dikembalikan').length });
+      }
+    } else if (rangeDays <= 180) {
+      // Bucket per minggu
+      const weeksCount = Math.ceil(rangeDays / 7);
+      for (let i = 0; i < weeksCount; i++) {
+        const weekStart = new Date(periodStart.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+        const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+        
+        const weekStr = `Minggu ${i+1} ${weekStart.toLocaleDateString('id-ID', { month: 'short' })}`;
+        
+        const ticketsInWeek = allRecentTickets.filter(t => {
+          const tDate = new Date(t.createdAt);
+          return tDate >= weekStart && tDate <= new Date(weekEnd.getTime() + 24 * 60 * 60 * 1000 - 1);
+        });
+        
+        trendData.push({ month: weekStr, peminjaman: ticketsInWeek.length, pengembalian: ticketsInWeek.filter(t => t.overallStatus === 'Dikembalikan').length });
+      }
+    } else {
+      // Bucket per bulan
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      let currentMonth = new Date(periodStart.getFullYear(), periodStart.getMonth(), 1);
       
-      const ticketsInMonth = allRecentTickets.filter(t => {
-        const tDate = new Date(t.createdAt);
-        return tDate.getMonth() === d.getMonth() && tDate.getFullYear() === d.getFullYear();
-      });
-      
-      const pinjam = ticketsInMonth.length;
-      const kembali = ticketsInMonth.filter(t => t.overallStatus === 'Dikembalikan').length;
-      
-      trendData.push({ month: mStr, peminjaman: pinjam, pengembalian: kembali });
+      while (currentMonth <= periodEnd) {
+        const mStr = monthNames[currentMonth.getMonth()] + " '" + currentMonth.getFullYear().toString().substring(2);
+        
+        const ticketsInMonth = allRecentTickets.filter(t => {
+          const tDate = new Date(t.createdAt);
+          return tDate.getMonth() === currentMonth.getMonth() && tDate.getFullYear() === currentMonth.getFullYear();
+        });
+        
+        trendData.push({ month: mStr, peminjaman: ticketsInMonth.length, pengembalian: ticketsInMonth.filter(t => t.overallStatus === 'Dikembalikan').length });
+        currentMonth.setMonth(currentMonth.getMonth() + 1);
+      }
     }
 
     // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -285,11 +319,16 @@ export async function getAnalyticsDashboardData(startDate?: string, endDate?: st
 const getExportDataInternal = async (startDate?: string, endDate?: string) => {
 
   try {
-    const dateFilter = startDate && endDate ? {
-      gte: new Date(startDate + "T00:00:00Z"),
-      lte: new Date(endDate + "T23:59:59Z")
-    } : undefined;
-    const ticketsWhere = dateFilter ? { createdAt: dateFilter } : {};
+    const now = new Date();
+    const periodStart = startDate ? new Date(startDate + "T00:00:00Z") : new Date(now.getFullYear(), now.getMonth(), 1);
+    const periodEnd = endDate ? new Date(endDate + "T23:59:59Z") : now;
+
+    const ticketsWhere = {
+      createdAt: {
+        gte: periodStart,
+        lte: periodEnd
+      }
+    };
 
     const [assets, activeTickets, activeMaintenanceRecords, tickets] = await Promise.all([
       // 1. Get Assets Data
