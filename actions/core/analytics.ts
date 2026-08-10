@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { prisma } from '../../lib/prisma'
 import { Role } from '@prisma/client'
@@ -229,7 +229,7 @@ const getAnalyticsDashboardDataInternal = async (startDate?: string, endDate?: s
           critical: criticalAssets.slice(0, 3).map(assetName => ({
             icon: 'alert-circle',
             label: 'Stok Kritis',
-            text: `${assetName} menipis (sisa â‰¤ 3 unit) â€” pertimbangkan restock.`
+            text: `${assetName} menipis (sisa <= 3 unit) - pertimbangkan restock.`
           })),
           rotating: [
             { 
