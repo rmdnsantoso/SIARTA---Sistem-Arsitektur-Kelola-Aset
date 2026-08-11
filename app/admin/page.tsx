@@ -12,7 +12,7 @@ import ReturnProcess from '../../components/admin/ReturnProcess'
 import TicketHistory from '../../components/admin/TicketHistory'
 import MaintenanceHistory from '../../components/admin/MaintenanceHistory'
 import { usePolling } from '../../hooks/usePolling'
-import { getAllTickets } from '../../actions/core/ticket'
+import { getAllTickets, getTicketsForHSSE, getTicketsForAreaHead } from '../../actions/core/ticket'
 import { getLoggedInUser } from '../../actions/core/session'
 import { adaptTickets } from '../../types/db'
 import type { Ticket } from '../../types/ticket'
@@ -37,14 +37,21 @@ export default function AdminDashboard() {
 
   const refreshData = async () => {
     try {
-      const [dbTickets, sessionRes] = await Promise.all([
-        getAllTickets(1, 100),
-        getLoggedInUser()
-      ])
-      setTickets(adaptTickets(dbTickets.data))
-      if (sessionRes.success && sessionRes.user) {
-        setCurrentUser({ id: sessionRes.user.id, name: sessionRes.user.name, role: sessionRes.user.role })
+      const sessionRes = await getLoggedInUser()
+      if (!sessionRes.success || !sessionRes.user) {
+        setLoading(false)
+        return
       }
+      
+      const userRole = sessionRes.user.role
+      setCurrentUser({ id: sessionRes.user.id, name: sessionRes.user.name, role: userRole })
+      
+      let fetchAction = getAllTickets
+      if (userRole === 'HSSE') fetchAction = getTicketsForHSSE
+      else if (userRole === 'AreaHead') fetchAction = getTicketsForAreaHead
+
+      const dbTickets = await fetchAction(1, 100)
+      setTickets(adaptTickets(dbTickets.data))
     } catch (err) {
       console.error('Gagal memuat ulang tiket admin:', err)
     } finally {
@@ -96,7 +103,7 @@ export default function AdminDashboard() {
           
           {activeNav === 'Verifikasi Pinjam' && <BorrowingProcess tickets={tickets} onSuccess={refreshData} />}
           {activeNav === 'Pengembalian Aset' && <ReturnProcess tickets={tickets} onSuccess={refreshData} />}
-          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
+          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} fetchAction={currentUser?.role === 'HSSE' ? getTicketsForHSSE : currentUser?.role === 'AreaHead' ? getTicketsForAreaHead : getAllTickets} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistory />}
           {activeNav === 'Analitik' && <AnalyticsContent />}
           {activeNav === 'Kelola Pengguna' && <UserManagement currentUserId={currentUser?.id} />}
