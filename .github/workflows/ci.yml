@@ -26,16 +26,16 @@ jobs:
         run: npm install
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Generate Prisma Client
         run: npx prisma generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Coba Build Aplikasi
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.DATABASE_URL }}
