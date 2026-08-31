@@ -157,7 +157,7 @@ export default function ApprovalDashboard() {
 
           {activeNav === 'Master Aset' && <AssetMaster isViewOnly={true} />}
           {activeNav === 'Kelola Pengguna' && <UserManagement isViewOnly={true} currentUserId={currentUser?.id} />}
-          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} />}
+          {activeNav === 'Riwayat Peminjaman' && <TicketHistory tickets={tickets} fetchAction={getTicketsForAreaHead} />}
           {activeNav === 'Riwayat Pemeliharaan' && <MaintenanceHistoryAreaHead />}
         </div>
       </div>
