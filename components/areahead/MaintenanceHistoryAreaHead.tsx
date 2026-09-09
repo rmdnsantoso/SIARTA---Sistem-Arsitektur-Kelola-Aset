@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
-import { getAllMaintenanceRecords } from '../../actions/core/maintenance'
+import { getMaintenanceHistory } from '../../actions/core/maintenance'
 import { usePolling } from '../../hooks/usePolling'
-import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 
 interface HistoryTicket {
   id: string
@@ -42,11 +42,15 @@ export default function MaintenanceHistoryAreaHead() {
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null)
   const [zoomScale, setZoomScale] = useState(1)
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalRecords, setTotalRecords] = useState(0)
+  const [serverStats, setServerStats] = useState({ totalSedangDiperbaiki: 0, totalSelesai: 0, totalDimusnahkan: 0 })
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
 
-  const refreshData = useCallback(() => {
-    getAllMaintenanceRecords().then(res => {
+  const refreshData = () => {
+    const dbFilterStatus = filterStatus === 'Laporan Masuk' ? 'Menunggu Tindakan' : filterStatus;
+    getMaintenanceHistory(currentPage, itemsPerPage, dbFilterStatus, debouncedSearch).then(res => {
       if (res.success && res.data) {
         const adapted: HistoryTicket[] = res.data.map(r => ({
           id: r.recordCode,
@@ -57,35 +61,33 @@ export default function MaintenanceHistoryAreaHead() {
           notes: r.issue,
           reporter: r.reporterName,
           photoUrl: r.photoUrl ?? undefined,
-          photos: r.photos?.map((p: any) => p.image) || [],
+          photos: (r as any).photos?.map((p: any) => p.image) || [],
           timestamp: r.createdAt?.toString(),
           updatedAt: r.updatedAt?.toString(),
           resolverName: (r as any).resolverName || undefined,
         }))
         setRecords(adapted)
+        setTotalPages(res.totalPages || 1)
+        setTotalRecords(res.total || 0)
+        if (res.stats) {
+          setServerStats(res.stats)
+        }
       }
     }).finally(() => setLoading(false))
-  }, [])
+  }
 
-  useEffect(() => {
-    refreshData()
-  }, [refreshData])
-
-  useRealtimeRefetch('MaintenanceRecord', refreshData)
   usePolling(refreshData, 60000)
 
-  const historyData = records
-
-  const filteredData = historyData.filter(item => {
-    const matchesSearch = item.items.some(i => i.assetName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                          item.id.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    if (filterStatus === 'Semua') return matchesSearch
-    return item.status === filterStatus && matchesSearch
+  useRealtimeEvent('maintenance_updated', () => {
+    refreshData()
   })
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  React.useEffect(() => {
+    setLoading(true)
+    refreshData()
+  }, [currentPage, debouncedSearch, filterStatus])
+
+  const paginatedData = records
 
   return (
     <div className="space-y-4 sm:space-y-6 font-sans relative animate-fade-in">
@@ -93,25 +95,25 @@ export default function MaintenanceHistoryAreaHead() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-6">
         <StatCard 
           label="Total Riwayat Tercatat" 
-          value={historyData.length} 
+          value={totalRecords} 
           iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
           colorTheme="default"
         />
         <StatCard 
           label="Laporan Masuk" 
-          value={historyData.filter(d => d.status === 'Laporan Masuk').length} 
+          value={serverStats.totalSedangDiperbaiki} 
           iconPath="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
           colorTheme="amber"
         />
         <StatCard 
           label="Selesai Diperbaiki" 
-          value={historyData.filter(d => d.status === 'Selesai Diperbaiki').length} 
+          value={serverStats.totalSelesai} 
           iconPath="M5 13l4 4L19 7" 
           colorTheme="green"
         />
         <StatCard 
           label="Aset Dimusnahkan" 
-          value={historyData.filter(d => d.status === 'Dimusnahkan').length} 
+          value={serverStats.totalDimusnahkan} 
           iconPath="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" 
           colorTheme="red"
         />

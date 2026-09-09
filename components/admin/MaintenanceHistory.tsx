@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
 import { getMaintenanceHistory } from '../../actions/core/maintenance'
 import { usePolling } from '../../hooks/usePolling'
-import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
+import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
 
 interface HistoryTicket {
   id: string
@@ -56,8 +56,9 @@ export default function MaintenanceHistory() {
     return () => clearTimeout(handler)
   }, [searchQuery])
 
-  const refreshData = useCallback(() => {
-    getMaintenanceHistory(currentPage, itemsPerPage, filterStatus, debouncedSearch).then(res => {
+  const refreshData = () => {
+    const dbFilterStatus = filterStatus === 'Sedang Diperbaiki' ? 'Menunggu Tindakan' : filterStatus;
+    getMaintenanceHistory(currentPage, itemsPerPage, dbFilterStatus, debouncedSearch).then(res => {
       if (res.success && res.data) {
         const adapted: HistoryTicket[] = res.data.map(r => ({
           id: r.recordCode,
@@ -81,15 +82,18 @@ export default function MaintenanceHistory() {
         }
       }
     }).finally(() => setLoading(false))
-  }, [currentPage, itemsPerPage, filterStatus, debouncedSearch])
+  }
 
   React.useEffect(() => {
     setLoading(true)
     refreshData()
-  }, [currentPage, debouncedSearch, filterStatus, refreshData])
+  }, [currentPage, debouncedSearch, filterStatus])
 
-  useRealtimeRefetch('MaintenanceRecord', refreshData)
   usePolling(refreshData, 60000)
+
+  useRealtimeEvent('maintenance_updated', () => {
+    refreshData()
+  })
 
   return (
     <div className="space-y-4 sm:space-y-6 font-sans relative animate-fade-in">
