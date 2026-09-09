@@ -57,7 +57,8 @@ export default function MaintenanceHistory() {
   }, [searchQuery])
 
   const refreshData = () => {
-    getMaintenanceHistory(currentPage, itemsPerPage, filterStatus, debouncedSearch).then(res => {
+    const dbFilterStatus = filterStatus === 'Sedang Diperbaiki' ? 'Menunggu Tindakan' : filterStatus;
+    getMaintenanceHistory(currentPage, itemsPerPage, dbFilterStatus, debouncedSearch).then(res => {
       if (res.success && res.data) {
         const adapted: HistoryTicket[] = res.data.map(r => ({
           id: r.recordCode,
