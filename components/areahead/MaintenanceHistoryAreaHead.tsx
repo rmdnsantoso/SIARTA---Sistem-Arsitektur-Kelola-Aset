@@ -37,7 +37,15 @@ export default function MaintenanceHistoryAreaHead() {
   const [records, setRecords] = useState<HistoryTicket[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 500)
+    return () => clearTimeout(handler)
+  }, [searchQuery])
   const [selectedTicket, setSelectedTicket] = useState<HistoryTicket | null>(null)
   const [zoomedPhoto, setZoomedPhoto] = useState<string | null>(null)
   const [zoomScale, setZoomScale] = useState(1)
@@ -246,7 +254,7 @@ export default function MaintenanceHistoryAreaHead() {
                     </div>
                   </td>
                 </tr>
-              ) : filteredData.length === 0 ? (
+              ) : records.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-400 font-medium">
                     Tidak ada riwayat yang ditemukan.
@@ -302,7 +310,7 @@ export default function MaintenanceHistoryAreaHead() {
         {totalPages > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col lg:flex-row items-center justify-between shrink-0 gap-4 rounded-b-lg">
             <span className="text-sm text-gray-500 font-medium">
-              Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredData.length)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredData.length)}</span> dari <span className="font-bold text-gray-900">{filteredData.length}</span> hasil
+              Menampilkan <span className="font-bold text-gray-900">{Math.min((currentPage - 1) * itemsPerPage + 1, totalRecords)}</span> hingga <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, totalRecords)}</span> dari <span className="font-bold text-gray-900">{totalRecords}</span> hasil
             </span>
             <div className="flex items-center gap-2">
               <button 
@@ -331,7 +339,7 @@ export default function MaintenanceHistoryAreaHead() {
 
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages || filteredData.length === 0}
+                disabled={currentPage === totalPages || totalRecords === 0}
                 className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Selanjutnya
