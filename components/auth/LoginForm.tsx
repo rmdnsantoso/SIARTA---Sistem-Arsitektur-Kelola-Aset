@@ -113,6 +113,11 @@ export default function LoginForm() {
           // Wajah terdaftar → ganti view ke FaceScanner (tanpa popup)
           setView('face')
         } else {
+          // Reset nav ke menu utama agar user tidak kembali ke halaman terakhir sesi sebelumnya
+          localStorage.removeItem('admin_activeNav')
+          localStorage.removeItem('areahead_activeNav')
+          localStorage.removeItem('hsse_activeNav')
+          localStorage.removeItem('peminjam_activeNav')
           router.push(getRoleRoute(res.user.role as string))
         }
       } else {
@@ -128,6 +133,11 @@ export default function LoginForm() {
 
   // ── Face callbacks ──────────────────────────────────────────────────────────
   const handleFaceSuccess = (user?: { name: string; email: string; role: string }) => {
+    // Reset nav ke menu utama agar user tidak kembali ke halaman terakhir sesi sebelumnya
+    localStorage.removeItem('admin_activeNav')
+    localStorage.removeItem('areahead_activeNav')
+    localStorage.removeItem('hsse_activeNav')
+    localStorage.removeItem('peminjam_activeNav')
     router.push(getRoleRoute(user?.role ?? 'Peminjam'))
   }
 
