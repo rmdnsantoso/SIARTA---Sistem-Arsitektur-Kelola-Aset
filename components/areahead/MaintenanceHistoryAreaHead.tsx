@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import StatCard from '../shared/StatCard'
 import { getMaintenanceHistory } from '../../actions/core/maintenance'
 import { usePolling } from '../../hooks/usePolling'
-import { useRealtimeEvent } from '../../hooks/useRealtimeEvents'
+import { useRealtimeRefetch } from '../../hooks/useRealtimeRefetch'
 
 interface HistoryTicket {
   id: string
@@ -86,9 +86,7 @@ export default function MaintenanceHistoryAreaHead() {
 
   usePolling(refreshData, 60000)
 
-  useRealtimeEvent('maintenance_updated', () => {
-    refreshData()
-  })
+  useRealtimeRefetch('MaintenanceRecord', refreshData)
 
   React.useEffect(() => {
     setLoading(true)
